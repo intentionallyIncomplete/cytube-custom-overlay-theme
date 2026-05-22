@@ -36,6 +36,16 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Inject CDN Version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          sed -i "s|@__VERSION__|@${VERSION}|g" channel_config_settings.js
+          git config user.email "ci@github.com"
+          git config user.name "GitHub Actions"
+          git add channel_config_settings.js
+          git commit -m "chore: pin CDN to v${VERSION} [skip ci]"
+          git push
+
       - name: Run Semantic Release
         run: npx semantic-release
         env:
