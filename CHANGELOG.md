@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.4...v1.0.5) (2026-05-25)
+
+
+### Bug Fixes
+
+* issue [#29](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/29) ([1143c69](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/1143c69d41a7e2f84bb8cb7cc12bc3cfa36a186e))
+
 ## [1.0.4](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.3...v1.0.4) (2026-05-25)
 
 
