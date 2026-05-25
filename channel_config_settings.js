@@ -1,4 +1,5 @@
 const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.0.3";
+const CDN_REF = CDN_BASE.indexOf("@__VERSION__") >= 0 ? CDN_BASE.replace("@__VERSION__", "@latest") : CDN_BASE;
 
 // BTFW_THEME_ADMIN_START
 window.BTFW_THEME_ADMIN = {
@@ -14,7 +15,7 @@ window.BTFW_THEME_ADMIN = {
   },
   "slider": {
     "enabled": true,
-    "feedUrl": CDN_BASE + "/channels.json"
+    "feedUrl": CDN_REF + "/channels.json"
   },
   "typography": {
     "preset": "nunito",
@@ -46,7 +47,7 @@ window.BTFW_THEME_ADMIN = {
   if (D.querySelector('script[data-btfw-loader]')) { console.debug("[BTFW] loader tag exists; skip"); return; }
   if (D.getElementById("btfw-grid")) { console.debug("[BTFW] layout present; skip"); return; }
 
-  var primary = CDN_BASE + "/" + FILE;
+  var primary = CDN_REF + "/" + FILE;
 
   function inject(src, attr) {
     var s = D.createElement("script");
@@ -61,9 +62,9 @@ window.BTFW_THEME_ADMIN = {
   // Primary load
   var tag = inject(primary);
 
-  // Fallback to raw.githack.com if jsDelivr fails
+  // Fallback: same CDN pin (or @latest if __VERSION__ was not injected yet)
   tag.onerror = function () {
-    console.warn("[BTFW] primary failed, trying fallback");
-    inject("https://raw.githack.com/intentionallyIncomplete/BillTube3-slim/refs/heads/main/" + FILE + "?" + Date.now(), { "data-btfw-fallback": "1" });
+    console.warn("[BTFW] primary failed, trying CDN fallback");
+    inject(CDN_REF + "/" + FILE + "?" + Date.now(), { "data-btfw-fallback": "1" });
   };
 })(window, document);

@@ -26,7 +26,8 @@ const DEV_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-s
     return module.instance;
   }
 
-  window.BTFW = { define, init, DEV_CDN };
+  var BASE = DEV_CDN;
+  window.BTFW = { define, init, DEV_CDN, BASE };
 
   var BootOverlay = (function () {
     var overlay = null;
@@ -218,19 +219,21 @@ const DEV_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-s
     });
   }
 
-  console.log('[BTFW] DEV_CDN:', DEV_CDN);
+  var isDev = /(?:^|[?&])dev=1(?:&|$)/.test(location.search);
+  console.log('[BTFW] BASE:', BASE, isDev ? '(dev modules)' : '(bundles)');
+
   // Preload CSS in proper order for layout stability
   Promise.all([
-    preload(BASE+"/css/tokens.css"),
-    preload(BASE+"/css/base.css"),
-    preload(BASE+"/css/navbar.css"),
-    preload(BASE+"/css/chat.css"),
-    preload(BASE+"/css/overlays.css"),
-    preload(BASE+"/css/player.css"),
-    preload(BASE+"/css/mobile.css")
-  ]).then(function(){
-    // Load modules in dependency order - core first, then layout-dependent modules
-    var mods=[
+    preload(BASE + "/css/tokens.css"),
+    preload(BASE + "/css/base.css"),
+    preload(BASE + "/css/navbar.css"),
+    preload(BASE + "/css/chat.css"),
+    preload(BASE + "/css/overlays.css"),
+    preload(BASE + "/css/player.css"),
+    preload(BASE + "/css/mobile.css"),
+    preload(BASE + "/css/boot-overlay.css")
+  ]).then(function () {
+    var scripts = isDev ? [
       "modules/util-motion.js",
       "modules/feature-style-core.js",
       "modules/feature-bulma-layer.js",
@@ -272,10 +275,19 @@ const DEV_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-s
       "modules/feature-video-enhancements.js",
       "modules/feature-channel-theme-admin.js",
       "modules/feature-theme-settings.js",
-      "modules/feature-ratings.js"
+      "modules/feature-ratings.js",
+      "modules/feature-audio-boost.js",
+      "modules/feature-movie-suggestions.js"
+    ] : [
+      "dist/core.bundle.js",
+      "dist/chat.bundle.js",
+      "dist/player.bundle.js",
+      "dist/playlist.bundle.js",
+      "dist/admin.bundle.js",
+      "dist/features.bundle.js"
     ];
-    return Promise.all(bundles.map(function (file) {
-      return load(DEV_CDN + "/" + file);
+    return Promise.all(scripts.map(function (file) {
+      return load(BASE + "/" + file);
     }));
   }).then(function () {
     return Promise.all([
@@ -296,7 +308,7 @@ const DEV_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-s
       BTFW.init("feature:chat-tools"),
       BTFW.init("feature:chat-filters"),
       BTFW.init("feature:chat-username-colors"),
-      BTFW.init("feature:emotes"),  
+      BTFW.init("feature:emotes"),
       BTFW.init("feature:chatMedia"),
       BTFW.init("feature:emoji-compat"),
       BTFW.init("feature:chat-avatars"),
@@ -305,15 +317,12 @@ const DEV_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-s
       BTFW.init("feature:navbar"),
       BTFW.init("feature:modal-skin"),
       BTFW.init("feature:nowplaying"),
-      BTFW.init("feature:movie-info"),
-      BTFW.init("feature:auto-subs"),
       BTFW.init("feature:gifs"),
       BTFW.init("feature:videoOverlay"),
       BTFW.init("feature:poll-overlay"),
       BTFW.init("feature:pip"),
       BTFW.init("feature:notify"),
       BTFW.init("feature:notification-sounds"),
-      BTFW.init("feature:audioEnhancer"),
       BTFW.init("feature:syncGuard"),
       BTFW.init("feature:chat-commands"),
       BTFW.init("feature:playlistPerformance"),
@@ -327,10 +336,13 @@ const DEV_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-s
       BTFW.init("feature:themeSettings"),
       BTFW.init("feature:ratings"),
       BTFW.init("feature:audioboost"),
-      BTFW.init("ext:autosubs"),
+      BTFW.init("feature:auto-subs"),
       BTFW.init("feature:movie-info"),
       BTFW.init("ext:movie-suggestion")
     ];
+    if (isDev) {
+      inits.push(BTFW.init("feature:audioEnhancer"));
+    }
     return Promise.all(inits);
   }).then(function () {
     console.log("[BTFW v3.4f] Ready.");
