@@ -29,10 +29,15 @@ if (!commit) {
   process.exit(0);
 }
 
+execSync('git config user.email "ci@github.com"', { stdio: "inherit" });
+execSync('git config user.name "GitHub Actions"', { stdio: "inherit" });
 execSync("git add channel_config_settings.js", { stdio: "inherit" });
 try {
-  execSync(`git commit -m "chore: pin CDN to ${tag} [skip ci]"`, { stdio: "inherit" });
-  execSync("git push", { stdio: "inherit" });
-} catch {
+  execSync("git diff --cached --quiet");
   console.log("Nothing to commit");
+  process.exit(0);
+} catch {
+  // staged changes present
 }
+execSync(`git commit -m "chore: pin CDN to ${tag} [skip ci]"`, { stdio: "inherit" });
+execSync("git push", { stdio: "inherit" });
