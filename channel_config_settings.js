@@ -46,7 +46,7 @@ window.BTFW_THEME_ADMIN = {
   if (D.querySelector('script[data-btfw-loader]')) { console.debug("[BTFW] loader tag exists; skip"); return; }
   if (D.getElementById("btfw-grid")) { console.debug("[BTFW] layout present; skip"); return; }
 
-  var primary = CDN_BASE + "@latest/" + FILE;
+  var primary = CDN_BASE + "/" + FILE;
 
   function inject(src, attr) {
     var s = D.createElement("script");
