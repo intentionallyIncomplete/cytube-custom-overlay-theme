@@ -1,5 +1,5 @@
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.0.3";
-const CDN_REF = CDN_BASE.indexOf("@__VERSION__") >= 0 ? CDN_BASE.replace("@__VERSION__", "@latest") : CDN_BASE;
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.0.4";
+const CDN_REF = CDN_BASE.indexOf("@v1.0.4") >= 0 ? CDN_BASE.replace("@v1.0.4", "@latest") : CDN_BASE;
 
 // BTFW_THEME_ADMIN_START
 window.BTFW_THEME_ADMIN = {
