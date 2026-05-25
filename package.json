@@ -1,6 +1,6 @@
 {
   "name": "billtube3-slim",
-  "version": "3.4.0",
+  "version": "1.0.2",
   "description": "Modular UI enhancement framework for CyTube",
   "type": "module",
   "scripts": {
@@ -8,7 +8,8 @@
     "lint-staged": "eslint . --ext .js,.css,.md,.json",
     "lint:fix": "npm run lint:js -- --fix && npm run lint:css -- --fix",
     "build": "node scripts/build.js",
-    "purge-cdn": "curl -s -X GET \"https://purge.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@dev/channel_config_settings.js\" && echo \"✓ CDN cache purged\""
+    "inject-cdn": "node scripts/inject-cdn-version.js",
+    "purge-cdn": "node scripts/purge-cdn.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
     "@semantic-release/release-notes-generator": "^14.1.0",
     "esbuild": "^0.20.0",
     "eslint": "^8.57.0",
@@ -38,14 +40,24 @@
     "branches": [
       "main"
     ],
+    "tagFormat": "v${version}",
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
       [
+        "@semantic-release/npm",
+        {
+          "npmPublish": false
+        }
+      ],
+      [
         "@semantic-release/github",
         {
-          "assets": []
+          "assets": [],
+          "successComment": false,
+          "failComment": false,
+          "releasedLabels": false
         }
       ],
       [
