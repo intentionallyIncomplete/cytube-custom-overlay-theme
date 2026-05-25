@@ -38,12 +38,24 @@ jobs:
         run: npm ci
 
       - name: Run Semantic Release
-        run: npx semantic-release
+        id: release
+        run: |
+          set -o pipefail
+          npx semantic-release 2>&1 | tee semantic-release.log
+          sr_exit=${PIPESTATUS[0]}
+          if grep -q "Published GitHub release" semantic-release.log; then
+            echo "new_release_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "new_release_published=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$sr_exit"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Inject CDN version
+        if: steps.release.outputs.new_release_published == 'true'
         run: node scripts/inject-cdn-version.js --commit
 
       - name: Purge jsDelivr CDN cache
+        if: steps.release.outputs.new_release_published == 'true'
         run: npm run purge-cdn
