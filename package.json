@@ -8,6 +8,7 @@
     "lint-staged": "eslint . --ext .js,.css,.md,.json",
     "lint:fix": "npm run lint:js -- --fix && npm run lint:css -- --fix",
     "build": "node scripts/build.js",
+    "verify-dist": "node scripts/verify-dist.js",
     "inject-cdn": "node scripts/inject-cdn-version.js",
     "purge-cdn": "node scripts/purge-cdn.js"
   },
@@ -22,6 +23,7 @@
     "@commitlint/config-conventional": "^20.0.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.7",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^11.0.6",
     "@semantic-release/npm": "^12.0.2",
@@ -52,6 +54,12 @@
         }
       ],
       [
+        "@semantic-release/exec",
+        {
+          "prepareCmd": "npm run build && node scripts/inject-cdn-version.js"
+        }
+      ],
+      [
         "@semantic-release/github",
         {
           "assets": [],
@@ -65,7 +73,14 @@
         {
           "assets": [
             "package.json",
-            "CHANGELOG.md"
+            "CHANGELOG.md",
+            "channel_config_settings.js",
+            "dist/core.bundle.js",
+            "dist/chat.bundle.js",
+            "dist/player.bundle.js",
+            "dist/playlist.bundle.js",
+            "dist/admin.bundle.js",
+            "dist/features.bundle.js"
           ],
           "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }

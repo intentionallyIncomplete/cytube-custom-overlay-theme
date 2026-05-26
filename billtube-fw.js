@@ -1,4 +1,5 @@
 const DEV_CDN = (function () {
+  var fallback = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@latest";
   var scripts = document.getElementsByTagName("script");
   for (var i = scripts.length - 1; i >= 0; i--) {
     var src = scripts[i].src || "";
@@ -6,7 +7,8 @@ const DEV_CDN = (function () {
     var m = src.match(/^(https:\/\/cdn\.jsdelivr\.net\/gh\/[^/]+\/[^/]+@[^/]+)/);
     if (m) return m[1];
   }
-  return "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@latest";
+  console.warn("[BTFW] Could not read version from billtube-fw.js URL; using @latest. Pin CDN_BASE in channel config to a release tag.");
+  return fallback;
 })();
 
 (function () {

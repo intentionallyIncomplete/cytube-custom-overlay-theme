@@ -2,6 +2,7 @@
 
 import fs from "fs";
 import path from "path";
+import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import { minify } from "terser";
 
@@ -126,4 +127,9 @@ async function buildBundle(bundle) {
     await buildBundle(bundle);
   }
   console.log("\n✨ Build complete!");
+  const verify = spawnSync(process.execPath, ["scripts/verify-dist.js"], {
+    cwd: path.join(__dirname, ".."),
+    stdio: "inherit"
+  });
+  if (verify.status !== 0) process.exit(verify.status || 1);
 })();

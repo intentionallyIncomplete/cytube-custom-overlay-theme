@@ -52,10 +52,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Inject CDN version
-        if: steps.release.outputs.new_release_published == 'true'
-        run: node scripts/inject-cdn-version.js --commit
-
       - name: Purge jsDelivr CDN cache
         if: steps.release.outputs.new_release_published == 'true'
         run: npm run purge-cdn

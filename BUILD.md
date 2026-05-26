@@ -2,76 +2,72 @@
 
 ## Overview
 
-BillTube uses esbuild to bundle modules for production, significantly improving load times by reducing HTTP requests from 33 to 6.
+BillTube bundles modules for production (6 HTTP requests instead of 33+) and serves them via **jsDelivr** using a **single git ref** per release (`@vX.Y.Z`).
 
-## Bundle Strategy
+## jsDelivr refs
 
-Modules are grouped into logical bundles:
+| URL ref | Points to |
+|---------|-----------|
+| `@v1.0.5` | Git tag `v1.0.5` (use in production) |
+| `@latest` | `main` branch tip (moves every push) |
+| `@<commit-sha>` | Exact commit (only valid if that commit contains built `dist/`) |
 
-- **core.bundle.js** - Style core, Bulma layer, layout
-- **chat.bundle.js** - All chat-related features
-- **player.bundle.js** - Player, video, ambient, PIP features
-- **playlist.bundle.js** - Playlist and now-playing features
-- **admin.bundle.js** - Theme admin and settings
-- **features.bundle.js** - All remaining features
+**Rule:** CyTube `CDN_BASE`, `billtube-fw.js`, and all `dist/*.bundle.js` / `css/*` must use the **same** ref. `billtube-fw.js` derives its asset base from its own script URL.
 
-## Usage
+## Bundle strategy
 
-### Install Dependencies
+- **core.bundle.js** — Style core, Bulma layer, layout
+- **chat.bundle.js** — Chat features
+- **player.bundle.js** — Player, video, audio boost, subs, movie info
+- **playlist.bundle.js** — Playlist and now-playing
+- **admin.bundle.js** — Theme admin and settings
+- **features.bundle.js** — Remaining features
+
+## Local development
 
 ```bash
 npm install
+npm run build          # writes dist/*.bundle.js
+npm run verify-dist    # fail if bundles missing
 ```
 
-### Build for Production
+### Load modes
 
-```bash
-npm run build
-# or if PowerShell execution policy blocks npm:
-node scripts/build.js
-```
+- **Production (bundled):** default — loads `dist/*.bundle.js` from the same ref as `billtube-fw.js`
+- **Dev (raw modules):** add `?dev=1` to the CyTube channel URL — loads `modules/*.js` instead of bundles
 
-This creates optimized bundles in the `dist/` directory.
+## Release pipeline
 
-### Development Mode
+On each semantic-release to `main`:
 
-```bash
-npm run build:watch
-# or:
-node scripts/build.js --watch
-```
+1. Version bump in `package.json`
+2. `npm run build` — rebuild `dist/`
+3. `inject-cdn-version.js` — pin `channel_config_settings.js` to `@vX.Y.Z`
+4. Git commit includes `package.json`, `CHANGELOG.md`, `channel_config_settings.js`, and all `dist/*.bundle.js`
+5. Git tag `vX.Y.Z` on that commit
+6. `npm run purge-cdn` — invalidate jsDelivr cache for fw, config, bundles, and CSS
 
-Watches for changes and rebuilds automatically.
+### After each release (manual)
 
-### Testing Modes
+Paste the updated **`channel_config_settings.js`** from the release commit into CyTube → Channel settings → Custom JavaScript / JS. The repo file is not applied to your channel automatically.
 
-- **Production (bundled)**: `https://your-site.com/`
-- **Dev (individual modules)**: `https://your-site.com/?dev=1`
-
-The framework auto-detects based on the `?dev=1` query parameter.
-
-## Performance Gains
-
-- **Before**: 33 sequential module loads (~1500-2000ms)
-- **After**: 6 parallel bundle loads (~400-600ms)
-- **Improvement**: ~70-80% faster initial load
-
-## File Structure
+## File structure
 
 ```
 BillTube3-slim/
-├── modules/              # Source modules (for dev mode)
-├── dist/                 # Built bundles (gitignored)
-├── scripts/
-│   ├── build.js         # Build script
-│   └── bundles/         # Generated entry files (gitignored)
-└── billtube-fw.js       # Framework loader
+├── modules/              # Source (dev mode / build input)
+├── dist/                 # Built bundles (committed on release)
+├── css/                  # Stylesheets (loaded from same ref as fw)
+├── billtube-fw.js        # Loader + boot (must match release tag)
+├── channel_config_settings.js  # CyTube channel snippet (pinned on release)
+└── scripts/
+    ├── build.js
+    ├── verify-dist.js
+    ├── inject-cdn-version.js
+    └── purge-cdn.js
 ```
 
-## Notes
+## Performance
 
-- Bundles are minified for production
-- Source modules remain available for dev mode
-- Build artifacts are gitignored
-- CDN should serve bundles with proper cache headers
-
+- **Before:** ~33 sequential module loads (~1500–2000ms)
+- **After:** 6 parallel bundle loads (~400–600ms)
