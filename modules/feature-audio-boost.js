@@ -766,7 +766,7 @@
       };
     });
 
-    // v1.0.x billtube-fw used a mismatched module id
+    // Legacy id used by billtube-fw < v1.0.6
     BTFW.define("feature:audio-boost", ["feature:audioboost"], async (ctx) => ctx.init("feature:audioboost"));
   });
 })();

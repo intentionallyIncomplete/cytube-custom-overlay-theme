@@ -479,26 +479,5 @@ BTFW.define("ext:movie-suggestion", [], async () => {
   };
 });
 
-// v1.0.x billtube-fw used a mismatched module id
+// Legacy id used by billtube-fw < v1.0.6
 BTFW.define("feature:movie-suggestions", ["ext:movie-suggestion"], async (ctx) => ctx.init("ext:movie-suggestion"));
-
-// Auto-initialize when BTFW is ready (legacy; boot handles init)
-(function() {
-  function tryInit() {
-    if (window.BTFW && typeof BTFW.init === 'function') {
-      BTFW.init('ext:movie-suggestion').catch(() => {});
-    } else {
-      setTimeout(tryInit, 100);
-    }
-  }
-  
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      document.addEventListener('btfw:ready', tryInit);
-      setTimeout(tryInit, 500);
-    });
-  } else {
-    document.addEventListener('btfw:ready', tryInit);
-    setTimeout(tryInit, 500);
-  }
-})();
