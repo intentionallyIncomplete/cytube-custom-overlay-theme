@@ -1,3 +1,11 @@
+## [1.0.6](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.5...v1.0.6) (2026-05-26)
+
+
+### Bug Fixes
+
+* issue [#32](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/32) ([511ffcc](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/511ffcc3a5b6b4376d752b9aa85dc6c5d4279d34))
+* use published @semantic-release/exec@^7.1.0 ([e4b188e](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/e4b188ec247b331da2b9fb68250aa194a3d23cf7))
+
 ## [1.0.5](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.4...v1.0.5) (2026-05-25)
 
 
