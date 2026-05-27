@@ -1,0 +1,28 @@
+# Purge jsDelivr when shipped assets change on main, even if semantic-release
+# did not cut a version (see https://github.com/intentionallyIncomplete/BillTube3-slim/issues/37).
+# Release workflow still purges after a published release; this covers other pushes.
+
+name: Purge CDN
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "dist/**"
+      - "billtube-fw.js"
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.x"
+
+      - name: Purge jsDelivr CDN cache
+        run: node scripts/purge-cdn.js

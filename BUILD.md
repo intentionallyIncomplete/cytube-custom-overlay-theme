@@ -43,9 +43,20 @@ On each semantic-release to `main`:
 1. Version bump in `package.json`
 2. `npm run build` — rebuild `dist/`
 3. `inject-cdn-version.js` — pin `channel_config_settings.js` to `@vX.Y.Z`
-4. Git commit includes `package.json`, `CHANGELOG.md`, `channel_config_settings.js`, and all `dist/*.bundle.js`
+4. Git commit includes `package.json`, `CHANGELOG.md`, `channel_config_settings.js`, `billtube-fw.js`, and all `dist/*.bundle.js`
 5. Git tag `vX.Y.Z` on that commit
-6. `npm run purge-cdn` — invalidate jsDelivr cache for fw, config, bundles, and CSS
+6. `npm run purge-cdn` — invalidate jsDelivr cache for fw, config, bundles, and CSS (also runs via `.github/workflows/purge-cdn.yml` when `dist/` or `billtube-fw.js` change on `main`)
+
+### Commit types and version bumps
+
+Configured in `package.json` → `release` → `@semantic-release/commit-analyzer` ([issue #37](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/37)):
+
+| Bump | Types / signals |
+|------|-----------------|
+| major | `BREAKING CHANGE` / breaking commits |
+| minor | `feat` |
+| patch | `fix`, `perf`, `refactor`, `build`, `revert` |
+| none | `chore(no-release):`, `[skip release]` in message, or types not listed (e.g. `docs`, `test`, `ci`) |
 
 ### After each release (manual)
 
