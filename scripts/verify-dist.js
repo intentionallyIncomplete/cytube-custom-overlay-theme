@@ -20,4 +20,11 @@ if (missing.length) {
   process.exit(1);
 }
 
+const coreBundle = fs.readFileSync(path.join(rootDir, "dist/core.bundle.js"), "utf8");
+if (!/util:motion/.test(coreBundle)) {
+  console.error("core.bundle.js does not define util:motion (add modules/util-motion.js to core bundle)");
+  process.exit(1);
+}
+
 console.log("✓ All production bundles present");
+console.log("✓ core.bundle.js includes util:motion");

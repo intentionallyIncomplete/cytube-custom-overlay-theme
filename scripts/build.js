@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
+import * as esbuild from "esbuild";
 import { minify } from "terser";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,6 +18,7 @@ const bundles = [
   {
     name: 'core',
     modules: [
+      'modules/util-motion.js',
       'modules/feature-style-core.js',
       'modules/feature-bulma-layer.js',
       'modules/feature-layout.js'
@@ -121,8 +123,24 @@ async function buildBundle(bundle) {
   console.log(`✓ Built ${bundle.name}.bundle.js (${(result.code.length / 1024).toFixed(1)}KB)`);
 }
 
+async function buildFrameworkLoader() {
+  const rootDir = path.join(__dirname, "..");
+  const entry = path.join(rootDir, "src", "billtube-fw.js");
+  const outfile = path.join(rootDir, "billtube-fw.js");
+  await esbuild.build({
+    entryPoints: [entry],
+    outfile,
+    bundle: true,
+    format: "iife",
+    target: ["es2018"],
+    logLevel: "silent"
+  });
+  console.log("✓ Built billtube-fw.js");
+}
+
 (async function build() {
   console.log("🔨 Building BillTube bundles with Terser...\n");
+  await buildFrameworkLoader();
   for (const bundle of bundles) {
     await buildBundle(bundle);
   }
