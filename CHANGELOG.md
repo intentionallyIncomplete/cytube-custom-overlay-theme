@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.7...v1.1.0) (2026-06-02)
+
+
+### Features
+
+* **ui:** minimal UI refresh — squarer panels, hidden footer, v1.0.8 ([#39](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/39))Strip ko-fi, disclaimer, and framework branding from the page footer and hidethe stack footer host. Tighten the visual system with 4px radius tokens, lightershadows, and consistent spacing across base, chat, overlays, and navbar CSS.Align dark-mode Bulma surfaces with the new tokens.Confirm layout default remains video-left / chat-right when no saved pref.Bump package and CDN pin to v1.0.8; rebuild dist bundles. ([6982d38](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/6982d389eaf635f00c74405fa2882ca50986c83c))
+
 ## [1.0.7](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.6...v1.0.7) (2026-05-27)
 
 ## [1.0.6](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.5...v1.0.6) (2026-05-26)
