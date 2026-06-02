@@ -1,5 +1,6 @@
 BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) => {
   const SPLIT_KEY = "btfw:grid:leftPx";
+  /** "right" = video left, chat right (default). "left" = chat left, video right. */
   const CHAT_SIDE_KEY = "btfw:layout:chatSide";
   const NAV_HOST_ID = "btfw-navhost";
   const VIDEO_MIN_PX = 520;

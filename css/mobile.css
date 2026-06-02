@@ -113,7 +113,7 @@ body.btfw-mobile-nav-open{
   .btfw-stack-item__body{ padding: 6px; }
 
   /* Footer spacing inside stack */
-  #btfw-stack-footer{ margin-top: 8px; }
+  #btfw-stack-footer { display: none !important; }
 }
 
 /* --------- Small phones (<= 480px): extra tightening ---------------------- */

@@ -42,7 +42,8 @@ html[data-btfw-theme="dark"] .modal-card {
   background: color-mix(in srgb, var(--btfw-color-surface) 92%, transparent 8%) !important;
   color: var(--btfw-color-text) !important;
   border: 1px solid var(--btfw-border) !important;
-  box-shadow: 0 18px 42px color-mix(in srgb, var(--btfw-color-bg) 55%, transparent 45%);
+  box-shadow: var(--btfw-overlay-shadow);
+  border-radius: var(--btfw-radius);
 }
 
 html[data-btfw-theme="dark"] .tabs.is-boxed li a { background:transparent; border-color:transparent; color:#c8d4e0; }

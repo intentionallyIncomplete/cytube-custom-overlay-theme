@@ -1,4 +1,4 @@
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.0.7";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.0.8";
 
 // BTFW_THEME_ADMIN_START
 window.BTFW_THEME_ADMIN = {
@@ -23,7 +23,7 @@ window.BTFW_THEME_ADMIN = {
   "integrations": {
     "enabled": true,
     "tmdb": {
-      "apiKey": "6459fcd631e69317f25758b82f77615d"
+      "apiKey": "bb77de6825b29b63ddf5c95688e6613c"
     }
   },
   "resources": {
@@ -32,7 +32,7 @@ window.BTFW_THEME_ADMIN = {
     "modules": []
   },
   "branding": {
-    "headerName": "BillTube3 Slim (Experimental)"
+    "headerName": "Quiglytube Slim (Experimental)"
   }
 };
 // BTFW_THEME_ADMIN_END

@@ -172,7 +172,7 @@
   min-width: 44px;
   height: 44px;
   padding: 0;
-  border-radius: 22px;
+  border-radius: var(--btfw-radius);
   border: 0;
   background: rgba(0, 0, 0, 0.42);
   color: #fff;
@@ -225,7 +225,7 @@
   justify-content: center;
 }
 #videowrap.btfw-pip {
-  border-radius: 18px;
+  border-radius: var(--btfw-radius);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--btfw-border) 70%, transparent 30%);
   box-shadow: 0 22px 48px color-mix(in srgb, var(--btfw-color-bg) 46%, transparent 54%);
@@ -470,7 +470,7 @@
 #btfw-emotes-grid .btfw-emote-tile {
   display:flex; align-items:center; justify-content:center;
   border: 1px solid var(--btfw-border);
-  border-radius: 10px; cursor: pointer;
+  border-radius: var(--btfw-radius); cursor: pointer;
   background: color-mix(in srgb, var(--btfw-color-panel) 80%, transparent 20%);
   /* keep size constant: no transform on hover */
   transition: background .12s ease, border-color .12s ease;
@@ -700,7 +700,7 @@
 
 /* Buttons */
 .modal .button {
-  border-radius: 10px;
+  border-radius: var(--btfw-radius);
   border: 1px solid var(--btfw-border);
   background: color-mix(in srgb, var(--btfw-color-panel) 80%, transparent 20%);
   color: var(--btfw-color-text);
@@ -774,7 +774,7 @@
 #btfw-gif-modal .btfw-gif-cell {
   position: relative;
   aspect-ratio: 1 / 1;        /* square */
-  border-radius: 12px;
+  border-radius: var(--btfw-radius);
   overflow: hidden;
   border: 1px solid var(--btfw-border);
   background: color-mix(in srgb, var(--btfw-color-panel) 82%, transparent 18%);
@@ -1147,7 +1147,7 @@ html[data-btfw-theme="dark"] .panel {
   background: var(--btfw-notice-bg, color-mix(in srgb, var(--btfw-overlay-bg) 96%, transparent 4%));
   color: var(--btfw-notice-text, var(--btfw-color-text));
   border: 1px solid var(--btfw-notice-border, var(--btfw-border));
-  border-radius: 16px;
+  border-radius: var(--btfw-radius);
   box-shadow: 0 18px 32px color-mix(in srgb, var(--btfw-color-bg) 52%, transparent 48%);
   backdrop-filter: blur(14px);
   overflow: hidden;
@@ -1198,7 +1198,7 @@ html[data-btfw-theme="dark"] .panel {
   flex: 0 0 auto;
   width: 38px;
   height: 38px;
-  border-radius: 14px;
+  border-radius: var(--btfw-radius);
   background: var(--btfw-notice-icon-bg);
   color: var(--btfw-notice-icon-color);
   display: flex;
@@ -1268,7 +1268,7 @@ html[data-btfw-theme="dark"] .panel {
 
 .btfw-notice-cta{
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--btfw-radius);
   padding: 8px 16px;
   font-weight: 600;
   font-size: 13px;
