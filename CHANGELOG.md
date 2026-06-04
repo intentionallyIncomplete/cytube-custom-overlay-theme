@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.2.0...v1.2.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **player:** resolve HTMLMediaElement for audio Web Audio chain ([#48](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/48)) ([81a32f7](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/81a32f773f2c8ca2e7942a6607576f90f9dc9747))
+
 # [1.2.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.1.1...v1.2.0) (2026-06-04)
 
 
