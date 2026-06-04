@@ -27,9 +27,11 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 
 ```bash
 npm install
-npm run build          # writes dist/*.bundle.js
+npm run build          # writes dist/*.bundle.js; regenerates modules/user-release-notes.generated.js from user-release-notes.json
 npm run verify-dist    # fail if bundles missing
 ```
+
+Before a user-facing release, update `user-release-notes.json` (see `.cursor/skills/updating-user-release-notes/`) so **Options → User Preferences → General → Recent Updates** stays current.
 
 Boot always loads `dist/*.bundle.js` from the same git ref as `billtube-fw.js`.
 
@@ -40,7 +42,7 @@ On each semantic-release to `main`:
 1. Version bump in `package.json`
 2. `npm run build` — rebuild `dist/`
 3. `inject-cdn-version.js` — pin `channel_config_settings.js` to `@vX.Y.Z`
-4. Git commit includes `package.json`, `CHANGELOG.md`, `channel_config_settings.js`, `billtube-fw.js`, and all `dist/*.bundle.js`
+4. Git commit includes `package.json`, `CHANGELOG.md`, `user-release-notes.json`, `modules/user-release-notes.generated.js`, `channel_config_settings.js`, `billtube-fw.js`, and all `dist/*.bundle.js`
 5. Git tag `vX.Y.Z` on that commit
 6. `npm run purge-cdn` — invalidate jsDelivr cache for fw, config, bundles, and CSS (also runs via `.github/workflows/purge-cdn.yml` when `dist/` or `billtube-fw.js` change on `main`)
 
@@ -64,6 +66,7 @@ Paste the updated **`channel_config_settings.js`** from the release commit into 
 ```
 BillTube3-slim/
 ├── modules/              # Source (build input)
+├── user-release-notes.json  # End-user Recent Updates copy (bundled into admin)
 ├── dist/                 # Built bundles (committed on release)
 ├── css/                  # Stylesheets (loaded from same ref as fw)
 ├── billtube-fw.js        # Loader + boot (must match release tag)

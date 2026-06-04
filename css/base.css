@@ -1079,6 +1079,43 @@ nav.pagination.is-centered.btfw-gif-pager {
   line-height: 1.6;
 }
 
+#useroptions .btfw-useroptions-panel--updates .btfw-useroptions-summary {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--btfw-color-text) 70%, transparent 30%);
+  line-height: 1.6;
+}
+
+#useroptions .btfw-useroptions-version {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--btfw-color-text) 58%, transparent 42%);
+}
+
+#useroptions .btfw-useroptions-updates-list {
+  margin: 0;
+  padding-left: 1.15em;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--btfw-color-text) 70%, transparent 30%);
+  line-height: 1.55;
+}
+
+#useroptions .btfw-useroptions-updates-list li + li {
+  margin-top: 6px;
+}
+
+#useroptions .btfw-useroptions-muted {
+  margin: 0;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--btfw-color-text) 58%, transparent 42%);
+  line-height: 1.6;
+  font-style: italic;
+}
+
 /* Stack footer hidden (auth via navbar; branding removed per #39) */
 #btfw-stack-footer {
   display: none !important;
