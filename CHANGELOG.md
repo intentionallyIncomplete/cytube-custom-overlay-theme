@@ -1,3 +1,12 @@
+## [1.1.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.1.0...v1.1.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **boot:** bundle and init feature:audioEnhancer after dev mode removal ([e0b5156](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/e0b51561f730943be5650b16299d2fd5521bdaef))
+* **player:** filter invalid recent suggestions and slim boot ([8306a3b](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/8306a3b6cfa9620e1689189ecbdf4c7240662565))
+* **player:** recent suggestions filter and slim boot cleanup ([e8b7001](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/e8b70011b93f6b8a070dc2b1631603b50ca61c69)), closes [#44](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/44)
+
 # [1.1.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.0.7...v1.1.0) (2026-06-02)
 
 
