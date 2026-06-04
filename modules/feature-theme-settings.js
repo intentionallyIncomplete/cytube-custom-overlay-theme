@@ -585,6 +585,65 @@ BTFW.define("feature:themeSettings", [], async () => {
     });
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function getUserReleaseNotesData() {
+    if (typeof BTFW_USER_RELEASE_NOTES !== "undefined" && Array.isArray(BTFW_USER_RELEASE_NOTES?.releases)) {
+      return BTFW_USER_RELEASE_NOTES;
+    }
+    return { releases: [] };
+  }
+
+  function formatRecentUpdatesHtml() {
+    const latest = getUserReleaseNotesData().releases?.[0];
+    if (!latest) {
+      return '<p class="btfw-useroptions-muted">Updates will appear here after the next channel release.</p>';
+    }
+    const parts = [];
+    if (latest.version) {
+      parts.push(`<span class="btfw-useroptions-version">v${escapeHtml(latest.version)}</span>`);
+    }
+    if (latest.summary) {
+      parts.push(`<p class="btfw-useroptions-summary">${escapeHtml(latest.summary)}</p>`);
+    }
+    const items = Array.isArray(latest.highlights) ? latest.highlights.filter(Boolean) : [];
+    if (items.length) {
+      parts.push(
+        `<ul class="btfw-useroptions-updates-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+      );
+    }
+    if (!parts.length) {
+      return '<p class="btfw-useroptions-muted">Updates will appear here after the next channel release.</p>';
+    }
+    return parts.join("");
+  }
+
+  function buildUserOptionsAboutHtml() {
+    return `
+      <div class="btfw-useroptions-hero">
+        <span class="btfw-useroptions-badge">Quiglytube3</span>
+        <h4>Created by Bill, Modified by Quigly</h4>
+        <p>Quiglytube3 keeps the entire channel aligned with a unified visual language. Theme and layout settings are managed by the channel to ensure a consistent experience.</p>
+      </div>
+      <div class="btfw-useroptions-panels">
+        <article class="btfw-useroptions-panel btfw-useroptions-panel--updates">
+          <h5>Recent Updates</h5>
+          ${formatRecentUpdatesHtml()}
+        </article>
+        <article class="btfw-useroptions-panel">
+          <h5>Need a tweak?</h5>
+          <p>Ping Quigly in Discord with feedback.</p>
+        </article>
+      </div>
+    `;
+  }
+
  function decorateUserOptions(modal = document.getElementById("useroptions")){
   if (!modal) return;
   const pane = modal.querySelector("#us-general");
@@ -663,25 +722,9 @@ BTFW.define("feature:themeSettings", [], async () => {
       }
     });
     
-    const customSection = document.createElement('div');
-    customSection.className = 'btfw-useroptions-about';
-    customSection.innerHTML = `
-      <div class="btfw-useroptions-hero">
-        <span class="btfw-useroptions-badge">BillTube3</span>
-        <h4>Made by Bill</h4>
-        <p>BillTube3 keeps the entire channel aligned with a unified visual language. Theme and layout settings are managed by the channel to ensure a consistent experience.</p>
-      </div>
-      <div class="btfw-useroptions-panels">
-        <article class="btfw-useroptions-panel">
-          <h5>New features!</h5>
-          <p>Native mobile theme, dynamic chromecast support, Tenor and Giphy for more emote variety.</p>
-        </article>
-        <article class="btfw-useroptions-panel">
-          <h5>Need a tweak?</h5>
-          <p>Share feedback in chat or ping Bill directly on Discord. Adjustments roll out globally after testing in the Channel Theme Toolkit.</p>
-        </article>
-      </div>
-    `;
+    const customSection = document.createElement("div");
+    customSection.className = "btfw-useroptions-about";
+    customSection.innerHTML = buildUserOptionsAboutHtml();
     
     pane.insertBefore(customSection, pane.firstChild);
   }
