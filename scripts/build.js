@@ -74,7 +74,6 @@ const bundles = [
   {
     name: 'features',
     modules: [
-      'modules/feature-channels.js',
       'modules/feature-footer.js',
       'modules/feature-navbar.js',
       'modules/feature-modal-skin.js',

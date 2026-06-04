@@ -8,6 +8,32 @@ BTFW.define("ext:movie-suggestion", [], async () => {
   let selectedMovieTitle = null;
   let selectedPosterPath = null;
 
+  const LOG = '[movie-suggestion]';
+  function mlog(...args) { console.log(LOG, ...args); }
+  function mwarn(...args) { console.warn(LOG, ...args); }
+  function merror(...args) { console.error(LOG, ...args); }
+
+  function normalizePosterPath(posterPath) {
+    if (!posterPath || posterPath === 'null') return null;
+    return posterPath;
+  }
+
+  function workerPosterPath(suggestion) {
+    return normalizePosterPath(suggestion.posterPath);
+  }
+
+  function isValidSuggestion(s) {
+    return !!(s && s.movieId != null && s.movieId !== '' && s.movieTitle && s.username);
+  }
+
+  function skipReason(s) {
+    if (!s || typeof s !== 'object') return 'empty';
+    if (s.movieId == null || s.movieId === '') return 'missing movieId';
+    if (!s.movieTitle) return 'missing movieTitle';
+    if (!s.username) return 'missing username';
+    return 'unknown';
+  }
+
   // Inject CSS
   function injectStyles() {
     if (document.getElementById("btfw-movie-suggest-styles")) return;
@@ -246,20 +272,21 @@ BTFW.define("ext:movie-suggestion", [], async () => {
   function openModal() {
     const modal = $("#btfw-movie-suggest-modal");
     if (!modal) return;
-    
+
+    mlog('openModal', { userRank });
     modal.classList.add("is-active");
-    
-    // Clear and reload suggestions every time modal opens
+
     const container = $("#btfw-recent-suggestions", modal);
     if (container) container.innerHTML = '';
-    
+
     loadRecentSuggestions();
   }
 
   function closeModal() {
     const modal = $("#btfw-movie-suggest-modal");
     if (!modal) return;
-    
+
+    mlog('closeModal');
     modal.classList.remove("is-active");
     $("#btfw-movie-search", modal).value = '';
     $(".btfw-movie-results", modal).innerHTML = '';
@@ -270,27 +297,33 @@ BTFW.define("ext:movie-suggestion", [], async () => {
   }
 
   function searchMovies(query) {
+    mlog('searchMovies', { query });
     const apiKey = getTMDBKey();
     if (!apiKey) {
-      console.error('[movie-suggestion] TMDB API key not available');
+      merror('TMDB API key not available');
       return;
     }
-    
+
     const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
-    
+
     fetch(url)
       .then(res => res.json())
-      .then(data => displaySearchResults(data.results.slice(0, 5)))
-      .catch(err => console.error("[movie-suggestion] Error fetching movies:", err));
+      .then(data => {
+        const results = (data.results || []).slice(0, 5);
+        mlog('searchMovies: results', { count: results.length });
+        displaySearchResults(results);
+      })
+      .catch(err => merror('Error fetching movies:', err));
   }
 
   function displaySearchResults(movies) {
     const modal = $("#btfw-movie-suggest-modal");
     if (!modal) return;
 
+    mlog('displaySearchResults', { count: movies.length });
     const container = $(".btfw-movie-results", modal);
     container.innerHTML = movies.map(movie => `
-      <div class="movie-result" data-id="${movie.id}" data-title="${movie.title}" data-poster="${movie.poster_path}">
+      <div class="movie-result" data-id="${movie.id}" data-title="${movie.title}" data-poster="${movie.poster_path || ''}">
         <img src="https://image.tmdb.org/t/p/w154${movie.poster_path}" alt="${movie.title}" 
              onerror="this.src='https://via.placeholder.com/154x231?text=No+Image'">
         <div class="movie-result__info">
@@ -317,7 +350,9 @@ BTFW.define("ext:movie-suggestion", [], async () => {
 
   async function confirmSuggestion() {
     if (!selectedMovieId || !selectedMovieTitle) return;
-    
+
+    mlog('confirmSuggestion', { movieId: selectedMovieId, movieTitle: selectedMovieTitle });
+
     const confirmModal = $("#btfw-movie-confirm-modal");
     if (confirmModal) confirmModal.classList.remove("is-active");
     
@@ -335,32 +370,53 @@ BTFW.define("ext:movie-suggestion", [], async () => {
 
   function suggestMovie(movieId, movieTitle, posterPath) {
     const username = CLIENT?.name || 'Anonymous';
-    console.log(`[movie-suggestion] Suggesting: ${movieTitle} (ID: ${movieId}) by ${username}`);
+    const normalizedPoster = normalizePosterPath(posterPath);
+    mlog('suggestMovie', {
+      movieId,
+      movieTitle,
+      username,
+      posterPath: normalizedPoster
+    });
 
-    return saveSuggestionToCloudflare(movieId, movieTitle, username, posterPath);
+    return saveSuggestionToCloudflare(movieId, movieTitle, username, normalizedPoster);
   }
 
   function saveSuggestionToCloudflare(movieId, movieTitle, username, posterPath) {
+    const normalizedPoster = normalizePosterPath(posterPath);
     const suggestion = {
       movieId,
       movieTitle,
       username,
-      posterPath,
       timestamp: new Date().toISOString()
     };
+    if (normalizedPoster) {
+      suggestion.posterPath = normalizedPoster;
+    } else {
+      mlog('saveSuggestionToCloudflare: posterPath omitted (null)');
+    }
+
+    mlog('saveSuggestionToCloudflare: POST', {
+      movieId,
+      movieTitle,
+      username,
+      hasPoster: !!normalizedPoster
+    });
 
     return fetch('https://movie-suggestions-worker.billtube.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(suggestion)
     })
-      .then(res => res.json())
+      .then(res => {
+        mlog('saveSuggestionToCloudflare: response status', res.status);
+        return res.json();
+      })
       .then(data => {
-        console.log('[movie-suggestion] Saved:', data);
+        mlog('Saved:', data);
         return data;
       })
       .catch(err => {
-        console.error('[movie-suggestion] Save failed:', err);
+        merror('Save failed:', err);
         throw err;
       });
   }
@@ -368,95 +424,160 @@ BTFW.define("ext:movie-suggestion", [], async () => {
   function loadRecentSuggestions() {
     const container = $("#btfw-recent-suggestions");
     if (!container) return;
-    
+
     container.innerHTML = '';
+    mlog('loadRecentSuggestions: fetch start');
 
     fetch('https://movie-suggestions-worker.billtube.workers.dev')
       .then(res => res.json())
       .then(async data => {
-        // Fetch all movie details first, maintaining order
+        const raw = Array.isArray(data) ? data : [];
+        mlog('loadRecentSuggestions: raw=' + raw.length);
+
+        const valid = [];
+        const skipped = [];
+        for (const s of raw) {
+          if (isValidSuggestion(s)) {
+            valid.push(s);
+          } else {
+            skipped.push(s);
+          }
+        }
+
+        mlog('loadRecentSuggestions: valid=' + valid.length + ' skipped=' + skipped.length);
+        if (skipped.length > 0) {
+          const samples = skipped.slice(0, 3).map(s => ({
+            reason: skipReason(s),
+            keys: s && typeof s === 'object' ? Object.keys(s) : []
+          }));
+          mwarn('loadRecentSuggestions: skipped samples', samples);
+        }
+
+        const enrichStart = performance.now();
+        mlog('loadRecentSuggestions: TMDB enrichment start', { count: valid.length });
+
         const suggestions = await Promise.all(
-          data.map(suggestion => 
-            fetchMovieDetails(suggestion.movieId).then(movie => ({
-              movieId: suggestion.movieId,
-              movieTitle: suggestion.movieTitle,
-              username: suggestion.username,
-              posterPath: movie.poster_path
-            }))
-          )
+          valid.map(suggestion => {
+            const storedPoster = workerPosterPath(suggestion);
+            return fetchMovieDetails(suggestion.movieId).then(movie => {
+              const tmdbPoster = normalizePosterPath(movie.poster_path);
+              const posterPath = storedPoster || tmdbPoster || null;
+              const posterSource = storedPoster ? 'worker' : (tmdbPoster ? 'tmdb' : 'none');
+              mlog('loadRecentSuggestions: enriched', {
+                movieId: suggestion.movieId,
+                movieTitle: suggestion.movieTitle,
+                username: suggestion.username,
+                posterSource
+              });
+              return {
+                movieId: suggestion.movieId,
+                movieTitle: suggestion.movieTitle,
+                username: suggestion.username,
+                posterPath
+              };
+            });
+          })
         );
-        
-        // Add them in reverse order so newest appears at top
+
+        mlog('loadRecentSuggestions: TMDB enrichment end', {
+          ms: Math.round(performance.now() - enrichStart)
+        });
+
         suggestions.reverse().forEach(s => {
           addRecentSuggestion(s.movieId, s.movieTitle, s.username, s.posterPath);
         });
+        mlog('loadRecentSuggestions: rendered=' + suggestions.length);
       })
-      .catch(err => console.error('[movie-suggestion] Load failed:', err));
+      .catch(err => merror('Load failed:', err));
   }
 
   function addRecentSuggestion(movieId, movieTitle, username, posterPath) {
     const container = $("#btfw-recent-suggestions");
     if (!container) return;
 
+    const usedTitleFallback = !movieTitle;
+    const usedUserFallback = !username;
+    const title = movieTitle || 'Unknown title';
+    const user = username || 'Anonymous';
+    if (usedTitleFallback || usedUserFallback) {
+      mwarn('addRecentSuggestion: used fallbacks', {
+        movieId,
+        usedTitleFallback,
+        usedUserFallback
+      });
+    }
+
+    const poster = normalizePosterPath(posterPath) || '';
+    mlog('addRecentSuggestion', {
+      movieId,
+      title,
+      username: user,
+      posterPath: !!poster,
+      usedFallback: usedTitleFallback || usedUserFallback
+    });
+
     const div = document.createElement('div');
     div.className = 'recent-suggestion';
     div.innerHTML = `
-      <img src="https://image.tmdb.org/t/p/w92${posterPath}" alt="${movieTitle}"
+      <img src="https://image.tmdb.org/t/p/w92${poster}" alt="${title}"
            onerror="this.src='https://via.placeholder.com/92x138?text=No+Image'">
       <div>
-        <div class="recent-suggestion__title">${movieTitle}</div>
-        <small class="recent-suggestion__user">Suggested by: ${username}</small>
+        <div class="recent-suggestion__title">${title}</div>
+        <small class="recent-suggestion__user">Suggested by: ${user}</small>
       </div>
     `;
     container.appendChild(div);
   }
 
   function fetchMovieDetails(movieId) {
+    mlog('fetchMovieDetails', { movieId });
     const apiKey = getTMDBKey();
     if (!apiKey) {
-      console.error('[movie-suggestion] TMDB API key not available');
+      merror('TMDB API key not available');
       return Promise.reject('No API key');
     }
-    
+
     const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}`;
-    
+
     return fetch(url)
       .then(res => res.json())
       .catch(err => {
-        console.error('[movie-suggestion] Fetch details failed:', err);
+        mwarn('Fetch details failed', { movieId, err });
         return { poster_path: null };
       });
   }
 
   function boot() {
+    mlog('boot: start');
     const apiKey = getTMDBKey();
     if (!apiKey) {
-      console.warn('[movie-suggestion] TMDB API key not configured. Add it in Theme Settings â†’ Integrations.');
+      mwarn('TMDB API key not configured. Add it in Theme Settings → Integrations.');
       return;
     }
-    
-    console.log('[movie-suggestion] Initializing with TMDB API key');
+
+    mlog('boot: TMDB key present', { hasKey: true });
+    mlog('Initializing with TMDB API key');
     injectStyles();
     buildModal();
     buildConfirmModal();
-    
+
     let retryCount = 0;
     const maxRetries = 50;
-    
+
     const tryAddButton = () => {
       if (addNavButton()) {
-        console.log('[movie-suggestion] Button added successfully');
+        mlog('Button added successfully');
         return;
       }
-      
+
       retryCount++;
       if (retryCount < maxRetries) {
         setTimeout(tryAddButton, 100);
       } else {
-        console.warn('[movie-suggestion] Failed to add button after retries');
+        mwarn('Failed to add button after retries', { retryCount });
       }
     };
-    
+
     tryAddButton();
   }
 

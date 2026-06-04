@@ -18,16 +18,10 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       priority: 2
     },
     {
-      id: "channels-group",
-      title: "Featured Channels",
-      selectors: ["#btfw-channels"],
-      priority: 3
-    },
-    {
       id: "poll-group",
       title: "Polls & Voting",
       selectors: ["#pollwrap", "#btfw-poll-parking", "#btfw-poll-history"],
-      priority: 4
+      priority: 3
     }
   ];
   
@@ -499,8 +493,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       elements = elements.filter(el => el && el.id !== "rightcontrols"); // rightcontrols is now merged
     }
     
-    // ✅ FIX: Allow channels-group to be created even with zero elements (slider will be added later)
-    if (group.id !== "channels-group" && elements.length === 0) return null;
+    if (elements.length === 0) return null;
     
     // Filter out any elements that are already in the stack to avoid circular references
     const stackList = document.querySelector("#btfw-stack .btfw-stack-list");
@@ -508,7 +501,6 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       elements = elements.filter(el => el && !stackList.contains(el) && !el.contains(stackList));
     }
     
-    // Continue creating the wrapper even if elements is empty (for channels-group)
     const wrapper = document.createElement("section");
     wrapper.className = "btfw-stack-item btfw-group-item";
     wrapper.dataset.bind = group.id;
@@ -735,38 +727,6 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
         }
         elements.push(el);
       });
-      
-      // ✅ FIX: Always create channels-group if slider is enabled, even if #btfw-channels doesn't exist yet
-      if (group.id === "channels-group" && elements.length === 0) {
-        // Check if channel slider is enabled via multiple possible sources
-        const btfw = window.BTFW || {};
-        
-        // Check modern config paths
-        let sliderEnabled = btfw.channelSliderEnabled || 
-                           (btfw.channelSlider && btfw.channelSlider.enabled) ||
-                           (btfw.channelTheme && btfw.channelTheme.slider && btfw.channelTheme.slider.enabled);
-        
-        // Also check legacy global variables (for backwards compatibility)
-        if (typeof sliderEnabled === 'undefined' && typeof window.UI_ChannelList !== 'undefined') {
-          sliderEnabled = window.UI_ChannelList === '1' || window.UI_ChannelList === 1;
-        }
-        
-        // If we found a URL but no explicit enabled flag, assume enabled
-        if (!sliderEnabled) {
-          const hasUrl = btfw.channelSliderJSON || 
-                        (btfw.channelSlider && btfw.channelSlider.feedUrl) ||
-                        (btfw.channelTheme && btfw.channelTheme.slider && btfw.channelTheme.slider.feedUrl) ||
-                        window.Channel_JSON;
-          if (hasUrl) sliderEnabled = true;
-        }
-        
-        if (sliderEnabled) {
-          // Don't skip this group - allow it to be created with zero elements
-          // The channel slider will be added to it later via placeSliderInStack()
-          groupedElements.set(group.id, { group, elements: [] });
-          return; // Continue to next group
-        }
-      }
       
       if (elements.length > 0) {
         groupedElements.set(group.id, { group, elements });

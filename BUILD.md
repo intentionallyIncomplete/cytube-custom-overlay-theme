@@ -31,10 +31,7 @@ npm run build          # writes dist/*.bundle.js
 npm run verify-dist    # fail if bundles missing
 ```
 
-### Load modes
-
-- **Production (bundled):** default — loads `dist/*.bundle.js` from the same ref as `billtube-fw.js`
-- **Dev (raw modules):** add `?dev=1` to the CyTube channel URL — loads `modules/*.js` instead of bundles
+Boot always loads `dist/*.bundle.js` from the same git ref as `billtube-fw.js`.
 
 ## Release pipeline
 
@@ -66,7 +63,7 @@ Paste the updated **`channel_config_settings.js`** from the release commit into 
 
 ```
 BillTube3-slim/
-├── modules/              # Source (dev mode / build input)
+├── modules/              # Source (build input)
 ├── dist/                 # Built bundles (committed on release)
 ├── css/                  # Stylesheets (loaded from same ref as fw)
 ├── billtube-fw.js        # Loader + boot (must match release tag)

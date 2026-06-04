@@ -12,10 +12,6 @@ window.BTFW_THEME_ADMIN = {
     "chatText": "#e6caad",
     "accent": "#d97436"
   },
-  "slider": {
-    "enabled": true,
-    "feedUrl": CDN_BASE + "/channels.json"
-  },
   "typography": {
     "preset": "nunito",
     "customFamily": ""

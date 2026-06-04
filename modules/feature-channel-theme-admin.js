@@ -34,10 +34,6 @@ BTFW.define("feature:channelThemeAdmin", [], async () => {
       chatText: "#d4defd",
       accent: "#191434"
     },
-    slider: {
-      enabled: false,
-      feedUrl: ""
-    },
     typography: {
       preset: "inter",
       customFamily: ""
@@ -305,24 +301,6 @@ background: "#0d0d0d",
     }
   }
 
-  function applyRuntimeSlider(theme){
-    if (!theme || typeof theme !== "object") return;
-    const slider = (theme.slider && typeof theme.slider === "object") ? theme.slider : (theme.slider = {});
-    let enabled = typeof slider.enabled === "boolean" ? slider.enabled : theme.sliderEnabled;
-    let feed = slider.feedUrl || slider.url || theme.sliderJson || "";
-    enabled = Boolean(enabled);
-    slider.enabled = enabled;
-    slider.feedUrl = feed;
-    theme.sliderEnabled = enabled;
-    theme.sliderJson = feed;
-    if (typeof window !== "undefined") {
-      const global = window.BTFW = window.BTFW || {};
-      global.channelSlider = { enabled, feedUrl: feed };
-      global.channelSliderEnabled = enabled;
-      global.channelSliderJSON = feed;
-    }
-  }
-
   function applyRuntimeBranding(theme){
     if (!theme || typeof theme !== "object") return;
     const branding = (theme.branding && typeof theme.branding === "object") ? theme.branding : (theme.branding = {});
@@ -576,7 +554,6 @@ background: "#0d0d0d",
     window.BTFW_THEME_ADMIN = normalized;
     global.channelTheme = normalized;
     applyRuntimeResources(normalized);
-    applyRuntimeSlider(normalized);
     applyRuntimeBranding(normalized);
     applyRuntimeColors(normalized);
     applyRuntimeIntegrations(normalized);
@@ -768,15 +745,31 @@ background: "#0d0d0d",
     };
   }
 
+  function isValidAssetUrl(url) {
+    if (!url || typeof url !== "string") return false;
+    const trimmed = url.trim();
+    if (!trimmed) return false;
+    try {
+      const parsed = new URL(trimmed, typeof document !== "undefined" ? document.baseURI : undefined);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+
   function ensureStylesheetLink(id, url){
     if (typeof document === "undefined" || !document.head) return;
     let link = document.getElementById(id);
-    if (url) {
+    const href = isValidAssetUrl(url) ? url.trim() : "";
+    if (href) {
       if (!link) {
         link = document.createElement("link");
         link.id = id;
         link.rel = "stylesheet";
+        link.setAttribute("crossorigin", "anonymous");
+        link.setAttribute("href", href);
         document.head.appendChild(link);
+        return;
       }
       if (link.rel !== "stylesheet") {
         link.rel = "stylesheet";
@@ -784,8 +777,8 @@ background: "#0d0d0d",
       if (link.getAttribute("crossorigin") !== "anonymous") {
         link.setAttribute("crossorigin", "anonymous");
       }
-      if (link.getAttribute("href") !== url) {
-        link.setAttribute("href", url);
+      if (link.getAttribute("href") !== href) {
+        link.setAttribute("href", href);
       }
     } else if (link && link.parentElement) {
       link.parentElement.removeChild(link);
@@ -795,17 +788,20 @@ background: "#0d0d0d",
   function ensureFontPreloadLink(id, url){
     if (typeof document === "undefined" || !document.head) return;
     let link = document.getElementById(id);
-    if (url) {
+    const href = isValidAssetUrl(url) ? url.trim() : "";
+    if (href) {
       if (!link) {
         link = document.createElement("link");
         link.id = id;
         link.rel = "preload";
         link.as = "style";
         link.setAttribute("crossorigin", "anonymous");
+        link.setAttribute("href", href);
         document.head.appendChild(link);
+        return;
       }
-      if (link.getAttribute("href") !== url) {
-        link.setAttribute("href", url);
+      if (link.getAttribute("href") !== href) {
+        link.setAttribute("href", href);
       }
     } else if (link && link.parentElement) {
       link.parentElement.removeChild(link);
@@ -1351,12 +1347,9 @@ background: "#0d0d0d",
     const normalized = cloneDefaults();
     deepMerge(normalized, cfg || {});
 
-    if (!normalized.slider || typeof normalized.slider !== "object") {
-      normalized.slider = JSON.parse(JSON.stringify(defaults.slider));
-    }
-    const slider = normalized.slider || {};
-    normalized.sliderEnabled = Boolean(slider.enabled);
-    normalized.sliderJson = slider.feedUrl || slider.url || normalized.sliderJson || "";
+    delete normalized.slider;
+    delete normalized.sliderEnabled;
+    delete normalized.sliderJson;
 
     if (!normalized.integrations || typeof normalized.integrations !== "object") {
       normalized.integrations = JSON.parse(JSON.stringify(defaults.integrations));
@@ -1450,6 +1443,7 @@ background: "#0d0d0d",
 
   function sanitizeConfigForOutput(cfg){
     const cleaned = JSON.parse(JSON.stringify(cfg || {}));
+    delete cleaned.slider;
     delete cleaned.sliderEnabled;
     delete cleaned.sliderJson;
     delete cleaned.headerName;
@@ -1647,18 +1641,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     }
   }
 
-  function updateSliderFieldState(panel){
-    const toggle = panel.querySelector('#btfw-theme-slider-enabled');
-    const input = panel.querySelector('#btfw-theme-slider-json');
-    if (!toggle || !input) return;
-    const enabled = Boolean(toggle.checked);
-    input.disabled = !enabled;
-    const field = input.closest('.field');
-    if (field) {
-      field.classList.toggle('is-disabled', !enabled);
-    }
-  }
-
   function updateTypographyFieldState(panel){
     const select = panel.querySelector('#btfw-theme-font');
     const field = panel.querySelector('#btfw-theme-font-custom-field');
@@ -1778,24 +1760,12 @@ function replaceBlock(original, startMarker, endMarker, block){
         <details class="section" data-section="resources">
           <summary class="section__summary">
             <div class="section__title">
-              <h4>Featured Content & Resources</h4>
-              <span>Manage the featured slider feed and extra theme assets.</span>
+              <h4>Theme Resources</h4>
+              <span>Extra stylesheets, scripts, and optional module URLs.</span>
             </div>
             <span class="section__chevron" aria-hidden="true">></span>
           </summary>
           <div class="section__body">
-            <div class="field">
-              <label class="btfw-checkbox" for="btfw-theme-slider-enabled">
-                <input type="checkbox" id="btfw-theme-slider-enabled" data-btfw-bind="slider.enabled">
-                <span>Enable featured slider</span>
-              </label>
-              <p class="help">Toggles the channel list carousel by setting <code>UI_ChannelList</code> in Channel JS.</p>
-            </div>
-            <div class="field">
-              <label for="btfw-theme-slider-json">Featured slider JSON</label>
-              <input type="url" id="btfw-theme-slider-json" data-btfw-bind="slider.feedUrl" placeholder="https://example.com/featured.json">
-              <p class="help">Paste the URL to the JSON feed used by the channel slider.</p>
-            </div>
             <div class="field">
               <label for="btfw-theme-css-urls">Additional CSS URLs</label>
               <textarea id="btfw-theme-css-urls" data-btfw-bind="resources.styles" placeholder="https://example.com/theme.css"></textarea>
@@ -2023,9 +1993,6 @@ function replaceBlock(original, startMarker, endMarker, block){
             tintSelect.value = "custom";
           }
         }
-        if (input.id === 'btfw-theme-slider-enabled') {
-          updateSliderFieldState(panel);
-        }
         if (input.dataset.btfwBind.startsWith("typography")) {
           if (input.id === 'btfw-theme-font-custom') {
             const fontSelect = panel.querySelector('#btfw-theme-font');
@@ -2168,7 +2135,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     renderModuleInputs(panel, modules);
     ensureModuleFieldAvailability(panel);
     updateTypographyFieldState(panel);
-    updateSliderFieldState(panel);
     syncMovieInfoToggle(panel, cfg);
     syncAutoSubsToggle(panel, cfg);
     syncAudioEnhancerToggle(panel, cfg);
@@ -2213,11 +2179,9 @@ function replaceBlock(original, startMarker, endMarker, block){
     delete updated.resources.externalModules;
     delete updated.moduleUrls;
     delete updated.externalModules;
-    if (!updated.slider || typeof updated.slider !== "object") {
-      updated.slider = cloneDefaults().slider;
-    }
-    updated.sliderEnabled = Boolean(updated.slider?.enabled);
-    updated.sliderJson = updated.slider?.feedUrl || "";
+    delete updated.slider;
+    delete updated.sliderEnabled;
+    delete updated.sliderJson;
     if (!updated.integrations || typeof updated.integrations !== "object") {
       updated.integrations = cloneDefaults().integrations;
     }
@@ -2337,45 +2301,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     });
 
     return submitted;
-  }
-
-  function extractSliderSettings(jsText){
-    if (!jsText) return {};
-    const settings = {};
-
-    const parsed = parseConfig(jsText);
-    if (parsed && typeof parsed === "object") {
-      const slider = parsed.slider || {};
-      if (typeof slider.enabled === "boolean") {
-        settings.enabled = slider.enabled;
-      } else if (typeof parsed.sliderEnabled === "boolean") {
-        settings.enabled = parsed.sliderEnabled;
-      }
-
-      let rawUrl = slider.feedUrl || slider.url || slider.json || '';
-      if (!rawUrl) {
-        rawUrl = parsed.sliderJson || parsed.sliderJSON || '';
-      }
-      if (typeof rawUrl !== "undefined") {
-        if (typeof rawUrl !== "string") {
-          rawUrl = String(rawUrl);
-        }
-        settings.url = rawUrl.trim();
-      }
-    }
-
-    if (typeof settings.enabled === "undefined" || typeof settings.url === "undefined") {
-      const enabledMatch = jsText.match(/UI_ChannelList\s*=\s*(['"]?)([01])\1/);
-      if (typeof settings.enabled === "undefined" && enabledMatch) {
-        settings.enabled = enabledMatch[2] === '1';
-      }
-      const urlMatch = jsText.match(/Channel_JSON\s*=\s*(['"`])([^'"`]*?)\1/);
-      if (typeof settings.url === "undefined" && urlMatch) {
-        settings.url = urlMatch[2].trim();
-      }
-    }
-
-    return settings;
   }
 
   function stripLegacySliderGlobals(jsText){
@@ -2519,15 +2444,9 @@ function replaceBlock(original, startMarker, endMarker, block){
     const storedVersion = Number(cfg.version) || 0;
     cfg.version = DEFAULT_CONFIG.version;
 
-    if (!cfg.slider || typeof cfg.slider !== "object") {
-      cfg.slider = cloneDefaults().slider;
-    }
-    if (typeof cfg.sliderEnabled === "boolean") {
-      cfg.slider.enabled = cfg.sliderEnabled;
-    }
-    if (typeof cfg.sliderJson === "string" && !cfg.slider.feedUrl) {
-      cfg.slider.feedUrl = cfg.sliderJson;
-    }
+    delete cfg.slider;
+    delete cfg.sliderEnabled;
+    delete cfg.sliderJson;
 
     if (!cfg.integrations || typeof cfg.integrations !== "object") {
       cfg.integrations = cloneDefaults().integrations;
@@ -2589,16 +2508,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     delete cfg.moduleUrls;
     delete cfg.externalModules;
     delete cfg.modules;
-
-    const sliderState = extractSliderSettings(jsField?.value || "");
-    if (typeof sliderState.enabled === "boolean") {
-      cfg.slider.enabled = sliderState.enabled;
-      cfg.sliderEnabled = sliderState.enabled;
-    }
-    if (typeof sliderState.url !== "undefined") {
-      cfg.slider.feedUrl = sliderState.url || "";
-      cfg.sliderJson = sliderState.url || "";
-    }
 
 let initializing = true;
 updateInputs(panel, cfg);

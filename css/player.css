@@ -473,7 +473,6 @@
 /* Space for modules stacked under the player */
 
 #playlistwrap, #playlistrow, #queuecontainer, #queue{ margin-top: 10px; }
-#btfw-channels{ margin-top: 10px; }
 
 /* Playlist queue entries */
 #queue li.queue_entry,
