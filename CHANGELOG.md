@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.3.0...v1.3.1) (2026-06-09)
+
+
+### Bug Fixes
+
+* **sync:** restore playback sync on mid-playback channel JS load ([#54](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/54)) ([9979c4b](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/9979c4bfe38510e1bf21377f8c03636af0fe81ba))
+
 # [1.3.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.2.1...v1.3.0) (2026-06-08)
 
 

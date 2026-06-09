@@ -1,4 +1,4 @@
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.3.0";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.3.1";
 
 // BTFW_THEME_ADMIN_START
 window.BTFW_THEME_ADMIN = {
