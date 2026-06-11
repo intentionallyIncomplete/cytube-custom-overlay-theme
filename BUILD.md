@@ -31,9 +31,34 @@ npm run build          # writes dist/*.bundle.js; regenerates modules/user-relea
 npm run verify-dist    # fail if bundles missing
 ```
 
+### Local asset server (CyTube testing)
+
+`billtube-fw.js` derives `BASE` from its own script URL, so local fw loads local bundles and CSS.
+
+```bash
+npm run dev            # build, watch modules/src/css, serve on :3000, write dev/channel-settings.js
+```
+
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Build + watch + static server + generated channel snippet |
+| `npm run dev:server` | Static server only (`PORT` or `BTFW_DEV_PORT`, default 3000) |
+| `npm run dev:channel` | Regenerate `dev/channel-settings.js` with `CDN_BASE` → localhost |
+
+**CyTube wiring (local instance recommended — avoids HTTPS mixed content):**
+
+1. Start BillTube: `npm run dev`
+2. Start local CyTube (see `sync/docker/README.md` in the CyTube repo)
+3. Channel Settings → **Javascript** tab → paste contents of `dev/channel-settings.js` → Save JS
+
+External Javascript (General settings) requires `https://` and will reject `http://127.0.0.1:3000/...`. Inline channel JS is the correct local-dev path.
+4. Open the channel — console should log `[BTFW] BASE: http://127.0.0.1:3000`
+
+`dev/channel-settings.js` is generated and gitignored; release `channel_config_settings.js` is never mutated.
+
 Before a user-facing release, update `user-release-notes.json` (see `.cursor/skills/updating-user-release-notes/`) so **Options → User Preferences → General → Recent Updates** stays current.
 
-Boot always loads `dist/*.bundle.js` from the same git ref as `billtube-fw.js`.
+Boot always loads `dist/*.bundle.js` from the same origin/ref as `billtube-fw.js`.
 
 ## Release pipeline
 

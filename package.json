@@ -11,7 +11,10 @@
     "test": "node --test test/**/*.test.js",
     "verify-dist": "node scripts/verify-dist.js",
     "inject-cdn": "node scripts/inject-cdn-version.js",
-    "purge-cdn": "node scripts/purge-cdn.js"
+    "purge-cdn": "node scripts/purge-cdn.js",
+    "dev": "node scripts/dev.js",
+    "dev:server": "node scripts/dev-server.js",
+    "dev:channel": "node scripts/generate-dev-channel.js"
   },
   "repository": {
     "type": "git",
