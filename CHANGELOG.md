@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.3.1...v1.4.0) (2026-06-11)
+
+
+### Features
+
+* **dev:** local asset server and generic BASE for CyTube dev stack ([593d609](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/593d6094016ef7acc9f87a3d362d5308297e8707))
+
 ## [1.3.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.3.0...v1.3.1) (2026-06-09)
 
 
