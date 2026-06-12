@@ -272,12 +272,12 @@ const DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
     ];
     return Promise.all(inits);
   }).then(function () {
-    return BTFW.init("feature:syncGuard").then(function (sg) {
-      return (sg && sg.playbackResyncIfNeeded) ? sg.playbackResyncIfNeeded() : Promise.resolve();
-    });
-  }).then(function () {
     return BTFW.init("feature:layout").then(function (layout) {
       return (layout && layout.commitLayout) ? layout.commitLayout() : Promise.resolve();
+    });
+  }).then(function () {
+    return BTFW.init("feature:syncGuard").then(function (sg) {
+      return (sg && sg.playbackResyncIfNeeded) ? sg.playbackResyncIfNeeded() : Promise.resolve();
     });
   }).then(function () {
     console.log("[BTFW v3.4f] Ready.");
