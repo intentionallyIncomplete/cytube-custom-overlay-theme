@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.0...v1.4.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* **sync:** seek until synced after channel JS boot ([#64](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/64)) ([3aba93b](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/3aba93b7a4ebfc43e18d3a8db3d207fc810e937b))
+
 # [1.4.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.3.1...v1.4.0) (2026-06-11)
 
 
