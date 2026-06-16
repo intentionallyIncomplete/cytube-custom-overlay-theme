@@ -84,6 +84,22 @@ BTFW.define('feature:syncGuard', [], async () => {
     return finalLocal != null && Math.abs(targetTime - finalLocal) <= accuracy;
   }
 
+  function hardReloadMediaPlayer() {
+    const p = window.PLAYER;
+    if (!p || !window.socket) {
+      return false;
+    }
+    try {
+      // Mirror sync/www/js/ui.js #mediarefresh — forces loadMediaPlayer on changeMedia.
+      p.mediaType = "";
+      p.mediaId = "";
+      socket.emit("playerReady");
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function waitForChangeMedia(timeoutMs = CHANGE_MEDIA_TIMEOUT_MS) {
     return new Promise((resolve) => {
       if (!window.socket) {
@@ -102,8 +118,10 @@ BTFW.define('feature:syncGuard', [], async () => {
       const timer = setTimeout(() => finish(null), timeoutMs);
 
       try {
-        socket.once('changeMedia', finish);
-        socket.emit('playerReady');
+        socket.once("changeMedia", finish);
+        if (!hardReloadMediaPlayer()) {
+          finish(null);
+        }
       } catch (_) {
         finish(null);
       }
@@ -167,6 +185,7 @@ BTFW.define('feature:syncGuard', [], async () => {
     name: 'feature:syncGuard',
     playbackResyncIfNeeded,
     hasActiveMedia,
+    hardReloadMediaPlayer,
     seekUntilSynced,
     getPlayerTime,
     applyServerPlayback,

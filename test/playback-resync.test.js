@@ -64,9 +64,21 @@ describe("playback resync", () => {
     assert.equal(ok, true);
   });
 
+  it("test_hardReloadMediaPlayer_clears_identity_before_playerReady", () => {
+    const player = { mediaId: "abc", mediaType: "yt" };
+    global.window.PLAYER = player;
+
+    const ok = api.hardReloadMediaPlayer();
+
+    assert.equal(ok, true);
+    assert.equal(capturedEmit, "playerReady");
+    assert.equal(player.mediaId, "");
+    assert.equal(player.mediaType, "");
+  });
+
   it("test_playbackResync_sets_flag_only_after_seek_verified", async () => {
     let localTime = 2082;
-    global.window.PLAYER = {
+    const player = {
       mediaId: "abc",
       mediaType: "yt",
       paused: false,
@@ -74,9 +86,12 @@ describe("playback resync", () => {
       getTime(cb) { cb(localTime); },
       seekTo(t) { localTime = t; }
     };
+    global.window.PLAYER = player;
 
     const p = api.playbackResyncIfNeeded();
     assert.equal(capturedEmit, "playerReady");
+    assert.equal(player.mediaId, "");
+    assert.equal(player.mediaType, "");
     assert.equal(capturedOnce.event, "changeMedia");
 
     capturedOnce.fn({ currentTime: 2092, paused: false, type: "yt", id: "abc" });
