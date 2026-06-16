@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.2...v1.4.3) (2026-06-16)
+
+
+### Bug Fixes
+
+* **nowplaying:** restore ellipsis and hover scroll for long titles ([fd8940c](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/fd8940ca039dea70d434eafbcb392eeee1445c26)), closes [#67](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/67)
+
 ## [1.4.2](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.1...v1.4.2) (2026-06-16)
 
 
