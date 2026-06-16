@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.1...v1.4.2) (2026-06-16)
+
+
+### Bug Fixes
+
+* **sync:** hard reload player after layout before seek ([55a4c79](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/55a4c7918c2299fa68204416663796893e04117d)), closes [#mediarefresh](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/mediarefresh) [#64](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/64)
+
 ## [1.4.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.0...v1.4.1) (2026-06-12)
 
 
