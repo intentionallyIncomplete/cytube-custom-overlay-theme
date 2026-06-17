@@ -1084,21 +1084,81 @@ const scheduleNormalizeChatActions = (() => {
     popup.style.visibility = "visible";
   }
 
+  function purgeCyTubeUsercountPopups(anchor) {
+    const root = anchor || $("#usercount");
+    if (!root) return;
+    root.querySelectorAll(".profile-box").forEach((el) => {
+      if (el.id !== "btfw-usercount-popup") el.remove();
+    });
+  }
+
+  function stashUsercountTitle(anchor) {
+    if (!anchor || anchor.dataset.btfwTitleStashed) return;
+    const saved = anchor.getAttribute("title");
+    if (saved) anchor.dataset.btfwSavedTitle = saved;
+    anchor.removeAttribute("title");
+    anchor.dataset.btfwTitleStashed = "true";
+  }
+
+  function restoreUsercountTitle(anchor) {
+    if (!anchor || !anchor.dataset.btfwTitleStashed) return;
+    const saved = anchor.dataset.btfwSavedTitle;
+    if (saved) anchor.setAttribute("title", saved);
+    else anchor.removeAttribute("title");
+    delete anchor.dataset.btfwSavedTitle;
+    delete anchor.dataset.btfwTitleStashed;
+  }
+
+  function startUsercountPopupGuard(anchor) {
+    purgeCyTubeUsercountPopups(anchor);
+    if (anchor._btfwUsercountPopupGuard) return;
+    anchor._btfwUsercountPopupGuard = new MutationObserver(() => {
+      if (document.getElementById("btfw-usercount-popup")) {
+        purgeCyTubeUsercountPopups(anchor);
+      }
+    });
+    anchor._btfwUsercountPopupGuard.observe(anchor, { childList: true });
+  }
+
+  function stopUsercountPopupGuard(anchor) {
+    if (anchor?._btfwUsercountPopupGuard) {
+      anchor._btfwUsercountPopupGuard.disconnect();
+      anchor._btfwUsercountPopupGuard = null;
+    }
+  }
+
   function hideUsercountPopup() {
     const popup = document.getElementById("btfw-usercount-popup");
+    const anchor = $("#usercount");
     if (popup) popup.remove();
+    stopUsercountPopupGuard(anchor);
+    purgeCyTubeUsercountPopups(anchor);
+    restoreUsercountTitle(anchor);
   }
 
   function showUsercountPopup(anchor) {
     hideUsercountPopup();
+    stashUsercountTitle(anchor);
+    purgeCyTubeUsercountPopups(anchor);
 
     const popup = document.createElement("div");
     popup.id = "btfw-usercount-popup";
-    popup.className = "btfw-usercount-popup profile-box";
+    popup.className = "btfw-usercount-popup";
     popup.setAttribute("role", "tooltip");
     popup.innerHTML = buildUsercountBreakdownHtml();
     document.body.appendChild(popup);
     positionUsercountPopup(popup, anchor);
+    startUsercountPopupGuard(anchor);
+    purgeCyTubeUsercountPopups(anchor);
+  }
+
+  function blockCyTubeUsercountHover(ev) {
+    const uc = ev.target?.closest?.("#usercount");
+    if (!uc) return;
+    purgeCyTubeUsercountPopups(uc);
+    if (ev.type === "mouseenter" || ev.type === "mousemove") {
+      ev.stopImmediatePropagation();
+    }
   }
 
   function wireUsercountPopup(uc) {
@@ -1110,23 +1170,33 @@ const scheduleNormalizeChatActions = (() => {
       }
     } catch (_) {}
 
-    if (uc.dataset.btfwUsercountPopupWired) return;
-    uc.dataset.btfwUsercountPopupWired = "true";
+    if (!uc.dataset.btfwUsercountPopupWired) {
+      uc.dataset.btfwUsercountPopupWired = "true";
 
-    uc.addEventListener("mouseenter", () => {
-      showUsercountPopup(uc);
-    });
-    uc.addEventListener("mouseleave", hideUsercountPopup);
-    uc.addEventListener("focus", () => {
-      showUsercountPopup(uc);
-    });
-    uc.addEventListener("blur", hideUsercountPopup);
+      uc.addEventListener("mouseenter", blockCyTubeUsercountHover, true);
+      uc.addEventListener("mousemove", blockCyTubeUsercountHover, true);
 
-    if (!document._btfwUsercountPopupDismiss) {
-      document._btfwUsercountPopupDismiss = true;
-      window.addEventListener("scroll", hideUsercountPopup, true);
-      window.addEventListener("resize", hideUsercountPopup);
+      uc.addEventListener("mouseenter", () => {
+        showUsercountPopup(uc);
+      });
+      uc.addEventListener("mouseleave", hideUsercountPopup);
+      uc.addEventListener("focus", () => {
+        showUsercountPopup(uc);
+      });
+      uc.addEventListener("blur", hideUsercountPopup);
+
+      if (!document._btfwUsercountPopupDismiss) {
+        document._btfwUsercountPopupDismiss = true;
+        window.addEventListener("scroll", hideUsercountPopup, true);
+        window.addEventListener("resize", hideUsercountPopup);
+      }
     }
+
+    try {
+      if (window.$) {
+        $(uc).off("mouseenter mousemove mouseleave click");
+      }
+    } catch (_) {}
   }
 
   function wireUsercountSocket(){
