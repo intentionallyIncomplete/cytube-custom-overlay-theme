@@ -1,3 +1,13 @@
+## [1.4.4](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.3...v1.4.4) (2026-06-17)
+
+
+### Bug Fixes
+
+* **chat:** clamp native usercount profile-box to viewport ([e7435ab](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/e7435ab52f26d5abf9d4df162ff4388c374cec4b)), closes [#70](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/70)
+* **chat:** clamp usercount breakdown popup to viewport ([ab5f5bf](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/ab5f5bf226479549c62c950f6944e936b18f5fac)), closes [#70](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/70)
+* **chat:** position user count tooltip above control ([6636d32](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/6636d32efe533e9ee359409f4359f4f11654e784)), closes [#70](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/70)
+* **chat:** suppress CyTube usercount hover while BillTube popup is open ([c5d1b55](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/c5d1b5517fb7c2f15c9026fb71f8c4a941f1fac7))
+
 ## [1.4.3](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.2...v1.4.3) (2026-06-16)
 
 
