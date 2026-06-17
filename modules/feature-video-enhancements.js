@@ -56,6 +56,59 @@ BTFW.define("feature:videoEnhancements", [], async () => {
   }
 
   // Media URL processing and title extraction
+  function encodeMediaUrlForQueue(raw) {
+    const url = String(raw || "").trim();
+    if (!url || !/\s/.test(url)) return url;
+
+    const match = url.match(/^([a-zA-Z][a-zA-Z0-9+.-]*:)(\/\/)?(.*)$/s);
+    if (!match) {
+      return url.replace(/ /g, "%20");
+    }
+
+    const candidate = `${match[1]}${match[2] || ""}${match[3].replace(/ /g, "%20")}`;
+
+    try {
+      return new URL(candidate).href;
+    } catch (_) {
+      return candidate;
+    }
+  }
+
+  function encodeMediaUrlsInField(linkList) {
+    const raw = String(linkList || "");
+    if (!raw || !/\s/.test(raw)) return raw;
+
+    const parts = raw.split(",http");
+    const links = parts.map((link, i) => encodeMediaUrlForQueue(i > 0 ? `http${link}` : link));
+
+    let out = links[0];
+    for (let i = 1; i < links.length; i++) {
+      out += `,http${links[i].replace(/^https?:/i, "")}`;
+    }
+    return out;
+  }
+
+  function normalizeMediaUrlField(input) {
+    if (!input || !input.value) return;
+    const encoded = encodeMediaUrlsInField(input.value);
+    if (encoded !== input.value) {
+      input.value = encoded;
+    }
+  }
+
+  function wrapQueueUrlEncoding() {
+    if (window._btfwQueueUrlWrapped || typeof window.queue !== "function") return;
+    const original = window.queue;
+    window.queue = function queueWithEncodedUrls(pos, src) {
+      const mediaInput = document.getElementById("mediaurl");
+      if (mediaInput && (!src || src === "url")) {
+        normalizeMediaUrlField(mediaInput);
+      }
+      return original.apply(this, arguments);
+    };
+    window._btfwQueueUrlWrapped = true;
+  }
+
   function processMediaUrl(urlInput){
     if (!urlInput || !urlInput.value) return;
 
@@ -66,7 +119,8 @@ BTFW.define("feature:videoEnhancements", [], async () => {
     url = url.replace("//www.dropbox.com/s/", "//dl.dropbox.com/s/")
              .replace("?dl=0", "")
              .replace("?a=view", "");
-    
+
+    url = encodeMediaUrlsInField(url);
     urlInput.value = url;
 
     // Auto-title extraction
@@ -132,6 +186,7 @@ BTFW.define("feature:videoEnhancements", [], async () => {
   function boot(){
     // Initial setup
     updateTitleLength();
+    wrapQueueUrlEncoding();
     bindMediaUrlProcessing();
     ensureFullscreenCss();
     tryHideQuality();
@@ -157,6 +212,9 @@ BTFW.define("feature:videoEnhancements", [], async () => {
       childList: true,
       subtree: true
     });
+
+    setTimeout(wrapQueueUrlEncoding, 0);
+    setTimeout(wrapQueueUrlEncoding, 1000);
   }
 
   if (document.readyState === "loading") {
