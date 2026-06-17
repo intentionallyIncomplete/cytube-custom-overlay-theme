@@ -1047,156 +1047,36 @@ const scheduleNormalizeChatActions = (() => {
     uc.textContent = cleaned || "0";
   }
 
-  function buildUsercountBreakdownHtml() {
-    if (typeof window.calcUserBreakdown === "function") {
-      try {
-        const breakdown = window.calcUserBreakdown();
-        return Object.keys(breakdown)
-          .map((key) => `<strong>${key}:&nbsp;</strong>${breakdown[key]}<br>`)
-          .join("");
-      } catch (_) {}
-    }
-    const count = $("#usercount")?.textContent?.trim() || "0";
-    return `<strong>Connected users:&nbsp;</strong>${count}`;
-  }
+  function clampUsercountProfileBox(uc) {
+    const popup = uc?.querySelector(":scope > .profile-box");
+    if (!popup) return;
 
-  function positionUsercountPopup(popup, anchor) {
     const margin = 8;
-    const rect = anchor.getBoundingClientRect();
-    popup.style.visibility = "hidden";
-    popup.style.display = "block";
-    popup.style.left = "0";
-    popup.style.top = "0";
+    const rect = popup.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.top;
 
-    const popupRect = popup.getBoundingClientRect();
-    let left = rect.right - popupRect.width;
-    let top = rect.top - popupRect.height - 6;
-
-    if (top < margin) {
-      top = rect.bottom + 6;
-    }
-
-    left = Math.max(margin, Math.min(left, window.innerWidth - popupRect.width - margin));
-    top = Math.max(margin, Math.min(top, window.innerHeight - popupRect.height - margin));
+    left = Math.max(margin, Math.min(left, window.innerWidth - rect.width - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - rect.height - margin));
 
     popup.style.left = `${left}px`;
     popup.style.top = `${top}px`;
-    popup.style.visibility = "visible";
   }
 
-  function purgeCyTubeUsercountPopups(anchor) {
-    const root = anchor || $("#usercount");
-    if (!root) return;
-    root.querySelectorAll(".profile-box").forEach((el) => {
-      if (el.id !== "btfw-usercount-popup") el.remove();
-    });
-  }
+  function wireUsercountProfileBoxClamp(uc) {
+    if (!uc || uc.dataset.btfwUsercountClampWired) return;
+    uc.dataset.btfwUsercountClampWired = "true";
 
-  function stashUsercountTitle(anchor) {
-    if (!anchor || anchor.dataset.btfwTitleStashed) return;
-    const saved = anchor.getAttribute("title");
-    if (saved) anchor.dataset.btfwSavedTitle = saved;
-    anchor.removeAttribute("title");
-    anchor.dataset.btfwTitleStashed = "true";
-  }
+    const scheduleClamp = () => {
+      requestAnimationFrame(() => clampUsercountProfileBox(uc));
+    };
 
-  function restoreUsercountTitle(anchor) {
-    if (!anchor || !anchor.dataset.btfwTitleStashed) return;
-    const saved = anchor.dataset.btfwSavedTitle;
-    if (saved) anchor.setAttribute("title", saved);
-    else anchor.removeAttribute("title");
-    delete anchor.dataset.btfwSavedTitle;
-    delete anchor.dataset.btfwTitleStashed;
-  }
+    uc.addEventListener("mouseenter", scheduleClamp);
+    uc.addEventListener("mousemove", scheduleClamp);
 
-  function startUsercountPopupGuard(anchor) {
-    purgeCyTubeUsercountPopups(anchor);
-    if (anchor._btfwUsercountPopupGuard) return;
-    anchor._btfwUsercountPopupGuard = new MutationObserver(() => {
-      if (document.getElementById("btfw-usercount-popup")) {
-        purgeCyTubeUsercountPopups(anchor);
-      }
-    });
-    anchor._btfwUsercountPopupGuard.observe(anchor, { childList: true });
-  }
-
-  function stopUsercountPopupGuard(anchor) {
-    if (anchor?._btfwUsercountPopupGuard) {
-      anchor._btfwUsercountPopupGuard.disconnect();
-      anchor._btfwUsercountPopupGuard = null;
-    }
-  }
-
-  function hideUsercountPopup() {
-    const popup = document.getElementById("btfw-usercount-popup");
-    const anchor = $("#usercount");
-    if (popup) popup.remove();
-    stopUsercountPopupGuard(anchor);
-    purgeCyTubeUsercountPopups(anchor);
-    restoreUsercountTitle(anchor);
-  }
-
-  function showUsercountPopup(anchor) {
-    hideUsercountPopup();
-    stashUsercountTitle(anchor);
-    purgeCyTubeUsercountPopups(anchor);
-
-    const popup = document.createElement("div");
-    popup.id = "btfw-usercount-popup";
-    popup.className = "btfw-usercount-popup";
-    popup.setAttribute("role", "tooltip");
-    popup.innerHTML = buildUsercountBreakdownHtml();
-    document.body.appendChild(popup);
-    positionUsercountPopup(popup, anchor);
-    startUsercountPopupGuard(anchor);
-    purgeCyTubeUsercountPopups(anchor);
-  }
-
-  function blockCyTubeUsercountHover(ev) {
-    const uc = ev.target?.closest?.("#usercount");
-    if (!uc) return;
-    purgeCyTubeUsercountPopups(uc);
-    if (ev.type === "mouseenter" || ev.type === "mousemove") {
-      ev.stopImmediatePropagation();
-    }
-  }
-
-  function wireUsercountPopup(uc) {
-    if (!uc) return;
-
-    try {
-      if (window.$) {
-        $(uc).off("mouseenter mousemove mouseleave click");
-      }
-    } catch (_) {}
-
-    if (!uc.dataset.btfwUsercountPopupWired) {
-      uc.dataset.btfwUsercountPopupWired = "true";
-
-      uc.addEventListener("mouseenter", blockCyTubeUsercountHover, true);
-      uc.addEventListener("mousemove", blockCyTubeUsercountHover, true);
-
-      uc.addEventListener("mouseenter", () => {
-        showUsercountPopup(uc);
-      });
-      uc.addEventListener("mouseleave", hideUsercountPopup);
-      uc.addEventListener("focus", () => {
-        showUsercountPopup(uc);
-      });
-      uc.addEventListener("blur", hideUsercountPopup);
-
-      if (!document._btfwUsercountPopupDismiss) {
-        document._btfwUsercountPopupDismiss = true;
-        window.addEventListener("scroll", hideUsercountPopup, true);
-        window.addEventListener("resize", hideUsercountPopup);
-      }
-    }
-
-    try {
-      if (window.$) {
-        $(uc).off("mouseenter mousemove mouseleave click");
-      }
-    } catch (_) {}
+    const obs = new MutationObserver(scheduleClamp);
+    obs.observe(uc, { childList: true, subtree: true });
+    uc._btfwUsercountClampObs = obs;
   }
 
   function wireUsercountSocket(){
@@ -1264,7 +1144,7 @@ const scheduleNormalizeChatActions = (() => {
   }
 
   cleanUsercountText();
-  wireUsercountPopup(uc);
+  wireUsercountProfileBoxClamp(uc);
   orderChatActions(actions);
   wireUsercountSocket();
 }
