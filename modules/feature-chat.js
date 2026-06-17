@@ -1025,7 +1025,19 @@ const scheduleNormalizeChatActions = (() => {
     const uc = $("#usercount");
     if (!uc) return;
 
-    const cleaned = (uc.textContent || "")
+    const raw = (uc.textContent || "").trim();
+    const leading = raw.match(/^(\d+)/);
+    if (leading) {
+      uc.textContent = leading[1];
+      return;
+    }
+
+    if (typeof window.CHANNEL?.usercount === "number") {
+      uc.textContent = String(window.CHANNEL.usercount);
+      return;
+    }
+
+    const cleaned = raw
       .replace(/connected users/gi, " ")
       .replace(/connected user/gi, " ")
       .replace(/not connected/gi, " ")
@@ -1033,6 +1045,38 @@ const scheduleNormalizeChatActions = (() => {
       .trim();
 
     uc.textContent = cleaned || "0";
+  }
+
+  function clampUsercountProfileBox(uc) {
+    const popup = uc?.querySelector(":scope > .profile-box");
+    if (!popup) return;
+
+    const margin = 8;
+    const rect = popup.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.top;
+
+    left = Math.max(margin, Math.min(left, window.innerWidth - rect.width - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - rect.height - margin));
+
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+  }
+
+  function wireUsercountProfileBoxClamp(uc) {
+    if (!uc || uc.dataset.btfwUsercountClampWired) return;
+    uc.dataset.btfwUsercountClampWired = "true";
+
+    const scheduleClamp = () => {
+      requestAnimationFrame(() => clampUsercountProfileBox(uc));
+    };
+
+    uc.addEventListener("mouseenter", scheduleClamp);
+    uc.addEventListener("mousemove", scheduleClamp);
+
+    const obs = new MutationObserver(scheduleClamp);
+    obs.observe(uc, { childList: true, subtree: true });
+    uc._btfwUsercountClampObs = obs;
   }
 
   function wireUsercountSocket(){
@@ -1084,7 +1128,8 @@ const scheduleNormalizeChatActions = (() => {
 
   uc.classList.add("btfw-usercount");
   uc.classList.remove("pointer");
-  if (!uc.title) uc.title = "Connected users";
+  uc.removeAttribute("title");
+  uc.setAttribute("aria-label", "Connected users");
 
   if (!uc.dataset.btfwUsercountBound) {
     uc.addEventListener("click", (e) => {
@@ -1099,6 +1144,7 @@ const scheduleNormalizeChatActions = (() => {
   }
 
   cleanUsercountText();
+  wireUsercountProfileBoxClamp(uc);
   orderChatActions(actions);
   wireUsercountSocket();
 }

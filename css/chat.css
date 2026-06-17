@@ -969,6 +969,7 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    position: relative;
     font-size: 12px;
     opacity: .9;
     margin-left: auto;
@@ -979,6 +980,10 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
     cursor: pointer;
     transition: opacity 0.15s ease;
     justify-content: flex-end;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #usercount.btfw-usercount:hover {
@@ -992,6 +997,11 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
   font-size: 14px;
   opacity: .75;
   line-height: 1;
+}
+
+#usercount.btfw-usercount > .profile-box {
+  max-width: min(220px, calc(100vw - 16px));
+  max-height: min(300px, calc(100vh - 16px));
 }
 .server-msg-reconnect {
   border: 0px solid #009900!important;
