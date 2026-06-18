@@ -1,3 +1,10 @@
+## [1.4.9](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.8...v1.4.9) (2026-06-18)
+
+
+### Bug Fixes
+
+* **chat:** restore hover grow on inline GIFs and images ([dbc098f](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/dbc098f2a25cbc37f050691dd6f7ed4cec3d7638)), closes [#messagebuffer](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/messagebuffer) [#75](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/75)
+
 ## [1.4.8](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.7...v1.4.8) (2026-06-18)
 
 
