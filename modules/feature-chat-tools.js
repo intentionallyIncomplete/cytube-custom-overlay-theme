@@ -308,6 +308,8 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
     const b = document.createElement("button");
     b.id = "btfw-chattools-btn";
     b.className = "button is-dark is-small btfw-chatbtn";
+    b.title = "Chat tools";
+    b.setAttribute("aria-label", "Chat tools");
     b.innerHTML = '<span style="font-weight:700;letter-spacing:.5px;">Aa</span>';
     const insertBefore = actions.querySelector("#btfw-chatcmds-btn")
       || actions.querySelector("#btfw-users-toggle")
@@ -343,6 +345,10 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
 
     const toolsBtn = $("#btfw-chattools-btn") || $("#btfw-ct-open");
     if (toolsBtn) {
+      toolsBtn.title = toolsBtn.title || "Chat tools";
+      if (!toolsBtn.getAttribute("aria-label")) {
+        toolsBtn.setAttribute("aria-label", "Chat tools");
+      }
       toolsBtn.addEventListener("click", (e)=>{
         e.preventDefault();
         e.stopPropagation();
