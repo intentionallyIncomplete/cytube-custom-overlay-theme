@@ -1,3 +1,10 @@
+## [1.4.11](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.10...v1.4.11) (2026-06-18)
+
+
+### Bug Fixes
+
+* **chat:** restore GIF visibility with hover grow intact ([595711b](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/595711bacf8de83575c2347922b66ec0e5358146))
+
 ## [1.4.10](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.9...v1.4.10) (2026-06-18)
 
 
