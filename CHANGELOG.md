@@ -1,3 +1,10 @@
+## [1.4.12](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.11...v1.4.12) (2026-06-18)
+
+
+### Bug Fixes
+
+* **chat:** add tooltip to Aa chat-tools button ([2be4254](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/2be425411bc96c7ac5c2d44aa8f3e2354ea96f93))
+
 ## [1.4.11](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.10...v1.4.11) (2026-06-18)
 
 
