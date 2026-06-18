@@ -82,6 +82,41 @@ BTFW.define("feature:player", ["feature:layout"], async ({}) => {
     ensureStylesheet(CITY_STYLES_LINK_ID, CITY_STYLES_URLS);
   }
 
+  function getVjsPlayer(playerEl) {
+    if (!playerEl) return null;
+    try {
+      return playerEl.player
+        || playerEl.player_
+        || (window.videojs && typeof window.videojs.getPlayer === "function" && window.videojs.getPlayer(playerEl.id))
+        || (window.videojs && window.videojs.players && window.videojs.players[playerEl.id]);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function enhanceVolumePanel(playerEl) {
+    const vjsPlayer = getVjsPlayer(playerEl);
+    if (!vjsPlayer) return;
+
+    const controlBar = typeof vjsPlayer.getChild === "function"
+      ? vjsPlayer.getChild("controlBar")
+      : null;
+    const volumePanel = controlBar && typeof controlBar.getChild === "function"
+      ? controlBar.getChild("volumePanel")
+      : null;
+    if (!volumePanel) return;
+
+    playerEl.classList.add("btfw-volume-inline");
+
+    try {
+      if (typeof volumePanel.inline === "function") {
+        volumePanel.inline(true);
+      }
+    } catch (_) {
+      /* no-op */
+    }
+  }
+
   function applyCityTheme() {
     ensureBaseStylesheet();
     ensureCityStylesheet();
@@ -100,6 +135,7 @@ BTFW.define("feature:player", ["feature:layout"], async ({}) => {
       if (!player.classList.contains(BIG_PLAY_CLASS)) {
         player.classList.add(BIG_PLAY_CLASS);
       }
+      enhanceVolumePanel(player);
     });
   }
 
@@ -310,6 +346,7 @@ BTFW.define("feature:player", ["feature:layout"], async ({}) => {
         ensureInlinePlayback();
         applyPosterUrl();
         togglePosterVisibility();
+        document.querySelectorAll(PLAYER_SELECTOR).forEach(enhanceVolumePanel);
       }
     });
     
@@ -326,6 +363,7 @@ BTFW.define("feature:player", ["feature:layout"], async ({}) => {
       ensureInlinePlayback();
       applyPosterUrl();
       togglePosterVisibility();
+      document.querySelectorAll(PLAYER_SELECTOR).forEach(enhanceVolumePanel);
     }, 100);
   }
 
