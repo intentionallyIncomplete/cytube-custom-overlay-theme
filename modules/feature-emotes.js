@@ -125,7 +125,7 @@ BTFW.define("feature:emotes", [], async () => {
           <button class="btfw-tab" data-tab="recent">Recent</button>
         </div>
         <div class="btfw-emotes-search">
-          <input id="btfw-emotes-search" type="search" placeholder="Search…" autocomplete="off" />
+          <input id="btfw-emotes-search" type="search" placeholder="Search…" autocomplete="off" aria-label="Search emotes and emoji" />
           <button id="btfw-emotes-clear" class="btfw-emotes-clear" type="button" title="Clear search" aria-label="Clear search" aria-hidden="true" tabindex="-1">×</button>
         </div>
         <button class="btfw-emotes-close" title="Close">×</button>
@@ -172,6 +172,12 @@ BTFW.define("feature:emotes", [], async () => {
         syncSearchClear();
         clearTimeout(t);
         t = setTimeout(()=> render(true), 120);
+      });
+      $("#btfw-emotes-search", pop).addEventListener("keydown", ev=>{
+        if (ev.key === "Escape") {
+          ev.preventDefault();
+          close();
+        }
       });
     })();
     $("#btfw-emotes-clear", pop).addEventListener("click", ()=>{
@@ -221,6 +227,18 @@ BTFW.define("feature:emotes", [], async () => {
     pop._btfwSyncSearchClear = syncSearchClear;
 
     return pop;
+  }
+
+  function focusSearch(preventScroll = true){
+    const input = document.getElementById("btfw-emotes-search");
+    if (!input || typeof input.focus !== "function") return;
+    if (preventScroll) {
+      try {
+        input.focus({ preventScroll: true });
+        return;
+      } catch(_) {}
+    }
+    try { input.focus(); } catch(_) {}
   }
 
   function focusGrid(preventScroll = true){
@@ -465,7 +483,7 @@ c.addEventListener("click", ev=>{
     motion.openPopover(pop);
     positionPopover(true);            // compute fixed height once per open
     render(true);
-    focusGrid();
+    requestAnimationFrame(() => focusSearch());
   }
 
   function close(){
