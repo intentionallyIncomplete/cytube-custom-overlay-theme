@@ -21,6 +21,16 @@ BTFW.define("feature:chat-commands", [], async () => {
   function hasRank(min){ return getRank() >= min; }
   function clamp(n,a,b){ return Math.min(b, Math.max(a, n)); }
   function norm(s){ return String(s||"").toLowerCase().replace(/['".,;:!?()\[\]{}]/g,"").replace(/\s+/g," ").trim(); }
+  function formatPlaybackTime(totalSeconds) {
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    }
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  }
 
 function getCurrentTitle(){
   const ct = document.getElementById('currenttitle') || document.querySelector('.currenttitle');
@@ -333,7 +343,16 @@ addCommand("cast", async (ctx)=>{
   
   addCommand("pick",  (ctx)=>{ const raw=ctx.args.join(" "); const parts=raw.split(/[,|]/).map(s=>s.trim()).filter(Boolean); if (parts.length<2) return "Usage: !pick a, b, c"; sendChat(`🎯 I choose: ${parts[Math.floor(Math.random()*parts.length)]}`); return ""; }, { desc:"Pick randomly", usage:"!pick a, b, c" });
   addCommand("ask",   ()=>{ const a=["Yes.","No.","Maybe.","Probably.","Probably not.","Absolutely.","Definitely not.","Ask again later."]; sendChat(a[Math.floor(Math.random()*a.length)]); return ""; }, { desc:"Magic-8", usage:"!ask <q>" });
-  addCommand("time",  ()=>{ const d=new Date(); sendChat(`[${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}]`); return ""; }, { desc:"Current time", usage:"!time" });
+  addCommand("time", async () => {
+    const sg = await BTFW.init("feature:syncGuard");
+    const seconds = await sg.getPlayerTime();
+    if (seconds == null) {
+      sysLocal("No active playback.");
+      return "";
+    }
+    sendChat(`[${formatPlaybackTime(seconds)}]`);
+    return "";
+  }, { desc: "Playback position", usage: "!time" });
   addCommand("dice",  ()=>{ sendChat(`🎲 ${1+Math.floor(Math.random()*5)}`); return ""; }, { desc:"Roll 1–5", usage:"!dice" });
   addCommand("roll",  ()=>{ sendChat(String(Math.floor(Math.random()*1000)).padStart(3,"0")); return ""; }, { desc:"Random 000–999", usage:"!roll" });
   addCommand("skip",  ()=>{ if (!hasRank(2)) return "You lack permission to voteskip."; emitVoteSkip(); return ""; }, { desc:"Vote skip", usage:"!skip" });

@@ -3,7 +3,7 @@ type: meta
 title: "Wiki Log"
 status: evergreen
 created: 2026-06-08
-updated: 2026-06-08
+updated: 2026-06-19
 tags:
   - meta
 ---
@@ -11,6 +11,22 @@ tags:
 # Wiki Log
 
 Newest entries first. Do not edit past entries.
+
+## 2026-06-19 — File PR #91 and issue #90 (!time playback position)
+
+- **Operation:** SAVE (review-and-ship + obsidian-wiki)
+- **Raw:** `.raw/pr-91-feat-chat-repurpose-time-to-post-video-playback-position.md`
+- **Created:** [[sources/GitHub PR 91]], [[sources/GitHub Issue 90]]
+- **Updated:** [[index]], [[hot]]
+- **Status:** PR #91 OPEN; user verified `!time` on local stack
+
+## 2026-06-18 — Ingest last 10 pull requests
+
+- **Operation:** EXPORT + INGEST (GitHub PRs #79–#89)
+- **Raw:** 10 files in `.raw/pr-*.md`
+- **Created:** [[meta/pr-registry]], [[sources/GitHub PR 79]] … [[sources/GitHub PR 89]]
+- **Updated:** [[index]], [[hot]]
+- **Hook:** `.cursor/hooks/after-pr-create.mjs` auto-exports on future `gh pr create`
 
 ## 2026-06-08 — Ingest enhancement issues
 

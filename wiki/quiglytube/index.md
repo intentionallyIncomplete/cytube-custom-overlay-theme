@@ -3,7 +3,7 @@ type: meta
 title: "Wiki Index"
 status: developing
 created: 2026-06-08
-updated: 2026-06-08
+updated: 2026-06-19
 tags:
   - meta
   - catalog
@@ -12,6 +12,10 @@ tags:
 # BillTube3-slim Wiki Index
 
 Master catalog. Start at [[overview]] or [[hot]] for recent context.
+
+## Open pull requests
+
+- [[sources/GitHub PR 91]] — `!time` playback position (OPEN, closes #90)
 
 ## Domains
 
@@ -23,6 +27,21 @@ Master catalog. Start at [[overview]] or [[hot]] for recent context.
 - [[sources/BUILD System|BUILD System]] (`.raw/BUILD.md`)
 - [[meta/bug-registry|Bug registry]] — all ingested GitHub bugs
 - [[meta/enhancement-registry|Enhancement registry]] — all ingested GitHub enhancements
+- [[meta/pr-registry|PR registry]] — recent merged pull requests
+- [[sources/GitHub Issue 90]] — `!time` playback position feature request
+
+### GitHub pull requests (last 10)
+
+- [[sources/GitHub PR 89]] — trivia removal (MERGED)
+- [[sources/GitHub PR 87]] — chat-tools tooltip (#74)
+- [[sources/GitHub PR 86]] — GIF visibility
+- [[sources/GitHub PR 85]] — Giphy filters + sizing
+- [[sources/GitHub PR 84]] — hover grow (#75)
+- [[sources/GitHub PR 83]] — emote search focus (#76)
+- [[sources/GitHub PR 82]] — volume slider (#73)
+- [[sources/GitHub PR 81]] — dev server skill
+- [[sources/GitHub PR 80]] — splitter release (#72)
+- [[sources/GitHub PR 79]] — media URL spaces (#77)
 
 ### GitHub issues (bug label)
 
@@ -86,6 +105,7 @@ Master catalog. Start at [[overview]] or [[hot]] for recent context.
 - [[meta/conventions]]
 - [[meta/bug-registry]]
 - [[meta/enhancement-registry]]
+- [[meta/pr-registry]]
 
 ## Questions
 
