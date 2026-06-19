@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.13...v1.5.0) (2026-06-19)
+
+
+### Features
+
+* **chat:** repurpose !time to post video playback position ([86e5e2c](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/86e5e2c18b46fbcc29206a8f4590ad68984208a1)), closes [#90](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/90)
+
 ## [1.4.13](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.12...v1.4.13) (2026-06-18)
 
 ## [1.4.12](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.4.11...v1.4.12) (2026-06-18)
