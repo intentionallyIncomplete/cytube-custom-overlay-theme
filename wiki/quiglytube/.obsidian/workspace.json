@@ -13,28 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "CLAUDE.md",
+                "file": "index.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CLAUDE"
-            }
-          }
-        ]
-      },
-      {
-        "id": "6f620b74e72b16a3",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "f4286b6f13a690fd",
-            "type": "leaf",
-            "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "title": "index"
             }
           }
         ]
@@ -199,14 +183,15 @@
       "bases:Create new base": false
     }
   },
-  "active": "f4286b6f13a690fd",
+  "active": "72e8b8b499c6bf38",
   "lastOpenFiles": [
+    "CLAUDE.md",
+    "sources/GitHub Issue 37.md",
     "meta/enhancement-registry.md",
     "sources/GitHub Issue 52.md",
     "sources/GitHub Issue 50.md",
     "sources/GitHub Issue 46.md",
     "sources/GitHub Issue 39.md",
-    "sources/GitHub Issue 37.md",
     "sources/GitHub Issue 22.md",
     "sources/GitHub Issue 2.md",
     "meta/_ingest-enhancements.cjs",
@@ -216,7 +201,6 @@
     "sources/GitHub Issue 44.md",
     "meta/bug-registry.md",
     "_templates/source.md",
-    "CLAUDE.md",
     "meta/_fix-titles.cjs",
     "sources/GitHub Issue 9.md",
     "sources/GitHub Issue 7.md",

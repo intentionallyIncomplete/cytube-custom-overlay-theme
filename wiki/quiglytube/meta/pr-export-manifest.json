@@ -1,0 +1,76 @@
+{
+  "date": "2026-06-18",
+  "count": 10,
+  "items": [
+    {
+      "number": 89,
+      "title": "refactor(chat): remove trivia and trivia leaderboard commands",
+      "state": "MERGED",
+      "rawFile": "pr-89-refactor-chat-remove-trivia-and-trivia-leaderboard-commands.md",
+      "sourceFile": "GitHub PR 89.md"
+    },
+    {
+      "number": 87,
+      "title": "fix(chat): add tooltip to Aa chat-tools button",
+      "state": "MERGED",
+      "rawFile": "pr-87-fix-chat-add-tooltip-to-aa-chat-tools-button.md",
+      "sourceFile": "GitHub PR 87.md"
+    },
+    {
+      "number": 86,
+      "title": "fix(chat): restore GIF visibility with hover grow intact",
+      "state": "MERGED",
+      "rawFile": "pr-86-fix-chat-restore-gif-visibility-with-hover-grow-intact.md",
+      "sourceFile": "GitHub PR 86.md"
+    },
+    {
+      "number": 85,
+      "title": "fix(chat): Giphy filters, full-size GIFs, 90% chat width cap",
+      "state": "MERGED",
+      "rawFile": "pr-85-fix-chat-giphy-filters-full-size-gifs-90-chat-width-cap.md",
+      "sourceFile": "GitHub PR 85.md"
+    },
+    {
+      "number": 84,
+      "title": "fix(chat): restore hover grow on inline GIFs and images",
+      "state": "MERGED",
+      "rawFile": "pr-84-fix-chat-restore-hover-grow-on-inline-gifs-and-images.md",
+      "sourceFile": "GitHub PR 84.md"
+    },
+    {
+      "number": 83,
+      "title": "fix(emotes): focus search input when opening picker",
+      "state": "MERGED",
+      "rawFile": "pr-83-fix-emotes-focus-search-input-when-opening-picker.md",
+      "sourceFile": "GitHub PR 83.md"
+    },
+    {
+      "number": 82,
+      "title": "fix(player): usable volume slider and control bar spacing",
+      "state": "MERGED",
+      "rawFile": "pr-82-fix-player-usable-volume-slider-and-control-bar-spacing.md",
+      "sourceFile": "GitHub PR 82.md"
+    },
+    {
+      "number": 81,
+      "title": "(chore): Update cursor skill for starting billtube server",
+      "state": "MERGED",
+      "rawFile": "pr-81-chore-update-cursor-skill-for-starting-billtube-server.md",
+      "sourceFile": "GitHub PR 81.md"
+    },
+    {
+      "number": 80,
+      "title": "fix(layout): release chat/video splitter on pointer up",
+      "state": "MERGED",
+      "rawFile": "pr-80-fix-layout-release-chat-video-splitter-on-pointer-up.md",
+      "sourceFile": "GitHub PR 80.md"
+    },
+    {
+      "number": 79,
+      "title": "fix(playlist): encode spaces in media URLs before queueing",
+      "state": "MERGED",
+      "rawFile": "pr-79-fix-playlist-encode-spaces-in-media-urls-before-queueing.md",
+      "sourceFile": "GitHub PR 79.md"
+    }
+  ]
+}
