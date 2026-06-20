@@ -1,7 +1,8 @@
-BTFW.define("feature:chat-commands", [], async () => {
+BTFW.define("feature:chat-commands", ["util:tmdb-proxy"], async ({ init }) => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const motion = await BTFW.init("util:motion");
+  const tmdb = await init("util:tmdb-proxy");
   const now = ()=>Date.now();
 
   function sendChat(msg){
@@ -39,35 +40,15 @@ function getCurrentTitle(){
   return t;
 }
 
-  function getTMDBKey(){
-    try {
-      const cfg = (window.BTFW_CONFIG && typeof window.BTFW_CONFIG === "object") ? window.BTFW_CONFIG : {};
-      const tmdbObj = (cfg.tmdb && typeof cfg.tmdb === "object") ? cfg.tmdb : {};
-      const cfgKey = typeof tmdbObj.apiKey === "string" ? tmdbObj.apiKey.trim() : "";
-      const legacyCfg = typeof cfg.tmdbKey === "string" ? cfg.tmdbKey.trim() : "";
-      let lsKey = "";
-      try { lsKey = (localStorage.getItem("btfw:tmdb:key") || "").trim(); }
-      catch(_) {}
-      const g  = v => (v==null ? "" : String(v)).trim();
-      const globalKey = g(window.TMDB_API_KEY) || g(window.BTFW_TMDB_KEY) || g(window.tmdb_key);
-      const bodyKey = (document.body?.dataset?.tmdbKey || "").trim();
-      const key = cfgKey || legacyCfg || lsKey || globalKey || bodyKey;
-      return key || null;
-    } catch(_) { return null; }
-  }
 async function fetchTMDBSummary(title){
-  const key = getTMDBKey();
-  if (!key) return 'TMDB key missing. Open Theme Settings → General → Integrations to add your TMDB API key, or set one of:\nwindow.BTFW_CONFIG.tmdb = { apiKey: "KEY" };\nlocalStorage.setItem("btfw:tmdb:key","KEY");\nwindow.tmdb_key = "KEY";';
+  if (!tmdb.isAvailable()) return tmdb.MISSING_PROXY_MSG;
   
   try {
     const imdbMatch = /^tt\d+$/.test(title.trim());
     let r;
     
     if (imdbMatch) {
-      const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(title.trim())}?api_key=${key}&external_source=imdb_id`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await tmdb.tmdbFetch(`find/${encodeURIComponent(title.trim())}`, { external_source: "imdb_id" });
       r = (data.movie_results||[])[0] || (data.tv_results||[])[0];
     } else {
       const yearMatch = title.match(/\b(19|20)\d{2}\b/);
@@ -78,37 +59,38 @@ async function fetchTMDBSummary(title){
         cleanTitle = title.replace(/\s*\(?\s*(19|20)\d{2}\s*\)?\s*/g, ' ').trim();
       }
       
-      const q = encodeURIComponent(cleanTitle);
-      
       if (year) {
-        const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${q}&primary_release_year=${year}&include_adult=false&language=en-US`;
-        const movieRes = await fetch(movieUrl);
-        if (movieRes.ok) {
-          const movieData = await movieRes.json();
-          if (movieData.results && movieData.results.length > 0) {
-            r = movieData.results[0];
-            r.media_type = 'movie';
-          }
+        const movieData = await tmdb.tmdbFetch("search/movie", {
+          query: cleanTitle,
+          primary_release_year: year,
+          include_adult: false,
+          language: "en-US",
+        });
+        if (movieData.results && movieData.results.length > 0) {
+          r = movieData.results[0];
+          r.media_type = 'movie';
         }
       }
       
       if (!r && year) {
-        const tvUrl = `https://api.themoviedb.org/3/search/tv?api_key=${key}&query=${q}&first_air_date_year=${year}&include_adult=false&language=en-US`;
-        const tvRes = await fetch(tvUrl);
-        if (tvRes.ok) {
-          const tvData = await tvRes.json();
-          if (tvData.results && tvData.results.length > 0) {
-            r = tvData.results[0];
-            r.media_type = 'tv';
-          }
+        const tvData = await tmdb.tmdbFetch("search/tv", {
+          query: cleanTitle,
+          first_air_date_year: year,
+          include_adult: false,
+          language: "en-US",
+        });
+        if (tvData.results && tvData.results.length > 0) {
+          r = tvData.results[0];
+          r.media_type = 'tv';
         }
       }
       
       if (!r) {
-        const multiUrl = `https://api.themoviedb.org/3/search/multi?api_key=${key}&query=${q}&include_adult=false&language=en-US`;
-        const res = await fetch(multiUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = await tmdb.tmdbFetch("search/multi", {
+          query: cleanTitle,
+          include_adult: false,
+          language: "en-US",
+        });
         r = (data.results||[])[0];
       }
     }
@@ -122,9 +104,8 @@ async function fetchTMDBSummary(title){
     let overview = r.overview || '';
     
     if (!overview && r.id) {
-      const detailsUrl = `https://api.themoviedb.org/3/${mediaType}/${r.id}?api_key=${key}&language=en-US`;
-      const dres = await fetch(detailsUrl);
-      if (dres.ok) { const det = await dres.json(); overview = det.overview || ''; }
+      const det = await tmdb.tmdbFetch(`${mediaType}/${r.id}`, { language: "en-US" });
+      overview = det.overview || '';
     }
     
     if (!overview) overview = 'No summary available.';
@@ -144,18 +125,14 @@ overview = overview.replace(/\|/g, '&#124;');
   }
 }
 async function fetchTMDBCast(title){
-  const key = getTMDBKey();
-  if (!key) return 'TMDB key missing. Configure your API key first.';
+  if (!tmdb.isAvailable()) return tmdb.MISSING_PROXY_MSG;
   
   try {
     const imdbMatch = /^tt\d+$/.test(title.trim());
     let movieId, mediaType = 'movie';
     
     if (imdbMatch) {
-      const url = `https://api.themoviedb.org/3/find/${encodeURIComponent(title.trim())}?api_key=${key}&external_source=imdb_id`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await tmdb.tmdbFetch(`find/${encodeURIComponent(title.trim())}`, { external_source: "imdb_id" });
       const r = (data.movie_results||[])[0] || (data.tv_results||[])[0];
       if (!r) return 'No TMDB result.';
       movieId = r.id;
@@ -169,38 +146,40 @@ async function fetchTMDBCast(title){
         cleanTitle = title.replace(/\s*\(?\s*(19|20)\d{2}\s*\)?\s*/g, ' ').trim();
       }
       
-      const q = encodeURIComponent(cleanTitle);
       let r;
       
       if (year) {
-        const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${q}&primary_release_year=${year}&include_adult=false&language=en-US`;
-        const movieRes = await fetch(movieUrl);
-        if (movieRes.ok) {
-          const movieData = await movieRes.json();
-          if (movieData.results && movieData.results.length > 0) {
-            r = movieData.results[0];
-            mediaType = 'movie';
-          }
+        const movieData = await tmdb.tmdbFetch("search/movie", {
+          query: cleanTitle,
+          primary_release_year: year,
+          include_adult: false,
+          language: "en-US",
+        });
+        if (movieData.results && movieData.results.length > 0) {
+          r = movieData.results[0];
+          mediaType = 'movie';
         }
       }
       
       if (!r && year) {
-        const tvUrl = `https://api.themoviedb.org/3/search/tv?api_key=${key}&query=${q}&first_air_date_year=${year}&include_adult=false&language=en-US`;
-        const tvRes = await fetch(tvUrl);
-        if (tvRes.ok) {
-          const tvData = await tvRes.json();
-          if (tvData.results && tvData.results.length > 0) {
-            r = tvData.results[0];
-            mediaType = 'tv';
-          }
+        const tvData = await tmdb.tmdbFetch("search/tv", {
+          query: cleanTitle,
+          first_air_date_year: year,
+          include_adult: false,
+          language: "en-US",
+        });
+        if (tvData.results && tvData.results.length > 0) {
+          r = tvData.results[0];
+          mediaType = 'tv';
         }
       }
       
       if (!r) {
-        const multiUrl = `https://api.themoviedb.org/3/search/multi?api_key=${key}&query=${q}&include_adult=false&language=en-US`;
-        const res = await fetch(multiUrl);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = await tmdb.tmdbFetch("search/multi", {
+          query: cleanTitle,
+          include_adult: false,
+          language: "en-US",
+        });
         r = (data.results||[])[0];
         if (r) mediaType = r.media_type || (r.title ? 'movie' : 'tv');
       }
@@ -209,10 +188,7 @@ async function fetchTMDBCast(title){
       movieId = r.id;
     }
     
-    const creditsUrl = `https://api.themoviedb.org/3/${mediaType}/${movieId}/credits?api_key=${key}`;
-    const creditsRes = await fetch(creditsUrl);
-    if (!creditsRes.ok) throw new Error(`HTTP ${creditsRes.status}`);
-    const creditsData = await creditsRes.json();
+    const creditsData = await tmdb.tmdbFetch(`${mediaType}/${movieId}/credits`, {});
     
     const cast = creditsData.cast || [];
     if (!cast.length) return 'No cast information available.';

@@ -78,8 +78,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 
   const ADD_MEDIA_SECTIONS = [
     { id: "addfromurl", title: "From URL", default: true },
-    { id: "searchcontrol", title: "Library & YouTube" },
-    { id: "customembed", title: "Custom embed" }
+    { id: "searchcontrol", title: "Library & YouTube" }
   ];
 
   function ensureAddMediaUI(mainContainer, controlsBar, actionsCluster) {
@@ -117,7 +116,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
           </header>
           <div class="btfw-addmedia-panel__body">
             <div class="btfw-addmedia-views"></div>
-            <p class="btfw-addmedia-help">Queue media by URL, browse your library, or embed custom players without leaving the playlist.</p>
+            <p class="btfw-addmedia-help">Queue media by URL or browse your library without leaving the playlist.</p>
           </div>
         </div>
       `;
@@ -216,8 +215,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 
     const wireLegacyTriggers = () => {
       const triggers = [
-        { id: "showsearch", target: "searchcontrol" },
-        { id: "showcustomembed", target: "customembed" }
+        { id: "showsearch", target: "searchcontrol" }
       ];
 
       triggers.forEach(({ id, target }) => {

@@ -1,69 +1,128 @@
-// BTFW â€” ext:movie-suggestion
-// TMDB movie suggestions for chat
-BTFW.define("ext:movie-suggestion", [], async () => {
+// BTFW — ext:movie-suggestion
+// TMDB movie requests via movies-storage worker
+BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy"], async ({ init }) => {
+  const tmdb = await init("util:tmdb-proxy");
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
   let selectedMovieId = null;
   let selectedMovieTitle = null;
   let selectedPosterPath = null;
+  let selectedReleaseYear = null;
 
-  const LOG = '[movie-suggestion]';
+  const searchState = {
+    query: "",
+    page: 1,
+    totalPages: 1,
+    sortBy: "popularity.desc",
+    genreId: "",
+    year: "",
+    minRating: "",
+    loading: false,
+  };
+
+  let metaCache = null;
+  let genresCache = null;
+
+  const LOG = "[movie-suggestion]";
   function mlog(...args) { console.log(LOG, ...args); }
-  function mwarn(...args) { console.warn(LOG, ...args); }
   function merror(...args) { console.error(LOG, ...args); }
 
-  function normalizePosterPath(posterPath) {
-    if (!posterPath || posterPath === 'null') return null;
-    return posterPath;
+  function sendChat(msg) {
+    try {
+      if (window.socket?.emit) {
+        window.socket.emit("chatMsg", { msg });
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
-  function workerPosterPath(suggestion) {
-    return normalizePosterPath(suggestion.posterPath);
+  async function workerFetch(path, options = {}) {
+    return tmdb.workerFetch(path, options);
   }
 
-  function isValidSuggestion(s) {
-    return !!(s && s.movieId != null && s.movieId !== '' && s.movieTitle && s.username);
-  }
-
-  function skipReason(s) {
-    if (!s || typeof s !== 'object') return 'empty';
-    if (s.movieId == null || s.movieId === '') return 'missing movieId';
-    if (!s.movieTitle) return 'missing movieTitle';
-    if (!s.username) return 'missing username';
-    return 'unknown';
-  }
-
-  // Inject CSS
   function injectStyles() {
     if (document.getElementById("btfw-movie-suggest-styles")) return;
     const style = document.createElement("style");
     style.id = "btfw-movie-suggest-styles";
     style.textContent = `
-      /* Movie Suggestion Modal Styles */
+      #btfw-movie-suggest-modal.is-active,
+      #btfw-movie-confirm-modal.is-active {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #btfw-movie-confirm-modal.is-active {
+        z-index: 6100 !important;
+      }
+
+      #btfw-movie-suggest-modal.btfw-movie-suggest-pending .modal-card {
+        pointer-events: none;
+        opacity: 0.4;
+      }
+
+      #btfw-movie-suggest-modal .modal-card-body {
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+      }
+
+      #btfw-movie-suggest-modal .btfw-movie-filters {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      @media (max-width: 768px) {
+        #btfw-movie-suggest-modal .btfw-movie-filters {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      #btfw-movie-suggest-modal .btfw-movie-filters .label {
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+        opacity: 0.8;
+      }
+
       #btfw-movie-suggest-modal .btfw-movie-results {
         display: flex;
+        flex-wrap: nowrap;
         gap: 12px;
         overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-gutter: stable;
         margin-top: 16px;
+        padding-bottom: 4px;
+        min-height: 230px;
       }
 
       #btfw-movie-suggest-modal .movie-result {
-        min-width: 150px;
+        flex: 0 0 150px;
+        width: 150px;
         cursor: pointer;
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 8px;
         overflow: hidden;
-        transition: all 0.2s ease;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
       }
 
       #btfw-movie-suggest-modal .movie-result:hover {
         border-color: var(--btfw-color-accent, #6d4df6);
-        transform: translateY(-2px);
+      }
+
+      #btfw-movie-suggest-modal .movie-result__poster {
+        aspect-ratio: 2 / 3;
+        background: rgba(255,255,255,0.06);
+        overflow: hidden;
       }
 
       #btfw-movie-suggest-modal .movie-result img {
         width: 100%;
+        height: 100%;
+        object-fit: cover;
         display: block;
       }
 
@@ -76,28 +135,46 @@ BTFW.define("ext:movie-suggestion", [], async () => {
         font-size: 0.85rem;
       }
 
-      #btfw-movie-suggest-modal .recent-suggestion {
+      #btfw-movie-suggest-modal .btfw-movie-pager {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      #btfw-movie-suggest-modal .btfw-movie-history {
+        margin-top: 24px;
+      }
+
+      #btfw-movie-suggest-modal .btfw-movie-history__title {
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+
+      #btfw-movie-suggest-modal .history-item {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         padding: 8px;
         border-radius: 8px;
         background: rgba(255,255,255,0.03);
       }
 
-      #btfw-movie-suggest-modal .recent-suggestion img {
+      #btfw-movie-suggest-modal .history-item img {
         width: 46px;
         height: 69px;
         border-radius: 4px;
         object-fit: cover;
+        flex-shrink: 0;
       }
 
-      #btfw-movie-suggest-modal .recent-suggestion__title {
+      #btfw-movie-suggest-modal .history-item__title {
         font-weight: 600;
       }
 
-      #btfw-movie-suggest-modal .recent-suggestion__user {
+      #btfw-movie-suggest-modal .history-item__meta {
         opacity: 0.7;
         font-size: 0.85rem;
       }
@@ -105,26 +182,27 @@ BTFW.define("ext:movie-suggestion", [], async () => {
       .button.btfw-nav-pill#btfw-movie-suggest-btn:hover {
         background-color: var(--btfw-color-accent, #6d4df6);
       }
+
+      #btfw-movie-confirm-modal .modal-card {
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+      }
+
+      #btfw-movie-confirm-modal .btfw-movie-confirm-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--btfw-surface-divider, rgba(255,255,255,0.12));
+      }
+
+      #btfw-movie-confirm-modal .btfw-movie-confirm-actions .button {
+        min-width: 4.5rem;
+      }
     `;
     document.head.appendChild(style);
-  }
-
-  // Get TMDB API key from config
-  function getTMDBKey() {
-    try {
-      const cfg = (window.BTFW_CONFIG && typeof window.BTFW_CONFIG === "object") ? window.BTFW_CONFIG : {};
-      const tmdbObj = (cfg.tmdb && typeof cfg.tmdb === "object") ? cfg.tmdb : {};
-      const cfgKey = typeof tmdbObj.apiKey === "string" ? tmdbObj.apiKey.trim() : "";
-      const legacyCfg = typeof cfg.tmdbKey === "string" ? cfg.tmdbKey.trim() : "";
-      let lsKey = "";
-      try { lsKey = (localStorage.getItem("btfw:tmdb:key") || "").trim(); }
-      catch(_) {}
-      const g = v => (v == null ? "" : String(v)).trim();
-      const globalKey = g(window.TMDB_API_KEY) || g(window.BTFW_TMDB_KEY) || g(window.tmdb_key) || g(window.moviedbkey);
-      const bodyKey = (document.body?.dataset?.tmdbKey || "").trim();
-      const key = cfgKey || legacyCfg || lsKey || globalKey || bodyKey;
-      return key || null;
-    } catch(_) { return null; }
   }
 
   const userRank = CLIENT?.rank || 0;
@@ -135,7 +213,7 @@ BTFW.define("ext:movie-suggestion", [], async () => {
       const ul = donateBtn.closest("ul");
       if (ul) return { ul, insertAfter: donateBtn.parentElement };
     }
-    
+
     const themeBtn = $("#btfw-theme-btn-nav");
     if (themeBtn) {
       const ul = themeBtn.closest("ul");
@@ -144,7 +222,7 @@ BTFW.define("ext:movie-suggestion", [], async () => {
 
     return {
       ul: $(".navbar .nav.navbar-nav") || $(".navbar-nav") || $(".btfw-navbar ul") || $(".navbar ul"),
-      insertAfter: null
+      insertAfter: null,
     };
   }
 
@@ -163,9 +241,9 @@ BTFW.define("ext:movie-suggestion", [], async () => {
       <span class="btfw-nav-pill__icon" aria-hidden="true"><i class="fa fa-film"></i></span>
       <span class="btfw-nav-pill__label">Request</span>
     `;
-    
+
     li.appendChild(a);
-    
+
     if (nav.insertAfter) {
       nav.insertAfter.after(li);
     } else {
@@ -192,15 +270,52 @@ BTFW.define("ext:movie-suggestion", [], async () => {
         <section class="modal-card-body">
           <div class="field">
             <div class="control">
-              <input type="text" id="btfw-movie-search" class="input" 
-                     placeholder="${userRank === 0 ? 'Please register to search and suggest movies' : 'Search for a movie...'}"
-                     ${userRank === 0 ? 'disabled' : ''}>
+              <input type="text" id="btfw-movie-search" class="input"
+                     placeholder="${userRank === 0 ? "Please register to search and suggest movies" : "Search for a movie..."}"
+                     ${userRank === 0 ? "disabled" : ""}>
             </div>
           </div>
-          <div class="btfw-movie-results"></div>
-          <div style="margin-top:24px;">
-            <h6 style="font-weight:600;margin-bottom:12px;">Recent Suggestions:</h6>
-            <div id="btfw-recent-suggestions"></div>
+          <div class="btfw-movie-filters">
+            <div class="field">
+              <label class="label" for="btfw-movie-sort">Sort</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select id="btfw-movie-sort" class="input"></select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="btfw-movie-genre">Genre</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select id="btfw-movie-genre" class="input">
+                    <option value="">Any genre</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="btfw-movie-year">Year</label>
+              <div class="control">
+                <input type="number" id="btfw-movie-year" class="input" min="1900" max="2100" placeholder="Any">
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="btfw-movie-rating">Min rating</label>
+              <div class="control">
+                <input type="number" id="btfw-movie-rating" class="input" min="0" max="10" step="0.5" placeholder="Any">
+              </div>
+            </div>
+          </div>
+          <div class="btfw-movie-results" aria-live="polite"></div>
+          <nav class="btfw-movie-pager" aria-label="Search pages">
+            <button type="button" class="button is-small" id="btfw-movie-prev" disabled>Prev</button>
+            <span id="btfw-movie-page-label">Page 1</span>
+            <button type="button" class="button is-small" id="btfw-movie-next" disabled>Next</button>
+          </nav>
+          <div class="btfw-movie-history">
+            <h6 class="btfw-movie-history__title">Recent requests</h6>
+            <div id="btfw-movie-history"></div>
           </div>
         </section>
       </div>
@@ -212,10 +327,23 @@ BTFW.define("ext:movie-suggestion", [], async () => {
     bg.addEventListener("click", closeModal);
     del.addEventListener("click", closeModal);
 
+    $("#btfw-movie-prev", modal)?.addEventListener("click", () => {
+      if (searchState.page > 1) {
+        searchState.page -= 1;
+        runSearch();
+      }
+    });
+    $("#btfw-movie-next", modal)?.addEventListener("click", () => {
+      if (searchState.page < searchState.totalPages) {
+        searchState.page += 1;
+        runSearch();
+      }
+    });
+
     if (userRank === 0) {
       const input = $("#btfw-movie-search", modal);
       input.addEventListener("focus", () => {
-        alert('You need to be registered to search and suggest movies.');
+        alert("You need to be registered to search and suggest movies.");
         input.blur();
       });
     } else {
@@ -223,12 +351,30 @@ BTFW.define("ext:movie-suggestion", [], async () => {
       const input = $("#btfw-movie-search", modal);
       input.addEventListener("input", () => {
         clearTimeout(searchTimeout);
-        const query = input.value.trim();
-        if (query.length > 2) {
-          searchTimeout = setTimeout(() => searchMovies(query), 500);
-        } else {
-          $(".btfw-movie-results", modal).innerHTML = '';
-        }
+        searchState.query = input.value.trim();
+        searchState.page = 1;
+        searchTimeout = setTimeout(() => runSearch(), 400);
+      });
+
+      $("#btfw-movie-sort", modal)?.addEventListener("change", (e) => {
+        searchState.sortBy = e.target.value;
+        searchState.page = 1;
+        runSearch();
+      });
+      $("#btfw-movie-genre", modal)?.addEventListener("change", (e) => {
+        searchState.genreId = e.target.value;
+        searchState.page = 1;
+        runSearch();
+      });
+      $("#btfw-movie-year", modal)?.addEventListener("change", (e) => {
+        searchState.year = e.target.value.trim();
+        searchState.page = 1;
+        runSearch();
+      });
+      $("#btfw-movie-rating", modal)?.addEventListener("change", (e) => {
+        searchState.minRating = e.target.value.trim();
+        searchState.page = 1;
+        runSearch();
       });
     }
   }
@@ -248,11 +394,11 @@ BTFW.define("ext:movie-suggestion", [], async () => {
         </header>
         <section class="modal-card-body">
           <p>Are you sure you want to suggest <strong id="btfw-confirm-movie-title"></strong>?</p>
+          <div class="btfw-movie-confirm-actions">
+            <button type="button" class="button" id="btfw-movie-cancel">No</button>
+            <button type="button" class="button is-link" id="btfw-movie-confirm">Yes</button>
+          </div>
         </section>
-        <footer class="modal-card-foot">
-          <button class="button" id="btfw-movie-cancel">Cancel</button>
-          <button class="button is-link" id="btfw-movie-confirm">Confirm</button>
-        </footer>
       </div>
     `;
     document.body.appendChild(modal);
@@ -262,301 +408,285 @@ BTFW.define("ext:movie-suggestion", [], async () => {
     const cancel = $("#btfw-movie-cancel", modal);
     const confirm = $("#btfw-movie-confirm", modal);
 
-    const close = () => modal.classList.remove("is-active");
+    const close = () => closeConfirmModal();
     bg.addEventListener("click", close);
     del.addEventListener("click", close);
     cancel.addEventListener("click", close);
     confirm.addEventListener("click", confirmSuggestion);
   }
 
-  function openModal() {
+  async function ensureFilterOptions() {
+    if (metaCache && genresCache) return;
+
+    const [meta, genres] = await Promise.all([
+      workerFetch("/api/meta"),
+      workerFetch("/api/genres"),
+    ]);
+
+    metaCache = meta;
+    genresCache = genres;
+
     const modal = $("#btfw-movie-suggest-modal");
     if (!modal) return;
 
-    mlog('openModal', { userRank });
+    const sortSelect = $("#btfw-movie-sort", modal);
+    if (sortSelect && sortSelect.options.length === 0) {
+      for (const option of meta.sortOptions || []) {
+        const el = document.createElement("option");
+        el.value = option.value;
+        el.textContent = option.label;
+        sortSelect.appendChild(el);
+      }
+      sortSelect.value = searchState.sortBy;
+    }
+
+    const genreSelect = $("#btfw-movie-genre", modal);
+    if (genreSelect && genreSelect.options.length <= 1) {
+      for (const genre of genres.genres || []) {
+        const el = document.createElement("option");
+        el.value = String(genre.id);
+        el.textContent = genre.name;
+        genreSelect.appendChild(el);
+      }
+    }
+  }
+
+  function buildSearchParams() {
+    const params = {
+      page: searchState.page,
+      sort_by: searchState.sortBy,
+    };
+
+    if (searchState.query) {
+      params.query = searchState.query;
+      if (searchState.year) {
+        params.primary_release_year = searchState.year;
+        params.year = searchState.year;
+      }
+    } else {
+      if (searchState.genreId) params.with_genres = searchState.genreId;
+      if (searchState.year) params.primary_release_year = searchState.year;
+      if (searchState.minRating) params["vote_average.gte"] = searchState.minRating;
+    }
+
+    return params;
+  }
+
+  function posterSrc(posterPath) {
+    if (!posterPath || posterPath === "null") {
+      return "https://via.placeholder.com/154x231?text=No+Image";
+    }
+    return `https://image.tmdb.org/t/p/w154${posterPath}`;
+  }
+
+  function updatePager() {
+    const modal = $("#btfw-movie-suggest-modal");
+    if (!modal) return;
+
+    const prev = $("#btfw-movie-prev", modal);
+    const next = $("#btfw-movie-next", modal);
+    const label = $("#btfw-movie-page-label", modal);
+
+    if (label) {
+      label.textContent = `Page ${searchState.page} of ${searchState.totalPages}`;
+    }
+    if (prev) prev.disabled = searchState.page <= 1 || searchState.loading;
+    if (next) next.disabled = searchState.page >= searchState.totalPages || searchState.loading;
+  }
+
+  function renderSearchResults(movies) {
+    const modal = $("#btfw-movie-suggest-modal");
+    if (!modal) return;
+
+    const container = $(".btfw-movie-results", modal);
+    if (!movies.length) {
+      container.innerHTML = `<p style="opacity:0.75;padding:8px 0;">No movies found. Try another search or filter.</p>`;
+      return;
+    }
+
+    container.innerHTML = movies.map((movie) => `
+      <div class="movie-result"
+           data-id="${movie.id}"
+           data-title="${movie.title}"
+           data-poster="${movie.posterPath || ""}"
+           data-year="${movie.releaseYear || ""}">
+        <div class="movie-result__poster">
+          <img src="${posterSrc(movie.posterPath)}" alt="${movie.title}" loading="lazy"
+               onerror="this.src='https://via.placeholder.com/154x231?text=No+Image'">
+        </div>
+        <div class="movie-result__info">
+          <div class="movie-result__title">${movie.title}</div>
+          <small style="opacity:0.7;">${movie.releaseYear || "N/A"}</small>
+        </div>
+      </div>
+    `).join("");
+
+    $$(".movie-result", container).forEach((el) => {
+      el.addEventListener("click", () => {
+        selectedMovieId = el.dataset.id;
+        selectedMovieTitle = el.dataset.title;
+        selectedPosterPath = el.dataset.poster;
+        selectedReleaseYear = el.dataset.year || null;
+
+        const confirmModal = $("#btfw-movie-confirm-modal");
+        if (!confirmModal) return;
+
+        const yearSuffix = selectedReleaseYear ? ` (${selectedReleaseYear})` : "";
+        $("#btfw-confirm-movie-title", confirmModal).textContent = `${selectedMovieTitle}${yearSuffix}`;
+        openConfirmModal();
+      });
+    });
+  }
+
+  async function runSearch() {
+    const modal = $("#btfw-movie-suggest-modal");
+    if (!modal || searchState.loading) return;
+
+    searchState.loading = true;
+    updatePager();
+
+    const container = $(".btfw-movie-results", modal);
+    container.innerHTML = `<p style="opacity:0.75;padding:8px 0;">Searching…</p>`;
+
+    try {
+      await ensureFilterOptions();
+      const data = await workerFetch("/api/search", { params: buildSearchParams() });
+      searchState.totalPages = Math.max(1, data.totalPages || 1);
+      renderSearchResults(data.results || []);
+      mlog("runSearch", {
+        page: searchState.page,
+        totalPages: searchState.totalPages,
+        count: (data.results || []).length,
+      });
+    } catch (err) {
+      merror("runSearch failed:", err);
+      container.innerHTML = `<p style="opacity:0.75;padding:8px 0;">Search failed. Try again in a moment.</p>`;
+    } finally {
+      searchState.loading = false;
+      updatePager();
+    }
+  }
+
+  async function loadHistory() {
+    const container = $("#btfw-movie-history");
+    if (!container) return;
+
+    container.innerHTML = `<p style="opacity:0.75;">Loading…</p>`;
+
+    try {
+      const data = await workerFetch("/api/history", { params: { page: 1, limit: 10 } });
+      const items = data.results || [];
+      if (!items.length) {
+        container.innerHTML = `<p style="opacity:0.75;">No requests yet.</p>`;
+        return;
+      }
+
+      container.innerHTML = items.map((item) => {
+        const year = item.releaseYear ? ` (${item.releaseYear})` : "";
+        const poster = posterSrc(item.posterPath).replace("w154", "w92");
+        return `
+          <div class="history-item">
+            <img src="${poster}" alt="${item.movieTitle}" loading="lazy"
+                 onerror="this.src='https://via.placeholder.com/92x138?text=No+Image'">
+            <div>
+              <div class="history-item__title">${item.movieTitle}${year}</div>
+              <div class="history-item__meta">Requested by ${item.username}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    } catch (err) {
+      merror("loadHistory failed:", err);
+      container.innerHTML = `<p style="opacity:0.75;">Could not load recent requests.</p>`;
+    }
+  }
+
+  function openConfirmModal() {
+    const suggestModal = $("#btfw-movie-suggest-modal");
+    const confirmModal = $("#btfw-movie-confirm-modal");
+    if (!confirmModal) return;
+
+    if (suggestModal) suggestModal.classList.add("btfw-movie-suggest-pending");
+    confirmModal.classList.add("is-active");
+  }
+
+  function closeConfirmModal() {
+    const suggestModal = $("#btfw-movie-suggest-modal");
+    const confirmModal = $("#btfw-movie-confirm-modal");
+    if (suggestModal) suggestModal.classList.remove("btfw-movie-suggest-pending");
+    if (confirmModal) confirmModal.classList.remove("is-active");
+  }
+
+  async function openModal() {
+    const modal = $("#btfw-movie-suggest-modal");
+    if (!modal) return;
+
+    mlog("openModal", { userRank });
+    modal.classList.remove("btfw-movie-suggest-pending");
     modal.classList.add("is-active");
 
-    const container = $("#btfw-recent-suggestions", modal);
-    if (container) container.innerHTML = '';
-
-    loadRecentSuggestions();
+    try {
+      await ensureFilterOptions();
+      await Promise.all([runSearch(), loadHistory()]);
+    } catch (err) {
+      merror("openModal bootstrap failed:", err);
+    }
   }
 
   function closeModal() {
     const modal = $("#btfw-movie-suggest-modal");
     if (!modal) return;
 
-    mlog('closeModal');
+    closeConfirmModal();
+    mlog("closeModal");
     modal.classList.remove("is-active");
-    $("#btfw-movie-search", modal).value = '';
-    $(".btfw-movie-results", modal).innerHTML = '';
-    $("#btfw-recent-suggestions", modal).innerHTML = '';
+    $("#btfw-movie-search", modal).value = "";
+    $(".btfw-movie-results", modal).innerHTML = "";
+    searchState.query = "";
+    searchState.page = 1;
+    searchState.totalPages = 1;
     selectedMovieId = null;
     selectedMovieTitle = null;
     selectedPosterPath = null;
+    selectedReleaseYear = null;
   }
 
-  function searchMovies(query) {
-    mlog('searchMovies', { query });
-    const apiKey = getTMDBKey();
-    if (!apiKey) {
-      merror('TMDB API key not available');
-      return;
-    }
-
-    const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        const results = (data.results || []).slice(0, 5);
-        mlog('searchMovies: results', { count: results.length });
-        displaySearchResults(results);
-      })
-      .catch(err => merror('Error fetching movies:', err));
-  }
-
-  function displaySearchResults(movies) {
-    const modal = $("#btfw-movie-suggest-modal");
-    if (!modal) return;
-
-    mlog('displaySearchResults', { count: movies.length });
-    const container = $(".btfw-movie-results", modal);
-    container.innerHTML = movies.map(movie => `
-      <div class="movie-result" data-id="${movie.id}" data-title="${movie.title}" data-poster="${movie.poster_path || ''}">
-        <img src="https://image.tmdb.org/t/p/w154${movie.poster_path}" alt="${movie.title}" 
-             onerror="this.src='https://via.placeholder.com/154x231?text=No+Image'">
-        <div class="movie-result__info">
-          <div class="movie-result__title">${movie.title}</div>
-          <small style="opacity:0.7;">${movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}</small>
-        </div>
-      </div>
-    `).join('');
-
-    $$(".movie-result", container).forEach(el => {
-      el.addEventListener("click", () => {
-        selectedMovieId = el.dataset.id;
-        selectedMovieTitle = el.dataset.title;
-        selectedPosterPath = el.dataset.poster;
-        
-        const confirmModal = $("#btfw-movie-confirm-modal");
-        if (!confirmModal) return;
-        
-        $("#btfw-confirm-movie-title", confirmModal).textContent = selectedMovieTitle;
-        confirmModal.classList.add("is-active");
-      });
-    });
+  function formatChatAnnouncement(username, movieTitle, releaseYear) {
+    const year = releaseYear ? ` (${releaseYear})` : "";
+    return `🎬 Movie request: ${movieTitle}${year} — suggested by ${username}`;
   }
 
   async function confirmSuggestion() {
     if (!selectedMovieId || !selectedMovieTitle) return;
 
-    mlog('confirmSuggestion', { movieId: selectedMovieId, movieTitle: selectedMovieTitle });
+    const username = CLIENT?.name || "Anonymous";
+    mlog("confirmSuggestion", { movieId: selectedMovieId, movieTitle: selectedMovieTitle });
 
-    const confirmModal = $("#btfw-movie-confirm-modal");
-    if (confirmModal) confirmModal.classList.remove("is-active");
-    
-    // Save the suggestion and wait for completion
-    await suggestMovie(selectedMovieId, selectedMovieTitle, selectedPosterPath);
-    
-    // Give the worker a moment to process, then refresh
-    await new Promise(resolve => setTimeout(resolve, 400));
-    loadRecentSuggestions();
-    
-    // Keep modal open briefly to show the new suggestion
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    closeModal();
-  }
+    closeConfirmModal();
 
-  function suggestMovie(movieId, movieTitle, posterPath) {
-    const username = CLIENT?.name || 'Anonymous';
-    const normalizedPoster = normalizePosterPath(posterPath);
-    mlog('suggestMovie', {
-      movieId,
-      movieTitle,
-      username,
-      posterPath: normalizedPoster
-    });
-
-    return saveSuggestionToCloudflare(movieId, movieTitle, username, normalizedPoster);
-  }
-
-  function saveSuggestionToCloudflare(movieId, movieTitle, username, posterPath) {
-    const normalizedPoster = normalizePosterPath(posterPath);
-    const suggestion = {
-      movieId,
-      movieTitle,
-      username,
-      timestamp: new Date().toISOString()
-    };
-    if (normalizedPoster) {
-      suggestion.posterPath = normalizedPoster;
-    } else {
-      mlog('saveSuggestionToCloudflare: posterPath omitted (null)');
-    }
-
-    mlog('saveSuggestionToCloudflare: POST', {
-      movieId,
-      movieTitle,
-      username,
-      hasPoster: !!normalizedPoster
-    });
-
-    return fetch('https://movie-suggestions-worker.billtube.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(suggestion)
-    })
-      .then(res => {
-        mlog('saveSuggestionToCloudflare: response status', res.status);
-        return res.json();
-      })
-      .then(data => {
-        mlog('Saved:', data);
-        return data;
-      })
-      .catch(err => {
-        merror('Save failed:', err);
-        throw err;
+    try {
+      await workerFetch("/api/suggestions", {
+        method: "POST",
+        body: {
+          movieId: Number(selectedMovieId),
+          movieTitle: selectedMovieTitle,
+          username,
+          posterPath: selectedPosterPath || null,
+          releaseYear: selectedReleaseYear || null,
+        },
       });
-  }
 
-  function loadRecentSuggestions() {
-    const container = $("#btfw-recent-suggestions");
-    if (!container) return;
-
-    container.innerHTML = '';
-    mlog('loadRecentSuggestions: fetch start');
-
-    fetch('https://movie-suggestions-worker.billtube.workers.dev')
-      .then(res => res.json())
-      .then(async data => {
-        const raw = Array.isArray(data) ? data : [];
-        mlog('loadRecentSuggestions: raw=' + raw.length);
-
-        const valid = [];
-        const skipped = [];
-        for (const s of raw) {
-          if (isValidSuggestion(s)) {
-            valid.push(s);
-          } else {
-            skipped.push(s);
-          }
-        }
-
-        mlog('loadRecentSuggestions: valid=' + valid.length + ' skipped=' + skipped.length);
-        if (skipped.length > 0) {
-          const samples = skipped.slice(0, 3).map(s => ({
-            reason: skipReason(s),
-            keys: s && typeof s === 'object' ? Object.keys(s) : []
-          }));
-          mwarn('loadRecentSuggestions: skipped samples', samples);
-        }
-
-        const enrichStart = performance.now();
-        mlog('loadRecentSuggestions: TMDB enrichment start', { count: valid.length });
-
-        const suggestions = await Promise.all(
-          valid.map(suggestion => {
-            const storedPoster = workerPosterPath(suggestion);
-            return fetchMovieDetails(suggestion.movieId).then(movie => {
-              const tmdbPoster = normalizePosterPath(movie.poster_path);
-              const posterPath = storedPoster || tmdbPoster || null;
-              const posterSource = storedPoster ? 'worker' : (tmdbPoster ? 'tmdb' : 'none');
-              mlog('loadRecentSuggestions: enriched', {
-                movieId: suggestion.movieId,
-                movieTitle: suggestion.movieTitle,
-                username: suggestion.username,
-                posterSource
-              });
-              return {
-                movieId: suggestion.movieId,
-                movieTitle: suggestion.movieTitle,
-                username: suggestion.username,
-                posterPath
-              };
-            });
-          })
-        );
-
-        mlog('loadRecentSuggestions: TMDB enrichment end', {
-          ms: Math.round(performance.now() - enrichStart)
-        });
-
-        suggestions.reverse().forEach(s => {
-          addRecentSuggestion(s.movieId, s.movieTitle, s.username, s.posterPath);
-        });
-        mlog('loadRecentSuggestions: rendered=' + suggestions.length);
-      })
-      .catch(err => merror('Load failed:', err));
-  }
-
-  function addRecentSuggestion(movieId, movieTitle, username, posterPath) {
-    const container = $("#btfw-recent-suggestions");
-    if (!container) return;
-
-    const usedTitleFallback = !movieTitle;
-    const usedUserFallback = !username;
-    const title = movieTitle || 'Unknown title';
-    const user = username || 'Anonymous';
-    if (usedTitleFallback || usedUserFallback) {
-      mwarn('addRecentSuggestion: used fallbacks', {
-        movieId,
-        usedTitleFallback,
-        usedUserFallback
-      });
+      sendChat(formatChatAnnouncement(username, selectedMovieTitle, selectedReleaseYear));
+      await loadHistory();
+      closeModal();
+    } catch (err) {
+      merror("confirmSuggestion failed:", err);
+      alert("Could not save your movie request. Please try again.");
     }
-
-    const poster = normalizePosterPath(posterPath) || '';
-    mlog('addRecentSuggestion', {
-      movieId,
-      title,
-      username: user,
-      posterPath: !!poster,
-      usedFallback: usedTitleFallback || usedUserFallback
-    });
-
-    const div = document.createElement('div');
-    div.className = 'recent-suggestion';
-    div.innerHTML = `
-      <img src="https://image.tmdb.org/t/p/w92${poster}" alt="${title}"
-           onerror="this.src='https://via.placeholder.com/92x138?text=No+Image'">
-      <div>
-        <div class="recent-suggestion__title">${title}</div>
-        <small class="recent-suggestion__user">Suggested by: ${user}</small>
-      </div>
-    `;
-    container.appendChild(div);
-  }
-
-  function fetchMovieDetails(movieId) {
-    mlog('fetchMovieDetails', { movieId });
-    const apiKey = getTMDBKey();
-    if (!apiKey) {
-      merror('TMDB API key not available');
-      return Promise.reject('No API key');
-    }
-
-    const url = `https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}`;
-
-    return fetch(url)
-      .then(res => res.json())
-      .catch(err => {
-        mwarn('Fetch details failed', { movieId, err });
-        return { poster_path: null };
-      });
   }
 
   function boot() {
-    mlog('boot: start');
-    const apiKey = getTMDBKey();
-    if (!apiKey) {
-      mwarn('TMDB API key not configured. Add it in Theme Settings → Integrations.');
-      return;
-    }
-
-    mlog('boot: TMDB key present', { hasKey: true });
-    mlog('Initializing with TMDB API key');
+    mlog("boot: start", { workerBase: tmdb.getWorkerBase() });
     injectStyles();
     buildModal();
     buildConfirmModal();
@@ -566,27 +696,27 @@ BTFW.define("ext:movie-suggestion", [], async () => {
 
     const tryAddButton = () => {
       if (addNavButton()) {
-        mlog('Button added successfully');
+        mlog("Button added successfully");
         return;
       }
 
-      retryCount++;
+      retryCount += 1;
       if (retryCount < maxRetries) {
         setTimeout(tryAddButton, 100);
       } else {
-        mwarn('Failed to add button after retries', { retryCount });
+        console.warn(LOG, "Failed to add button after retries", { retryCount });
       }
     };
 
     tryAddButton();
   }
 
-  document.addEventListener('btfw:layoutReady', () => {
+  document.addEventListener("btfw:layoutReady", () => {
     setTimeout(boot, 100);
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
       setTimeout(boot, 200);
     });
   } else {
@@ -594,9 +724,10 @@ BTFW.define("ext:movie-suggestion", [], async () => {
   }
 
   return {
-    name: 'ext:movie-suggestion',
+    name: "ext:movie-suggestion",
     open: openModal,
-    close: closeModal
+    close: closeModal,
+    getWorkerBase: tmdb.getWorkerBase,
   };
 });
 

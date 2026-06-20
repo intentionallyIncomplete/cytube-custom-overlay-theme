@@ -3,25 +3,41 @@
     {
       "version": "1.6.0",
       "date": "2026-06-20",
-      "summary": "A cleaner glass layout for the left column, with MOTD, playlist, and polls easier to scan and use.",
+      "summary": "A cleaner sidebar, smarter movie requests with search and chat announcements, and smoother add-media and movie tools.",
       "categories": {
+        "features": [
+          "Movie requests: search with genre, year, minimum rating, and sort order, then page through results to find the right title.",
+          "Movie requests: confirming a pick posts an announcement in chat so everyone sees who suggested what."
+        ],
         "improvements": [
           "Left column modules: Message of the Day, playlist, and polls now appear as separate glass cards instead of one nested box.",
           "Channel look: fewer heavy borders across the stack, playlist, polls, chat tools, and modals for a more unified glass style.",
           "Polls panel: the empty poll area stays hidden until you start or join a poll, so the sidebar looks tidier when nothing is active.",
           "Mods: Edit MOTD and New Poll sit in each panel header for quicker access.",
-          "Account menu: click your avatar in the top bar to open account options directly."
+          "Account menu: click your avatar in the top bar to open account options directly.",
+          "Movie request modal: Yes/No confirmation before submitting, cleaner header spacing, and a scrollable list of recent channel requests.",
+          "Add media: titles can include spaces when adding from a URL, and links with spaces queue correctly.",
+          "Movie tools: !summary, !cast, ratings, subtitles, and movie info load through the channel backend instead of a TMDB key in channel settings."
         ],
         "fixes": [
           "Theme loading: fixed a freeze that could leave the channel stuck on the BillTube loading screen when the theme starts."
+        ],
+        "breaking": [
+          "Action required: channel staff need to update Custom JavaScript with the latest @v1.6.0 CDN pin so viewers get movie request, layout, and movie-tool updates."
+        ],
+        "deprecations": [
+          "Custom embed tab: removed from add media — use the standard URL or file tabs instead.",
+          "TMDB API key in theme settings no longer powers movie lookups; the backend worker handles them."
         ]
       },
       "highlights": [
+        "Movie requests: filter and page through search results by genre, year, rating, and sort.",
+        "Confirming a movie request announces it in chat for the whole room.",
+        "Movie request modal: Yes/No confirm and recent channel requests in one place.",
+        "Add-from-URL titles can use spaces; links with spaces queue correctly.",
         "Left column: MOTD, playlist, and polls are separate glass cards with clearer spacing.",
-        "Fewer box borders across the channel — stack, playlist, polls, and chat tools feel more unified.",
+        "Movie tools load through the channel backend — no TMDB key in channel JavaScript.",
         "Poll panel hides when no poll is running, so the sidebar stays clean.",
-        "Mods can reach Edit MOTD and New Poll from each panel header.",
-        "Your avatar opens the account menu from the top bar.",
         "Fixed a loading freeze when enabling the BillTube theme."
       ]
     },

@@ -17,10 +17,7 @@ window.BTFW_THEME_ADMIN = {
     "customFamily": ""
   },
   "integrations": {
-    "enabled": true,
-    "tmdb": {
-      "apiKey": "bb77de6825b29b63ddf5c95688e6613c"
-    }
+    "enabled": true
   },
   "resources": {
     "scripts": [],

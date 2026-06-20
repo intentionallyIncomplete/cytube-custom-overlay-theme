@@ -1,13 +1,12 @@
 /* BTFW – feature:auto-subs */
-BTFW.define("feature:auto-subs", [], async () => {
+BTFW.define("feature:auto-subs", ["util:tmdb-proxy"], async ({ init }) => {
+  const tmdb = await init("util:tmdb-proxy");
   const MODULE_NAME = "feature:auto-subs";
   const WYZIE_API = "https://sub.wyzie.ru/search";
-  const TMDB_API = "https://api.themoviedb.org/3";
 
   const state = {
     active: false,
-    tmdbKey: null,
-    warnedNoKey: false,
+    warnedNoProxy: false,
     currentTitle: "",
     subsCache: new Map(),
     lastAddedTracks: [],
@@ -59,31 +58,14 @@ BTFW.define("feature:auto-subs", [], async () => {
     return false;
   }
 
-  function getTMDBKey() {
-    try {
-      const cfg = (window.BTFW_CONFIG && typeof window.BTFW_CONFIG === "object") ? window.BTFW_CONFIG : {};
-      const admin = (window.BTFW_THEME_ADMIN && typeof window.BTFW_THEME_ADMIN === "object") ? window.BTFW_THEME_ADMIN : {};
-      const cfgTmdb = (cfg.tmdb && typeof cfg.tmdb === "object") ? cfg.tmdb : {};
-      const adminTmdb = (admin.integrations?.tmdb && typeof admin.integrations.tmdb === "object") ? admin.integrations.tmdb : {};
-      const integrations = (cfg.integrations && typeof cfg.integrations === "object") ? cfg.integrations : {};
-      const intTmdb = (integrations.tmdb && typeof integrations.tmdb === "object") ? integrations.tmdb : {};
+  function warnMissingProxy() {
+    if (state.warnedNoProxy) return;
+    state.warnedNoProxy = true;
+    console.error("[auto-subs] TMDB proxy unavailable. Deploy movies-storage worker with TMDB_API_KEY before enabling Auto subtitles.");
+  }
 
-      const cfgKey = typeof cfgTmdb.apiKey === "string" ? cfgTmdb.apiKey.trim() : "";
-      const adminKey = typeof adminTmdb.apiKey === "string" ? adminTmdb.apiKey.trim() : "";
-      const intKey = typeof intTmdb.apiKey === "string" ? intTmdb.apiKey.trim() : "";
-      const legacyCfg = typeof cfg.tmdbKey === "string" ? cfg.tmdbKey.trim() : "";
-      let lsKey = "";
-      try {
-        lsKey = (localStorage.getItem("btfw:tmdb:key") || "").trim();
-      } catch (_) {}
-      const g = v => (v == null ? "" : String(v)).trim();
-      const globalKey = g(window.TMDB_API_KEY) || g(window.BTFW_TMDB_KEY) || g(window.tmdb_key) || g(window.moviedbkey);
-      const bodyKey = (document.body?.dataset?.tmdbKey || "").trim();
-      const key = adminKey || intKey || cfgKey || legacyCfg || lsKey || globalKey || bodyKey;
-      return key || null;
-    } catch (_) {
-      return null;
-    }
+  function clearWarning() {
+    state.warnedNoProxy = false;
   }
 
   function updateRuntimeFlags(enabled) {
@@ -117,13 +99,7 @@ BTFW.define("feature:auto-subs", [], async () => {
   }
 
   function warnMissingKey() {
-    if (state.warnedNoKey) return;
-    state.warnedNoKey = true;
-    console.error("[auto-subs] TMDB API key missing. Set it under Theme Toolkit → Integrations before enabling Auto subtitles.");
-  }
-
-  function clearWarning() {
-    state.warnedNoKey = false;
+    warnMissingProxy();
   }
 
   function shouldLoadSubtitles() {
@@ -325,21 +301,16 @@ BTFW.define("feature:auto-subs", [], async () => {
   }
 
   async function searchTMDB(title, year) {
-    if (!state.tmdbKey) return null;
-    const key = state.tmdbKey;
-    let apiUrl = `${TMDB_API}/search/movie?api_key=${key}&query=${encodeURIComponent(title)}`;
-    if (year) {
-      apiUrl += `&primary_release_year=${year}`;
-    }
+    if (!tmdb.isAvailable()) return null;
     try {
-      const response = await fetch(apiUrl);
-      const data = await response.json();
+      const params = { query: title };
+      if (year) params.primary_release_year = year;
+      const data = await tmdb.tmdbFetch("search/movie", params);
       if (data.results && data.results.length > 0) {
         for (const movie of data.results) {
           const movieYear = movie.release_date ? parseInt(movie.release_date.substring(0, 4), 10) : null;
           if (isExactTitleMatch(title, movie.title, year, movieYear)) {
-            const extIdsResp = await fetch(`${TMDB_API}/movie/${movie.id}/external_ids?api_key=${key}`);
-            const extIds = await extIdsResp.json();
+            const extIds = await tmdb.tmdbFetch(`movie/${movie.id}/external_ids`, {});
             return extIds.imdb_id || null;
           }
         }
@@ -347,8 +318,7 @@ BTFW.define("feature:auto-subs", [], async () => {
           for (const movie of data.results) {
             const movieYear = movie.release_date ? parseInt(movie.release_date.substring(0, 4), 10) : null;
             if (movieYear === year) {
-              const extIdsResp = await fetch(`${TMDB_API}/movie/${movie.id}/external_ids?api_key=${key}`);
-              const extIds = await extIdsResp.json();
+              const extIds = await tmdb.tmdbFetch(`movie/${movie.id}/external_ids`, {});
               return extIds.imdb_id || null;
             }
           }
@@ -356,14 +326,11 @@ BTFW.define("feature:auto-subs", [], async () => {
       }
     } catch (_) {}
     if (year) {
-      const apiUrlNoYear = `${TMDB_API}/search/movie?api_key=${key}&query=${encodeURIComponent(title)}`;
       try {
-        const response = await fetch(apiUrlNoYear);
-        const data = await response.json();
+        const data = await tmdb.tmdbFetch("search/movie", { query: title });
         if (data.results && data.results.length > 0) {
           const movie = data.results[0];
-          const extIdsResp = await fetch(`${TMDB_API}/movie/${movie.id}/external_ids?api_key=${key}`);
-          const extIds = await extIdsResp.json();
+          const extIds = await tmdb.tmdbFetch(`movie/${movie.id}/external_ids`, {});
           return extIds.imdb_id || null;
         }
       } catch (_) {}
@@ -601,19 +568,10 @@ BTFW.define("feature:auto-subs", [], async () => {
     });
   }
 
-  function activate(tmdbKey) {
-    const keyChanged = Boolean(state.tmdbKey && state.tmdbKey !== tmdbKey);
-    state.tmdbKey = tmdbKey;
-    clearWarning();
+  function activate() {
     if (state.active) {
       updateRuntimeFlags(true);
-      if (keyChanged) {
-        state.subsCache.clear();
-        state.currentTitle = "";
-      }
-      if (!state.currentTitle || keyChanged) {
-        processCurrentTitle();
-      }
+      processCurrentTitle();
       return;
     }
     state.active = true;
@@ -638,7 +596,6 @@ BTFW.define("feature:auto-subs", [], async () => {
     state.lastAddedTracks = [];
     state.currentTitle = "";
     state.isFetching = false;
-    state.tmdbKey = null;
     state.active = false;
     updateRuntimeFlags(false);
   }
@@ -653,13 +610,13 @@ BTFW.define("feature:auto-subs", [], async () => {
         deactivate();
         return;
       }
-      const key = getTMDBKey();
-      if (!key) {
-        warnMissingKey();
+      if (!tmdb.isAvailable()) {
+        warnMissingProxy();
         deactivate();
         return;
       }
-      activate(key);
+      clearWarning();
+      activate();
       processCurrentTitle();
     } finally {
       state.isEvaluating = false;
