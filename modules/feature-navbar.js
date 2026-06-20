@@ -112,6 +112,83 @@ BTFW.define("feature:navbar", [], async () => {
     navUL.appendChild(li);
   }
 
+  function findAccountDropdownItem() {
+    const root = document.getElementById("btfw-navhost") || document;
+    const items = root.querySelectorAll("li.dropdown");
+    for (const li of items) {
+      if (li.id === "btfw-nav-avatar-item") continue;
+      const toggle = li.querySelector(":scope > a.dropdown-toggle, :scope > .dropdown-toggle");
+      if (!toggle) continue;
+      const label = (toggle.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+      if (label.startsWith("account")) return li;
+    }
+    return null;
+  }
+
+  function hideLogoutForm() {
+    const form = document.getElementById("logoutform");
+    if (!form || form.dataset.btfwHidden === "1") return;
+    form.dataset.btfwHidden = "1";
+    form.classList.add("btfw-logoutform--hidden");
+    form.setAttribute("aria-hidden", "true");
+    if (form.parentElement !== document.body) {
+      document.body.appendChild(form);
+    }
+  }
+
+  function setupAvatarAccountDropdown() {
+    const avatarLi = document.getElementById("btfw-nav-avatar-item");
+    if (!avatarLi) return;
+
+    let menu = avatarLi.querySelector(":scope > .dropdown-menu");
+    if (!menu) {
+      const accountLi = findAccountDropdownItem();
+      if (accountLi) {
+        menu = accountLi.querySelector(":scope > .dropdown-menu");
+        if (menu) {
+          avatarLi.classList.add("dropdown");
+          menu.classList.add("dropdown-menu-right");
+          avatarLi.appendChild(menu);
+        }
+        accountLi.remove();
+      }
+    }
+
+    const toggle = avatarLi.querySelector(".btfw-nav-avatar-link");
+    if (!toggle) return;
+
+    const name = getUserName();
+    if (menu && name) {
+      toggle.href = "#";
+      toggle.removeAttribute("target");
+      toggle.classList.add("dropdown-toggle");
+      toggle.setAttribute("data-toggle", "dropdown");
+      toggle.setAttribute("role", "button");
+      toggle.setAttribute("aria-haspopup", "true");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.title = name;
+
+      if (!toggle.dataset.btfwAvatarDropdown) {
+        toggle.dataset.btfwAvatarDropdown = "1";
+        toggle.addEventListener("click", (ev) => {
+          ev.preventDefault();
+        });
+      }
+      return;
+    }
+
+    toggle.classList.remove("dropdown-toggle");
+    toggle.removeAttribute("data-toggle");
+    toggle.removeAttribute("aria-haspopup");
+    toggle.removeAttribute("aria-expanded");
+    toggle.removeAttribute("role");
+    delete toggle.dataset.btfwAvatarDropdown;
+    toggle.href = name ? "/account/profile" : "/login";
+    if (name) toggle.target = "_blank";
+    else toggle.removeAttribute("target");
+    toggle.title = name ? name : "Sign in";
+  }
+
   function buildAvatarElement(name){
     const size = 28;
     let src = name ? (getProfileImgFromUserlist(name) || getCyTubeAvatar() || "") : "";
@@ -139,6 +216,8 @@ BTFW.define("feature:navbar", [], async () => {
     if (!navUL) return;
 
     let li = document.getElementById("btfw-nav-avatar-item");
+    const existingMenu = li?.querySelector(":scope > .dropdown-menu");
+
     if (!li) {
       li = document.createElement("li");
       li.id = "btfw-nav-avatar-item";
@@ -146,9 +225,15 @@ BTFW.define("feature:navbar", [], async () => {
       navUL.appendChild(li);
     } else {
       li.innerHTML = "";
+      li.classList.remove("dropdown");
     }
 
     li.appendChild(buildAvatarElement(getUserName()));
+
+    if (existingMenu) {
+      li.classList.add("dropdown");
+      li.appendChild(existingMenu);
+    }
   }
 
   function pruneNavLinks(){
@@ -168,8 +253,10 @@ BTFW.define("feature:navbar", [], async () => {
   }
 
   function refresh(){
+    hideLogoutForm();
     pruneNavLinks();
     renderAvatar();
+    setupAvatarAccountDropdown();
     setupMobileNav();
   }
 
@@ -286,9 +373,11 @@ BTFW.define("feature:navbar", [], async () => {
 
   // ---------- Boot ----------
   function boot(){
+    hideLogoutForm();
     ensureThemeButtonHook();
     pruneNavLinks();
     renderAvatar();
+    setupAvatarAccountDropdown();
     setupMobileNav();
 
     const userlist = $("#userlist");
@@ -311,7 +400,14 @@ BTFW.define("feature:navbar", [], async () => {
     const t = setInterval(()=>{
       tries++;
       const navUL = findNavList();
-      if (navUL) { ensureThemeButtonHook(); pruneNavLinks(); renderAvatar(); setupMobileNav(); }
+      if (navUL) {
+        hideLogoutForm();
+        ensureThemeButtonHook();
+        pruneNavLinks();
+        renderAvatar();
+        setupAvatarAccountDropdown();
+        setupMobileNav();
+      }
       if (tries > 10 || navUL) clearInterval(t);
     }, 300);
   }

@@ -288,12 +288,47 @@ BTFW.define("feature:motd-editor", [], async () => {
     }, true);
   }
 
+  const MOTD_EDIT_BTN_HTML = '<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD';
+  const MOTD_EDIT_BTN_CLASS = "btfw-stack-header-btn";
+  let injectButtonTimer = null;
+
   function injectButton(){
     const existingBtn = document.getElementById("btfw-motd-editbtn");
     const existingRow = existingBtn ? existingBtn.closest(".btfw-motd-editrow") : null;
 
     if (!canEditMotd()) {
+      if (existingBtn && existingBtn.closest(".btfw-stack-header-actions")) {
+        existingBtn.remove();
+      }
       if (existingRow) existingRow.remove();
+      return;
+    }
+
+    const motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
+    const header = motdGroup?.querySelector(".btfw-stack-item__header");
+    if (header) {
+      let slot = header.querySelector(".btfw-stack-header-actions");
+      if (!slot) {
+        slot = document.createElement("span");
+        slot.className = "btfw-stack-header-actions";
+        const arrows = header.querySelector(".btfw-stack-arrows");
+        if (arrows) header.insertBefore(slot, arrows);
+        else header.appendChild(slot);
+      }
+
+      let btn = existingBtn;
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.id = "btfw-motd-editbtn";
+      }
+      btn.className = MOTD_EDIT_BTN_CLASS;
+      if (btn.innerHTML !== MOTD_EDIT_BTN_HTML) btn.innerHTML = MOTD_EDIT_BTN_HTML;
+      if (!btn._btfwMotdBound) {
+        btn._btfwMotdBound = true;
+        btn.addEventListener("click", openEditor);
+      }
+      if (btn.parentElement !== slot) slot.appendChild(btn);
+      if (existingRow && existingRow.parentElement) existingRow.remove();
       return;
     }
 
@@ -304,7 +339,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     let row = existingRow;
     if (!row) {
       row = document.createElement("div");
-      row.innerHTML = `<button id="btfw-motd-editbtn" class="button is-small is-link"><i class="fa fa-pencil"></i> Edit MOTD</button>`;
+      row.innerHTML = `<button id="btfw-motd-editbtn" class="btfw-stack-header-btn"><i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD</button>`;
     }
 
     row.classList.add("buttons", "is-right", "btfw-motd-editrow");
@@ -312,8 +347,8 @@ BTFW.define("feature:motd-editor", [], async () => {
     if (!row.querySelector("#btfw-motd-editbtn")) {
       const btn = document.createElement("button");
       btn.id = "btfw-motd-editbtn";
-      btn.className = "button is-small is-link";
-      btn.innerHTML = `<i class="fa fa-pencil"></i> Edit MOTD`;
+      btn.className = MOTD_EDIT_BTN_CLASS;
+      btn.innerHTML = `<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD`;
       row.appendChild(btn);
     }
 
@@ -328,9 +363,17 @@ BTFW.define("feature:motd-editor", [], async () => {
     }
   }
 
+  function scheduleInjectButton() {
+    if (injectButtonTimer) return;
+    injectButtonTimer = requestAnimationFrame(() => {
+      injectButtonTimer = null;
+      injectButton();
+    });
+  }
+
   function boot(){
     injectButton();
-    const mo = new MutationObserver(()=> injectButton());
+    const mo = new MutationObserver(() => scheduleInjectButton());
     mo.observe(document.body, { childList:true, subtree:true });
     watchChannelSettings();
   }

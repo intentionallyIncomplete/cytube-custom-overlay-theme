@@ -26,6 +26,12 @@
   --btfw-glass-bg: color-mix(in srgb, var(--btfw-color-panel) 88%, transparent 12%);
   --btfw-glass-border: color-mix(in srgb, var(--btfw-color-accent) 18%, transparent 82%);
   --btfw-glass-shadow: 0 6px 16px color-mix(in srgb, var(--btfw-color-bg) 38%, transparent 62%);
+  --btfw-stack-gap: calc(var(--btfw-gap) + 6px);
+  --btfw-stack-glass-bg: color-mix(in srgb, var(--btfw-color-panel) 26%, transparent 74%);
+  --btfw-stack-glass-bg-nested: color-mix(in srgb, var(--btfw-color-panel) 16%, transparent 84%);
+  --btfw-stack-glass-shadow: 0 4px 12px color-mix(in srgb, var(--btfw-color-bg) 14%, transparent 86%);
+  --btfw-stack-header-bg: color-mix(in srgb, var(--btfw-color-accent) 6%, transparent 94%);
+  --btfw-stack-surface-highlight: color-mix(in srgb, var(--btfw-color-text) 5%, transparent 95%);
   --btfw-scrollbar-thumb: color-mix(in srgb, var(--btfw-color-text) 22%, transparent 78%);
   --btfw-scrollbar-thumb-hover: color-mix(in srgb, var(--btfw-color-accent) 32%, transparent 68%);
   --btfw-chip-bg: color-mix(in srgb, var(--btfw-color-accent) 20%, transparent 80%);
@@ -70,4 +76,14 @@
   box-shadow:
     var(--btfw-overlay-shadow),
     inset 0 1px 0 var(--btfw-surface-highlight);
+}
+
+/* Translucent glass for stack panels and nested feature blocks */
+.btfw-stack-surface {
+  background: var(--btfw-stack-glass-bg-nested);
+  border: 0;
+  border-radius: var(--btfw-radius);
+  box-shadow:
+    var(--btfw-stack-glass-shadow),
+    inset 0 1px 0 var(--btfw-stack-surface-highlight);
 }

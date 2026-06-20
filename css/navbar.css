@@ -184,6 +184,18 @@
 
 #btfw-navhost .btfw-nav-avatar-item {
   margin-left: 6px;
+  position: relative;
+}
+
+#btfw-navhost .btfw-nav-avatar-item.dropdown > .dropdown-menu {
+  right: 0;
+  left: auto;
+  margin-top: 8px;
+}
+
+form#logoutform.btfw-logoutform--hidden,
+#btfw-navhost form#logoutform {
+  display: none !important;
 }
 
 #btfw-navhost .btfw-nav-avatar-link {

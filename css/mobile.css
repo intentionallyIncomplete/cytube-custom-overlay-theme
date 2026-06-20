@@ -109,7 +109,7 @@ body.btfw-mobile-nav-open{
   }
 
   /* Content stack spacing tighter on mobile */
-  #btfw-stack .btfw-stack-list{ gap: 8px; }
+  #btfw-stack .btfw-stack-list{ gap: var(--btfw-stack-gap); }
   .btfw-stack-item__body{ padding: 6px; }
 
   /* Footer spacing inside stack */

@@ -1,11 +1,41 @@
 BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   const SKEY="btfw-stack-order";
+  const MOTD_VISIBILITY_KEY = "btfw-stack-motd-open";
   const PLAYLIST_VISIBILITY_KEY = "btfw-stack-playlist-open";
   const POLL_VISIBILITY_KEY = "btfw-stack-poll-open";
+
+  const STACK_VISIBILITY = {
+    "motd-group": {
+      storageKey: MOTD_VISIBILITY_KEY,
+      getDefaultOpen: (stored) => getDefaultPollOpen(stored, true),
+      toggleClass: "btfw-motd-toggle",
+      ariaLabel: "Toggle message of the day visibility",
+      openTitle: "Hide message of the day",
+      closeTitle: "Show message of the day"
+    },
+    "playlist-group": {
+      storageKey: PLAYLIST_VISIBILITY_KEY,
+      getDefaultOpen: (stored) => getDefaultPollOpen(stored, true),
+      toggleClass: "btfw-playlist-toggle",
+      ariaLabel: "Toggle playlist visibility",
+      openTitle: "Hide playlist (improves performance)",
+      closeTitle: "Show playlist"
+    },
+    "poll-group": {
+      storageKey: POLL_VISIBILITY_KEY,
+      getDefaultOpen: (stored) => getDefaultPollOpen(stored, hasPollContent()),
+      toggleClass: "btfw-poll-toggle",
+      ariaLabel: "Toggle poll panel visibility",
+      openTitle: "Hide poll panel",
+      closeTitle: "Show poll panel"
+    }
+  };
 
   let pollSyncTimer = null;
   let pollObserverWired = false;
   let pollSocketWired = false;
+  let populateActive = false;
+  let populateTimer = null;
 
   function hasPollContent(doc = document) {
     if (!doc || typeof doc.querySelector !== "function") return false;
@@ -499,11 +529,22 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     
     // Special handling for playlist group
     if (group.id === "playlist-group") {
+      detachPollWrapFromPlaylist();
       mergePlaylistControls();
-      // Re-get elements after merging
-      elements = elements.filter(el => el && el.id !== "rightcontrols"); // rightcontrols is now merged
+      // Re-get elements after merging; never absorb poll UI into playlist
+      elements = elements
+        .filter((el) => el && el.id !== "rightcontrols" && el.id !== "pollwrap")
+        .filter((el) => !el.querySelector || !el.querySelector("#pollwrap"));
     }
-    
+
+    if (group.id === "poll-group") {
+      detachPollWrapFromPlaylist();
+      movePollButton();
+      const pollWrap = document.getElementById("pollwrap");
+      elements = [pollWrap, document.getElementById("btfw-poll-history")]
+        .filter(Boolean);
+    }
+
     if (elements.length === 0) return null;
     
     // Filter out any elements that are already in the stack to avoid circular references
@@ -544,27 +585,8 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     wrapper.appendChild(header);
     wrapper.appendChild(body);
 
-    if (group.id === "playlist-group") {
-      attachStackVisibilityToggle(wrapper, {
-        storageKey: PLAYLIST_VISIBILITY_KEY,
-        getDefaultOpen: (stored) => getDefaultPollOpen(stored, true),
-        toggleClass: "btfw-playlist-toggle",
-        ariaLabel: "Toggle playlist visibility",
-        openTitle: "Hide playlist (improves performance)",
-        closeTitle: "Show playlist"
-      });
-    }
-
-    if (group.id === "poll-group") {
-      attachStackVisibilityToggle(wrapper, {
-        storageKey: POLL_VISIBILITY_KEY,
-        getDefaultOpen: (stored) => getDefaultPollOpen(stored, hasPollContent()),
-        toggleClass: "btfw-poll-toggle",
-        ariaLabel: "Toggle poll panel visibility",
-        openTitle: "Hide poll panel",
-        closeTitle: "Show poll panel"
-      });
-    }
+    const vis = STACK_VISIBILITY[group.id];
+    if (vis) attachStackVisibilityToggle(wrapper, vis);
 
     // Wire up/down buttons
     wrapper.querySelector(".btfw-up").onclick = function(){
@@ -702,33 +724,71 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     });
     observer.observe(wrapper, { attributes: true, attributeFilter: ["data-open"] });
 
-    arrows.appendChild(toggleBtn);
+    arrows.insertBefore(toggleBtn, arrows.firstChild);
     wrapper._btfwSetOpenState = setOpenState;
   }
 
-  function restorePollWrapFromGroup() {
-    const pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
-    if (!pollGroup) return;
+  function detachPollWrapFromPlaylist() {
     const pollWrap = document.getElementById("pollwrap");
-    const leftInner = document.querySelector("#leftpane-inner") || document.getElementById("btfw-leftpad");
-    if (pollWrap && leftInner && pollGroup.contains(pollWrap)) {
-      leftInner.appendChild(pollWrap);
+    if (!pollWrap) return null;
+
+    const insidePlaylist = pollWrap.closest(
+      "#playlistrow, #playlistwrap, #queuecontainer, [data-bind=\"playlist-group\"]"
+    );
+    if (!insidePlaylist) return pollWrap;
+
+    let parking = document.getElementById("btfw-poll-parking");
+    if (!parking) {
+      parking = document.createElement("div");
+      parking.id = "btfw-poll-parking";
+      parking.hidden = true;
+      parking.setAttribute("aria-hidden", "true");
+      document.body.appendChild(parking);
     }
-    pollGroup.remove();
+    parking.appendChild(pollWrap);
+    return pollWrap;
   }
 
-  function syncPollPanelVisibility(refs, options = {}) {
-    const content = hasPollContent();
-    const pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
+  function ensurePollStackPanel(refs) {
+    const pollWrap = document.getElementById("pollwrap");
+    if (!pollWrap) return;
 
-    if (!content) {
-      restorePollWrapFromGroup();
+    const overlayState = pollWrap.dataset && pollWrap.dataset.btfwPollOverlay;
+    const attrState = pollWrap.getAttribute && pollWrap.getAttribute("data-btfw-poll-overlay");
+    if (overlayState === "video" || attrState === "video") return;
+
+    detachPollWrapFromPlaylist();
+    movePollButton();
+
+    const list = refs && refs.list;
+    if (!list) return;
+
+    let pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
+    if (!pollGroup) {
+      const group = GROUPS.find((g) => g.id === "poll-group");
+      if (!group) return;
+      pollGroup = createGroupItem(group, [pollWrap]);
+      if (pollGroup) {
+        list.appendChild(pollGroup);
+        save(list);
+      }
       return;
     }
 
-    if (!pollGroup && refs) {
-      populate(refs);
+    const body = pollGroup.querySelector(".btfw-group-body");
+    if (body && !body.contains(pollWrap)) {
+      body.appendChild(pollWrap);
     }
+
+    const playlistGroup = document.querySelector('.btfw-stack-item[data-bind="playlist-group"]');
+    if (playlistGroup && playlistGroup.contains(pollWrap) && body) {
+      body.appendChild(pollWrap);
+    }
+  }
+
+  function syncPollPanelVisibility(refs, options = {}) {
+    ensurePollStackPanel(refs);
+    syncPollWrapVisibility();
 
     const group = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
     if (!group) return;
@@ -798,6 +858,58 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     }
   }
 
+  function ensureStackHeaderActionsSlot(groupId) {
+    const group = document.querySelector(`.btfw-stack-item[data-bind="${groupId}"]`);
+    const header = group?.querySelector(".btfw-stack-item__header");
+    if (!header) return null;
+
+    let slot = header.querySelector(".btfw-stack-header-actions");
+    if (!slot) {
+      slot = document.createElement("span");
+      slot.className = "btfw-stack-header-actions";
+      const arrows = header.querySelector(".btfw-stack-arrows");
+      if (arrows) header.insertBefore(slot, arrows);
+      else header.appendChild(slot);
+    }
+    return slot;
+  }
+
+  function styleStackHeaderButton(btn, html) {
+    if (!btn) return;
+    btn.classList.remove("btn", "btn-sm", "btn-default", "button", "is-small", "is-link");
+    btn.classList.add("btfw-stack-header-btn");
+    if (btn.innerHTML !== html) btn.innerHTML = html;
+  }
+
+  function syncPollWrapVisibility() {
+    const pollWrap = document.getElementById("pollwrap");
+    if (!pollWrap) return;
+    const idle = !hasPollContent();
+    pollWrap.classList.toggle("btfw-poll-idle", idle);
+    pollWrap.toggleAttribute("hidden", idle);
+    pollWrap.setAttribute("aria-hidden", idle ? "true" : "false");
+  }
+
+  function relocateStackHeaderActions() {
+    const pollSlot = ensureStackHeaderActionsSlot("poll-group");
+    const pollBtn = document.getElementById("newpollbtn");
+    if (pollSlot && pollBtn) {
+      styleStackHeaderButton(pollBtn, '<i class="fa fa-plus" aria-hidden="true"></i> New Poll');
+      if (pollBtn.parentElement !== pollSlot) pollSlot.appendChild(pollBtn);
+      const controls = document.querySelector("#pollwrap > .poll-controls");
+      if (controls && controls.children.length === 0) controls.remove();
+    }
+
+    const motdSlot = ensureStackHeaderActionsSlot("motd-group");
+    const motdBtn = document.getElementById("btfw-motd-editbtn");
+    if (motdSlot && motdBtn) {
+      styleStackHeaderButton(motdBtn, '<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD');
+      if (motdBtn.parentElement !== motdSlot) motdSlot.appendChild(motdBtn);
+      const row = motdBtn.closest(".btfw-motd-editrow");
+      if (row && row.parentElement) row.remove();
+    }
+  }
+
   function movePollButton() {
     // Move poll button from leftcontrols to pollwrap
     const leftControls = document.getElementById("leftcontrols");
@@ -816,9 +928,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
           pollWrap.insertBefore(btnContainer, pollWrap.firstChild);
         }
         
-        // Style the button to match the theme
-        btn.classList.add('button', 'is-small', 'is-link');
-        btnContainer.appendChild(btn);
+        if (btn.parentElement !== btnContainer) btnContainer.appendChild(btn);
       });
       
       // Remove leftcontrols if it's empty
@@ -829,21 +939,21 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   }
   
   function populate(refs){
+    if (populateActive) return;
+    populateActive = true;
+    try {
     const list = refs.list;
     const footer = refs.footer;
     
-    // Move poll button first
+    // Move poll button first, then decouple poll from playlist DOM
     movePollButton();
+    detachPollWrapFromPlaylist();
     
     // Group elements
     const groupedElements = new Map();
     
     // Process groups with better safety checks
     GROUPS.forEach(group => {
-      if (group.id === "poll-group" && !hasPollContent()) {
-        restorePollWrapFromGroup();
-        return;
-      }
       const elements = [];
       group.selectors.forEach(sel => {
         const el = document.querySelector(sel);
@@ -910,7 +1020,13 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     });
     
     save(list);
+    ensurePollStackPanel(refs);
+    syncPollWrapVisibility();
+    relocateStackHeaderActions();
     attachFooter(footer);
+    } finally {
+      populateActive = false;
+    }
   }
 
  function boot(){
@@ -919,7 +1035,13 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   populate(refs);
   wirePollObservers(refs);
   wirePollSocket(refs);
-    const observer=new MutationObserver(()=>populate(refs));
+    const observer=new MutationObserver(() => {
+      if (populateTimer) return;
+      populateTimer = requestAnimationFrame(() => {
+        populateTimer = null;
+        populate(refs);
+      });
+    });
     const leftpad = document.getElementById('btfw-leftpad');
   const main = document.getElementById('main');
   
