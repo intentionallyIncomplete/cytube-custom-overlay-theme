@@ -1,4 +1,5 @@
-BTFW.define("feature:ratings", [], async () => {
+BTFW.define("feature:ratings", ["util:tmdb-proxy"], async (ctx) => {
+  const tmdb = await ctx.init("util:tmdb-proxy");
   const configuredEndpoint = [
     (() => { try { return window.BTFW_THEME_ADMIN?.integrations?.ratings?.endpoint || ""; } catch (_) { return ""; } })(),
     (() => { try { return window.BTFW_CONFIG?.ratings?.endpoint || ""; } catch (_) { return ""; } })(),
@@ -83,7 +84,7 @@ BTFW.define("feature:ratings", [], async () => {
     loading: false,
     items: [],
     abortController: null,
-    tmdbKey: null,
+    tmdbProxyReady: false,
     tmdbCache: new Map(),
   };
 
@@ -502,24 +503,6 @@ BTFW.define("feature:ratings", [], async () => {
     return match ? match[0] : "";
   }
 
-  function resolveTMDBKey() {
-    try {
-      const cfg = (window.BTFW_CONFIG && typeof window.BTFW_CONFIG === "object") ? window.BTFW_CONFIG : {};
-      const tmdbObj = (cfg.tmdb && typeof cfg.tmdb === "object") ? cfg.tmdb : {};
-      const cfgKey = typeof tmdbObj.apiKey === "string" ? tmdbObj.apiKey.trim() : "";
-      const legacyCfg = typeof cfg.tmdbKey === "string" ? cfg.tmdbKey.trim() : "";
-      let lsKey = "";
-      try { lsKey = (localStorage.getItem("btfw:tmdb:key") || "").trim(); } catch (_) {}
-      const g = (v) => (v == null ? "" : String(v)).trim();
-      const globalKey = g(window.TMDB_API_KEY) || g(window.BTFW_TMDB_KEY) || g(window.tmdb_key);
-      const bodyKey = g(document.body?.dataset?.tmdbKey);
-      const key = cfgKey || legacyCfg || lsKey || globalKey || bodyKey;
-      return key || null;
-    } catch (_) {
-      return null;
-    }
-  }
-
   function ensureLeaderboardModal() {
     if (leaderboardState.modal?.isConnected) return leaderboardState.modal;
     const modal = document.createElement("div");
@@ -729,7 +712,7 @@ BTFW.define("feature:ratings", [], async () => {
     const listEl = leaderboardState.listEl;
     if (!listEl) return;
     const items = Array.isArray(leaderboardState.items) ? leaderboardState.items : [];
-    const useGrid = !!leaderboardState.tmdbKey || items.some((item) => item.posterUrl);
+    const useGrid = leaderboardState.tmdbProxyReady || items.some((item) => item.posterUrl);
     listEl.dataset.layout = useGrid ? "grid" : "list";
 
     if (!items.length) {
@@ -771,7 +754,7 @@ BTFW.define("feature:ratings", [], async () => {
   }
 
   async function fetchPosterForItem(item) {
-    if (!item || !leaderboardState.tmdbKey) return null;
+    if (!item || !leaderboardState.tmdbProxyReady) return null;
     const searchTitle = item.searchTitle || cleanTitleForSearch(item.title);
     if (!searchTitle) return null;
 
@@ -787,7 +770,6 @@ BTFW.define("feature:ratings", [], async () => {
       return cached || null;
     }
 
-    const key = leaderboardState.tmdbKey;
     const normalizedType = String(item.tmdbType || "").toLowerCase();
     const normalizedId = String(item.tmdbId || "").trim();
 
@@ -796,11 +778,7 @@ BTFW.define("feature:ratings", [], async () => {
       const path = type === "tv" ? `tv/${id}` : type === "movie" ? `movie/${id}` : "";
       if (!path) return null;
       try {
-        const url = new URL(`https://api.themoviedb.org/3/${path}`);
-        url.searchParams.set("api_key", key);
-        const response = await fetch(url.toString());
-        if (!response.ok) return null;
-        const json = await response.json();
+        const json = await tmdb.tmdbFetch(path, {});
         const posterPath = json?.poster_path;
         if (posterPath) {
           return sanitizePosterUrl(`https://image.tmdb.org/t/p/w342${posterPath}`);
@@ -832,22 +810,20 @@ BTFW.define("feature:ratings", [], async () => {
 
     for (const config of searchConfigs) {
       try {
-        const url = new URL(`https://api.themoviedb.org/3/${config.path}`);
-        url.searchParams.set("api_key", key);
-        url.searchParams.set("include_adult", "false");
-        url.searchParams.set("query", searchTitle);
+        const params = {
+          include_adult: "false",
+          query: searchTitle,
+        };
         if (year) {
           if (config.type === "movie" || config.type === "multi") {
-            url.searchParams.set("year", year);
-            url.searchParams.set("primary_release_year", year);
+            params.year = year;
+            params.primary_release_year = year;
           }
           if (config.type === "tv" || config.type === "multi") {
-            url.searchParams.set("first_air_date_year", year);
+            params.first_air_date_year = year;
           }
         }
-        const response = await fetch(url.toString());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const json = await response.json();
+        const json = await tmdb.tmdbFetch(config.path, params);
         const results = Array.isArray(json?.results) ? json.results : [];
         let chosen = null;
         for (const candidate of results) {
@@ -882,7 +858,7 @@ BTFW.define("feature:ratings", [], async () => {
   }
 
   async function hydrateLeaderboardPosters(items) {
-    if (!leaderboardState.tmdbKey) return;
+    if (!leaderboardState.tmdbProxyReady) return;
     const limit = Math.min(items.length, 60);
     for (let i = 0; i < limit; i += 1) {
       const item = items[i];
@@ -956,11 +932,11 @@ BTFW.define("feature:ratings", [], async () => {
 
     const controller = new AbortController();
     leaderboardState.abortController = controller;
-    const nextKey = resolveTMDBKey();
-    if (nextKey !== leaderboardState.tmdbKey) {
+    const nextProxyReady = tmdb.isAvailable();
+    if (nextProxyReady !== leaderboardState.tmdbProxyReady) {
       leaderboardState.tmdbCache.clear();
     }
-    leaderboardState.tmdbKey = nextKey;
+    leaderboardState.tmdbProxyReady = nextProxyReady;
 
     if (leaderboardState.loadingEl) leaderboardState.loadingEl.textContent = "Loading ratings…";
     setLeaderboardError("");

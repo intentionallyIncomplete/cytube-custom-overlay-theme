@@ -1,0 +1,23 @@
+{
+	"name": "empty-bar-d620",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-03-07",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	"kv_namespaces": [
+		{
+			"binding": "MOVIE_SUGGESTIONS",
+			"id": "f55dc413632e49d992d73d58f4146b99",
+      "preview_id": "8ed534c98b644559bf510d1573b2028d",
+			"remote": true
+		}
+	],
+	"vars": {
+		"ALLOWED_ORIGINS": "*"
+	}
+}

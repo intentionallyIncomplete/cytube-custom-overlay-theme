@@ -1,5 +1,6 @@
 /* BTFW – feature:movie-info */
-BTFW.define("feature:movie-info", [], async () => {
+BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
+  const tmdb = await init("util:tmdb-proxy");
   const MODULE_ID = "movie-info";
   const CONFIG = {
     CONTAINER_ID: "btfw-movie-header",
@@ -59,29 +60,6 @@ BTFW.define("feature:movie-info", [], async () => {
     state.currentTitle = "";
     state.isInitialized = false;
     runCleanup();
-  }
-
-  function getTMDBKey() {
-    try {
-      const cfg = (window.BTFW_CONFIG && typeof window.BTFW_CONFIG === "object") ? window.BTFW_CONFIG : {};
-      const admin = (window.BTFW_THEME_ADMIN && typeof window.BTFW_THEME_ADMIN === "object") ? window.BTFW_THEME_ADMIN : {};
-      const cfgTmdb = (cfg.tmdb && typeof cfg.tmdb === "object") ? cfg.tmdb : {};
-      const adminTmdb = (admin.integrations?.tmdb && typeof admin.integrations.tmdb === "object") ? admin.integrations.tmdb : {};
-      const cfgKey = typeof cfgTmdb.apiKey === "string" ? cfgTmdb.apiKey.trim() : "";
-      const adminKey = typeof adminTmdb.apiKey === "string" ? adminTmdb.apiKey.trim() : "";
-      const legacyCfg = typeof cfg.tmdbKey === "string" ? cfg.tmdbKey.trim() : "";
-      let lsKey = "";
-      try {
-        lsKey = (localStorage.getItem("btfw:tmdb:key") || "").trim();
-      } catch (_) {}
-      const g = v => (v == null ? "" : String(v)).trim();
-      const globalKey = g(window.TMDB_API_KEY) || g(window.BTFW_TMDB_KEY) || g(window.tmdb_key);
-      const bodyKey = (document.body?.dataset?.tmdbKey || "").trim();
-      const key = adminKey || cfgKey || legacyCfg || lsKey || globalKey || bodyKey;
-      return key || null;
-    } catch (_) {
-      return null;
-    }
   }
 
   function toEnabledValue(value) {
@@ -363,8 +341,8 @@ BTFW.define("feature:movie-info", [], async () => {
       displayMovieInfo(movieInfo);
     } catch (error) {
       if (requestId !== fetchToken) return;
-      if (!getTMDBKey()) {
-        console.warn("[movie-info] Enabled without a TMDB API key. Add a key in the Channel Theme Toolkit integrations panel to display metadata.");
+      if (!tmdb.isAvailable()) {
+        console.warn("[movie-info] TMDB proxy unavailable. Deploy movies-storage worker with TMDB_API_KEY.");
       }
       showErrorState();
     }
@@ -381,9 +359,8 @@ BTFW.define("feature:movie-info", [], async () => {
   }
 
   async function fetchMovieInfo(movieTitle) {
-    const apiKey = getTMDBKey();
-    if (!apiKey) {
-      throw new Error("TMDB API key not configured. Please set it in Theme Settings → Integrations");
+    if (!tmdb.isAvailable()) {
+      throw new Error(tmdb.MISSING_PROXY_MSG);
     }
     let match = movieTitle.match(/(.+)\s*\((\d{4})\)/);
     let title = match ? match[1].trim() : movieTitle;
@@ -396,12 +373,10 @@ BTFW.define("feature:movie-info", [], async () => {
       }
     }
     const cleanTitle = cleanMovieTitle(title);
-    const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(cleanTitle)}&year=${year}`;
-    const response = await fetch(searchUrl);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    const data = await response.json();
+    const data = await tmdb.tmdbFetch("search/movie", {
+      query: cleanTitle,
+      year,
+    });
     if (data?.results?.length > 0) {
       const movie = data.results[0];
       return {
