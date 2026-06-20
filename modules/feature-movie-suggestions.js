@@ -105,6 +105,16 @@ BTFW.define("ext:movie-suggestion", [], async () => {
       .button.btfw-nav-pill#btfw-movie-suggest-btn:hover {
         background-color: var(--btfw-color-accent, #6d4df6);
       }
+
+      #btfw-movie-confirm-modal .modal-card-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      #btfw-movie-confirm-modal .modal-card-foot .button.is-link {
+        min-width: 4.5rem;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -250,8 +260,8 @@ BTFW.define("ext:movie-suggestion", [], async () => {
           <p>Are you sure you want to suggest <strong id="btfw-confirm-movie-title"></strong>?</p>
         </section>
         <footer class="modal-card-foot">
-          <button class="button" id="btfw-movie-cancel">Cancel</button>
-          <button class="button is-link" id="btfw-movie-confirm">Confirm</button>
+          <button type="button" class="button" id="btfw-movie-cancel">No</button>
+          <button type="button" class="button is-link" id="btfw-movie-confirm">Yes</button>
         </footer>
       </div>
     `;

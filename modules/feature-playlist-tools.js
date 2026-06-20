@@ -335,7 +335,8 @@ BTFW.define("feature:playlist-tools", [], async () => {
   const scrubPattern = new RegExp(`\\b(?:${scrubTokens.join("|")})\\b`, "gi");
   const titleInputSelectors = ["#addfromurl-title-val", "#mediaurl-title", ".media-title-input"];
 
-  function sanitiseTitleInput(value) {
+  function sanitiseTitleInput(value, options = {}) {
+    const { trimEdges = false } = options;
     if (!value) return "";
 
     let title = String(value);
@@ -355,8 +356,9 @@ BTFW.define("feature:playlist-tools", [], async () => {
       return `(${match})`;
     });
 
-    // Collapse whitespace and trim edges
-    return title.replace(/\s+/g, " ").trim();
+    // Collapse runs of whitespace; only trim edges when finalising (blur/submit)
+    title = title.replace(/\s+/g, " ");
+    return trimEdges ? title.trim() : title;
   }
 
   let titleFilterObserver = null;
@@ -368,9 +370,9 @@ BTFW.define("feature:playlist-tools", [], async () => {
         if (!(input instanceof HTMLInputElement)) return;
         if (input._btfwTitleFilterBound) { anyBound = true; return; }
 
-        const apply = () => {
+        const apply = (trimEdges = false) => {
           const raw = input.value || "";
-          const cleaned = sanitiseTitleInput(raw);
+          const cleaned = sanitiseTitleInput(raw, { trimEdges });
           if (cleaned === raw) return;
 
           const start = input.selectionStart;
@@ -386,13 +388,14 @@ BTFW.define("feature:playlist-tools", [], async () => {
           }
         };
 
-        input.addEventListener("input", apply);
-        input.addEventListener("change", apply);
-        input.addEventListener("paste", () => requestAnimationFrame(apply));
+        input.addEventListener("input", () => apply(false));
+        input.addEventListener("change", () => apply(true));
+        input.addEventListener("blur", () => apply(true));
+        input.addEventListener("paste", () => requestAnimationFrame(() => apply(false)));
         input._btfwTitleFilterBound = true;
 
         // Normalise any pre-filled value immediately
-        apply();
+        apply(true);
         anyBound = true;
       });
 

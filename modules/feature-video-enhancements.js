@@ -112,23 +112,24 @@ BTFW.define("feature:videoEnhancements", [], async () => {
   function processMediaUrl(urlInput){
     if (!urlInput || !urlInput.value) return;
 
-    let url = urlInput.value.trim();
-    if (!url) return;
+    let url = urlInput.value;
+    if (!url.trim()) return;
 
-    // Dropbox URL transformation
+    // Dropbox URL transformation only while typing; encode spaces on queue submit
     url = url.replace("//www.dropbox.com/s/", "//dl.dropbox.com/s/")
              .replace("?dl=0", "")
              .replace("?a=view", "");
 
-    url = encodeMediaUrlsInField(url);
-    urlInput.value = url;
+    if (url !== urlInput.value) {
+      urlInput.value = url;
+    }
 
     // Auto-title extraction
     setTimeout(() => {
       const titleInput = document.querySelector("#addfromurl-title-val, #mediaurl-title, .media-title-input");
       if (titleInput && !titleInput.value.trim()) {
         try {
-          const decodedUrl = decodeURI(url);
+          const decodedUrl = decodeURI(url.trim());
           const pathParts = decodedUrl.split("/");
           const filename = pathParts[pathParts.length - 1];
           const nameParts = filename.split("?")[0].split(".");
@@ -152,6 +153,28 @@ BTFW.define("feature:videoEnhancements", [], async () => {
         }
       }
     }, 100);
+  }
+
+  function bindMediaUrlSubmitEncoding() {
+    const encodeField = () => {
+      const input = document.getElementById("mediaurl");
+      if (input) normalizeMediaUrlField(input);
+    };
+
+    ["#queue_end", "#queue_next"].forEach((selector) => {
+      const btn = document.querySelector(selector);
+      if (!btn || btn._btfwUrlEncodeBound) return;
+      btn._btfwUrlEncodeBound = true;
+      btn.addEventListener("click", encodeField, true);
+    });
+
+    const input = document.getElementById("mediaurl");
+    if (input && !input._btfwSubmitEncodeBound) {
+      input._btfwSubmitEncodeBound = true;
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") encodeField();
+      }, true);
+    }
   }
 
   // Setup media URL processing
@@ -188,6 +211,7 @@ BTFW.define("feature:videoEnhancements", [], async () => {
     updateTitleLength();
     wrapQueueUrlEncoding();
     bindMediaUrlProcessing();
+    bindMediaUrlSubmitEncoding();
     ensureFullscreenCss();
     tryHideQuality();
     setTimeout(tryHideQuality, 500);
@@ -206,6 +230,7 @@ BTFW.define("feature:videoEnhancements", [], async () => {
     // Watch for DOM changes to rebind URL processing
     const observer = new MutationObserver(() => {
       bindMediaUrlProcessing();
+      bindMediaUrlSubmitEncoding();
     });
 
     observer.observe(document.body, {
@@ -215,6 +240,8 @@ BTFW.define("feature:videoEnhancements", [], async () => {
 
     setTimeout(wrapQueueUrlEncoding, 0);
     setTimeout(wrapQueueUrlEncoding, 1000);
+    setTimeout(bindMediaUrlSubmitEncoding, 0);
+    setTimeout(bindMediaUrlSubmitEncoding, 1000);
   }
 
   if (document.readyState === "loading") {
