@@ -911,29 +911,30 @@ const scheduleNormalizeChatActions = (() => {
       cw.appendChild(bottom);
     }
 
-    let composer = bottom.querySelector(".btfw-chat-composer");
-    if (!composer) {
-      composer = document.createElement("div");
-      composer.className = "btfw-chat-composer";
-      bottom.prepend(composer);
+    const legacyComposer = bottom.querySelector(".btfw-chat-composer");
+    if (legacyComposer) {
+      Array.from(legacyComposer.children).forEach((child) => {
+        bottom.appendChild(child);
+      });
+      legacyComposer.remove();
     }
 
-    let composerMain = composer.querySelector("#btfw-chat-composer-main");
+    let composerMain = bottom.querySelector("#btfw-chat-composer-main");
     if (!composerMain) {
       composerMain = document.createElement("div");
       composerMain.id = "btfw-chat-composer-main";
       composerMain.className = "btfw-chat-composer-main";
-      composer.prepend(composerMain);
+      bottom.prepend(composerMain);
     }
 
-    let actions = composer.querySelector("#btfw-chat-actions") || bottom.querySelector("#btfw-chat-actions");
-    if (actions && actions.parentElement !== composer) {
-      composer.appendChild(actions);
+    let actions = bottom.querySelector("#btfw-chat-actions");
+    if (actions && actions.parentElement !== bottom) {
+      bottom.appendChild(actions);
     }
     if (!actions) {
       actions = document.createElement("div");
       actions.id = "btfw-chat-actions";
-      composer.appendChild(actions);
+      bottom.appendChild(actions);
     }
     actions.classList.add("btfw-chat-actions");
 
@@ -1025,6 +1026,8 @@ const scheduleNormalizeChatActions = (() => {
     const uc = $("#usercount");
     if (!uc) return;
 
+    uc.querySelectorAll(":scope > .profile-box").forEach((el) => el.remove());
+
     const raw = (uc.textContent || "").trim();
     const leading = raw.match(/^(\d+)/);
     if (leading) {
@@ -1045,38 +1048,6 @@ const scheduleNormalizeChatActions = (() => {
       .trim();
 
     uc.textContent = cleaned || "0";
-  }
-
-  function clampUsercountProfileBox(uc) {
-    const popup = uc?.querySelector(":scope > .profile-box");
-    if (!popup) return;
-
-    const margin = 8;
-    const rect = popup.getBoundingClientRect();
-    let left = rect.left;
-    let top = rect.top;
-
-    left = Math.max(margin, Math.min(left, window.innerWidth - rect.width - margin));
-    top = Math.max(margin, Math.min(top, window.innerHeight - rect.height - margin));
-
-    popup.style.left = `${left}px`;
-    popup.style.top = `${top}px`;
-  }
-
-  function wireUsercountProfileBoxClamp(uc) {
-    if (!uc || uc.dataset.btfwUsercountClampWired) return;
-    uc.dataset.btfwUsercountClampWired = "true";
-
-    const scheduleClamp = () => {
-      requestAnimationFrame(() => clampUsercountProfileBox(uc));
-    };
-
-    uc.addEventListener("mouseenter", scheduleClamp);
-    uc.addEventListener("mousemove", scheduleClamp);
-
-    const obs = new MutationObserver(scheduleClamp);
-    obs.observe(uc, { childList: true, subtree: true });
-    uc._btfwUsercountClampObs = obs;
   }
 
   function wireUsercountSocket(){
@@ -1131,20 +1102,7 @@ const scheduleNormalizeChatActions = (() => {
   uc.removeAttribute("title");
   uc.setAttribute("aria-label", "Connected users");
 
-  if (!uc.dataset.btfwUsercountBound) {
-    uc.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    }, true);
-    uc.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    }, true);
-    uc.dataset.btfwUsercountBound = "true";
-  }
-
   cleanUsercountText();
-  wireUsercountProfileBoxClamp(uc);
   orderChatActions(actions);
   wireUsercountSocket();
 }

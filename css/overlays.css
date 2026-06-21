@@ -266,29 +266,26 @@
    ====================================================================== */
 
 .btfw-chat-topbar {
-  background: color-mix(in srgb, var(--btfw-color-panel) 60%, transparent 40%) !important;
-  border: 0px solid var(--btfw-border);
-  border-radius: 50px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 .btfw-chat-bottombar {
   position: sticky;
   bottom: 0;
   z-index: 10;
-  padding: 6px 0 4px;
-  border-radius: var(--btfw-radius);
+  padding: 8px 10px 10px;
+  border-radius: 0;
   isolation: isolate;
+  background: transparent;
 }
 
 .btfw-chat-composer {
-  background: linear-gradient(145deg,
-    color-mix(in srgb, var(--btfw-overlay-elevated) 86%, transparent 14%),
-    color-mix(in srgb, var(--btfw-overlay-bg) 80%, transparent 20%));
+  background: transparent;
   border: 0;
-  box-shadow:
-    var(--btfw-glass-shadow),
-    inset 0 1px 0 var(--btfw-surface-highlight);
+  box-shadow: none;
 }
 
 .btfw-chat-actions .button.btfw-chatbtn {
@@ -307,15 +304,9 @@
 #chatwrap {
     margin-bottom: 0px!important;
 }
-/* Keep the chat composer visible at the bottom of chat column */
+/* bottombar highlight handled by chat column shell */
 .btfw-chat-bottombar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent 92%);
-  pointer-events: none;
-  z-index: -1;
+  display: none;
 }
 /* --- BTFW Emotes Popover (mini) --- */
 /* Fixed-size popover container (JS sets an explicit height) */

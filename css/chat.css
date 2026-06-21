@@ -130,10 +130,13 @@
     align-items: stretch;
     justify-content: space-between;
     gap: 1px;
-    padding: 8px 10px;
-    margin: 0 0 8px 0;
-    border: 0px solid var(--btfw-border);
-    border-radius: var(--btfw-radius);
+    padding: 10px 12px 8px;
+    margin: 0;
+    border: 0;
+    border-bottom: 1px solid var(--btfw-surface-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     flex-shrink: 0;
     flex-direction: column;
 }
@@ -141,8 +144,12 @@
 #chatwrap .btfw-chat-bottombar {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    margin: 5px 0 0px 0;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 10px 10px;
+    border-top: 1px solid var(--btfw-surface-divider);
+    border-radius: 0;
+    background: transparent;
     flex-shrink: 0;
 }
 
@@ -232,9 +239,8 @@
 #messagebuffer{
   flex: 1 1 auto;
   overflow: auto;
-  min-height: 0; /* Allow shrinking */
-  padding: 6px;
-  /* Ensure smooth scrolling */
+  min-height: 0;
+  padding: 8px 10px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -342,30 +348,23 @@
   flex: 1 1 auto;
 }
 
-.btfw-chat-composer {
+.btfw-chat-composer,
+#chatwrap .btfw-chat-bottombar.btfw-chat-composer-shell {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
     width: 100%;
-    padding: 3px 10px 10px;
-    border-radius: 20px;
+    padding: 0;
+    border-radius: 0;
     border: 0;
-    background: color-mix(in srgb, var(--btfw-color-panel) 88%, transparent 12%);
-    box-shadow:
-      var(--btfw-glass-shadow),
-      inset 0 1px 0 var(--btfw-surface-highlight);
+    background: transparent;
+    box-shadow: none;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .btfw-chat-composer::before{
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(80% 90% at 12% 46%, color-mix(in srgb, var(--btfw-color-accent) 44%, transparent 96%), transparent 48%);
-  opacity: .65;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .btfw-chat-composer > *{
@@ -934,17 +933,13 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
     background: transparent;
     border: 0;
     color: color-mix(in srgb, var(--btfw-color-chat-text) 86%, transparent 14%);
-    cursor: pointer;
-    transition: opacity 0.15s ease;
+    cursor: default;
+    pointer-events: none;
     justify-content: flex-end;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-#usercount.btfw-usercount:hover {
-  opacity: 1;
 }
 
 #usercount.btfw-usercount::before {
@@ -957,8 +952,7 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
 }
 
 #usercount.btfw-usercount > .profile-box {
-  max-width: min(220px, calc(100vw - 16px));
-  max-height: min(300px, calc(100vh - 16px));
+  display: none !important;
 }
 .server-msg-reconnect {
   border: 0px solid #009900!important;

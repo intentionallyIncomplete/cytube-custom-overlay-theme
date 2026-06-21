@@ -88,6 +88,8 @@ const bundles = [
     name: 'admin',
     modules: [
       'modules/user-release-notes.generated.js',
+      'modules/util-theme-runtime.js',
+      'modules/util-theme-presets.js',
       'modules/feature-channel-theme-admin.js',
       'modules/feature-theme-settings.js',
       'modules/feature-motd-editor.js'

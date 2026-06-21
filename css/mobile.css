@@ -21,15 +21,15 @@ body.btfw-mobile-nav-open{
 @media (max-width: 768px){
   /* Chat bars */
   #chatwrap .btfw-chat-topbar{
-    padding: 8px;
-    border-radius: 12px;
+    padding: 8px 10px 6px;
+    border-radius: 0;
   }
   #chatwrap .btfw-chat-bottombar{
-    padding: 8px 0 6px;
+    padding: 8px 10px 10px;
   }
   .btfw-chat-composer{
-    border-radius: 18px;
-    padding: 12px;
+    border-radius: 0;
+    padding: 0;
   }
   .btfw-chat-actions{ gap: 6px; }
   .button.btfw-chatbtn{

@@ -1,8 +1,11 @@
 /* BTFW — feature:themeSettings (clean, no LS collisions, with openers wired + Billcast apply dispatch) */
-BTFW.define("feature:themeSettings", [], async () => {
+BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"], async ({ init }) => {
+  const themeRuntime = await init("util:themeRuntime");
+  const themePresets = await init("util:themePresets");
+  const motion = await BTFW.init("util:motion");
+
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-  const motion = await BTFW.init("util:motion");
 
   const TS_KEYS = {
     chatTextPx  : "btfw:chat:textSize",
@@ -19,6 +22,223 @@ BTFW.define("feature:themeSettings", [], async () => {
   const set = (k, v) => { try { localStorage.setItem(k, v); } catch(_){} };
 
   const IGNORE_KEY = "btfw:chat:ignore";
+
+  let appearanceDraft = themeRuntime.cloneAppearance(themePresets.getActiveAppearance());
+  let editingPresetId = themePresets.getActivePreset()?.id || null;
+  let generalTabSyncing = false;
+
+  function buildTintOptionsHtml() {
+    const options = Object.entries(themeRuntime.TINT_PRESETS)
+      .map(([id, preset]) => `<option value="${id}">${preset.name}</option>`)
+      .join("");
+    return `${options}<option value="custom">Custom mix</option>`;
+  }
+
+  function buildFontOptionsHtml() {
+    return Object.entries(themeRuntime.FONT_PRESETS)
+      .map(([id, preset]) => `<option value="${id}">${preset.name}</option>`)
+      .join("") + '<option value="custom">Custom Google Font</option>';
+  }
+
+  function buildColorField(key, label) {
+    return `
+      <div class="btfw-ts-control btfw-ts-control--color">
+        <label class="btfw-input__label" for="btfw-user-color-${key}">${label}</label>
+        <input type="color" id="btfw-user-color-${key}" data-btfw-user-color="${key}">
+      </div>`;
+  }
+
+  function syncGeneralTabUI(modal) {
+    if (!modal) return;
+    generalTabSyncing = true;
+    try {
+      const draft = appearanceDraft;
+      const tintSelect = $("#btfw-user-tint", modal);
+      if (tintSelect) tintSelect.value = draft.tint || "midnight";
+      themeRuntime.COLOR_KEYS.forEach((key) => {
+        const input = $(`#btfw-user-color-${key}`, modal);
+        if (input && draft.colors?.[key]) input.value = draft.colors[key];
+      });
+      const fontSelect = $("#btfw-user-font", modal);
+      if (fontSelect) fontSelect.value = draft.typography?.preset || themeRuntime.FONT_DEFAULT_ID;
+      const customFont = $("#btfw-user-font-custom", modal);
+      if (customFont) customFont.value = draft.typography?.customFamily || "";
+      const customField = $("#btfw-user-font-custom-field", modal);
+      if (customField) {
+        customField.style.display = draft.typography?.preset === "custom" ? "block" : "none";
+      }
+      const presetSelect = $("#btfw-user-preset-select", modal);
+      if (presetSelect) {
+        const presets = themePresets.listPresets();
+        const active = themePresets.getActivePreset();
+        presetSelect.innerHTML = `<option value="">Channel default</option>${presets
+          .map((p) => `<option value="${p.id}">${p.name.replace(/</g, "&lt;")}</option>`)
+          .join("")}`;
+        presetSelect.value = active?.id || "";
+      }
+      const resolved = themeRuntime.resolveTypographyConfig(draft.typography || {});
+      const fontLabel = $("[data-btfw-user-font-label]", modal);
+      const fontSample = $("[data-btfw-user-font-sample]", modal);
+      if (fontLabel) fontLabel.textContent = resolved.label || "Inter";
+      if (fontSample) {
+        fontSample.style.fontFamily = resolved.family || themeRuntime.FONT_FALLBACK_FAMILY;
+      }
+    } finally {
+      generalTabSyncing = false;
+    }
+  }
+
+  function readGeneralTabDraft(modal) {
+    const tint = $("#btfw-user-tint", modal)?.value || "midnight";
+    const colors = {};
+    themeRuntime.COLOR_KEYS.forEach((key) => {
+      colors[key] = $(`#btfw-user-color-${key}`, modal)?.value || appearanceDraft.colors[key];
+    });
+    const preset = $("#btfw-user-font", modal)?.value || themeRuntime.FONT_DEFAULT_ID;
+    const customFamily = $("#btfw-user-font-custom", modal)?.value || "";
+    return themeRuntime.normalizeAppearanceConfig({
+      tint,
+      colors,
+      typography: { preset, customFamily }
+    });
+  }
+
+  function previewGeneralAppearance(modal) {
+    appearanceDraft = readGeneralTabDraft(modal);
+    themeRuntime.applyUserAppearance(appearanceDraft, { scope: "preview" });
+    syncGeneralTabUI(modal);
+  }
+
+  function bindGeneralTab(modal) {
+    if (!modal || modal._btfwGeneralBound) return;
+    modal._btfwGeneralBound = true;
+
+    const onInput = () => {
+      if (generalTabSyncing) return;
+      previewGeneralAppearance(modal);
+    };
+    $("#btfw-user-tint", modal)?.addEventListener("change", () => {
+      const tint = $("#btfw-user-tint", modal)?.value;
+      if (tint && tint !== "custom" && themeRuntime.TINT_PRESETS[tint]) {
+        appearanceDraft = themeRuntime.normalizeAppearanceConfig({
+          tint,
+          colors: { ...themeRuntime.TINT_PRESETS[tint].colors },
+          typography: appearanceDraft.typography
+        });
+        themeRuntime.applyUserAppearance(appearanceDraft, { scope: "preview" });
+        syncGeneralTabUI(modal);
+        return;
+      }
+      onInput();
+    });
+    themeRuntime.COLOR_KEYS.forEach((key) => {
+      $(`#btfw-user-color-${key}`, modal)?.addEventListener("input", () => {
+        if (generalTabSyncing) return;
+        const tintSelect = $("#btfw-user-tint", modal);
+        if (tintSelect && tintSelect.value !== "custom") tintSelect.value = "custom";
+        onInput();
+      });
+    });
+    $("#btfw-user-font", modal)?.addEventListener("change", () => {
+      const customField = $("#btfw-user-font-custom-field", modal);
+      const isCustom = $("#btfw-user-font", modal)?.value === "custom";
+      if (customField) customField.style.display = isCustom ? "block" : "none";
+      onInput();
+    });
+    $("#btfw-user-font-custom", modal)?.addEventListener("input", () => {
+      const fontSelect = $("#btfw-user-font", modal);
+      if (fontSelect && fontSelect.value !== "custom") fontSelect.value = "custom";
+      onInput();
+    });
+
+    $("#btfw-user-preset-select", modal)?.addEventListener("change", () => {
+      const id = $("#btfw-user-preset-select", modal)?.value || "";
+      if (!id) {
+        editingPresetId = null;
+        themePresets.clearActivePreset();
+        appearanceDraft = themeRuntime.cloneAppearance(
+          themeRuntime.extractAppearanceFromChannelConfig(window.BTFW_THEME_ADMIN)
+        );
+      } else {
+        const store = themePresets.setActivePreset(id);
+        const preset = store.presets.find((p) => p.id === id);
+        if (preset) {
+          editingPresetId = preset.id;
+          appearanceDraft = themeRuntime.cloneAppearance(preset.config);
+          themeRuntime.applyUserAppearance(appearanceDraft);
+        }
+      }
+      syncGeneralTabUI(modal);
+    });
+
+    $("#btfw-user-preset-save", modal)?.addEventListener("click", () => {
+      const name = window.prompt("Preset name", editingPresetId ? themePresets.getActivePreset()?.name || "" : "");
+      if (!name) return;
+      const config = readGeneralTabDraft(modal);
+      if (editingPresetId) {
+        themePresets.updatePreset(editingPresetId, { name, config });
+      } else {
+        const result = themePresets.saveNewPreset(name, config);
+        if (result.preset) editingPresetId = result.preset.id;
+      }
+      themeRuntime.applyUserAppearance(config);
+      appearanceDraft = themeRuntime.cloneAppearance(config);
+      syncGeneralTabUI(modal);
+    });
+
+    $("#btfw-user-preset-rename", modal)?.addEventListener("click", () => {
+      const active = themePresets.getActivePreset();
+      if (!active) return;
+      const name = window.prompt("Rename preset", active.name);
+      if (!name) return;
+      themePresets.updatePreset(active.id, { name });
+      syncGeneralTabUI(modal);
+    });
+
+    $("#btfw-user-preset-delete", modal)?.addEventListener("click", () => {
+      const active = themePresets.getActivePreset();
+      if (!active) return;
+      if (!window.confirm(`Delete preset "${active.name}"?`)) return;
+      themePresets.deletePreset(active.id);
+      editingPresetId = null;
+      appearanceDraft = themeRuntime.cloneAppearance(
+        themeRuntime.extractAppearanceFromChannelConfig(window.BTFW_THEME_ADMIN)
+      );
+      themePresets.clearActivePreset();
+      syncGeneralTabUI(modal);
+      previewGeneralAppearance(modal);
+    });
+
+    $("#btfw-user-reset-channel", modal)?.addEventListener("click", () => {
+      editingPresetId = null;
+      themePresets.clearActivePreset();
+      appearanceDraft = themeRuntime.cloneAppearance(
+        themeRuntime.extractAppearanceFromChannelConfig(window.BTFW_THEME_ADMIN)
+      );
+      syncGeneralTabUI(modal);
+      previewGeneralAppearance(modal);
+    });
+  }
+
+  function applyGeneralAppearance() {
+    const modal = $("#btfw-theme-modal");
+    const config = modal ? readGeneralTabDraft(modal) : appearanceDraft;
+    appearanceDraft = themeRuntime.cloneAppearance(config);
+    if (editingPresetId) {
+      themePresets.updatePreset(editingPresetId, { config });
+      themePresets.setActivePreset(editingPresetId);
+    }
+    themeRuntime.applyUserAppearance(config);
+    return config;
+  }
+
+  function onGeneralTabOpen() {
+    const modal = $("#btfw-theme-modal");
+    if (!modal) return;
+    editingPresetId = themePresets.getActivePreset()?.id || null;
+    appearanceDraft = themeRuntime.cloneAppearance(themePresets.getActiveAppearance());
+    syncGeneralTabUI(modal);
+  }
 
   function normalizeName(name){
     return (name || "").trim().replace(/^@+/, "");
@@ -169,7 +389,73 @@ BTFW.define("feature:themeSettings", [], async () => {
             <!-- General -->
             <div class="btfw-ts-panel" data-tab="general" style="display:block;">
               <div class="btfw-ts-grid">
-                <p class="btfw-help">General appearance settings live in the channel theme editor.</p>
+                <section class="btfw-ts-card">
+                  <header class="btfw-ts-card__header">
+                    <h3>Your appearance</h3>
+                    <p>Personal palette and typography layered on the channel default. Saved only in this browser.</p>
+                  </header>
+                  <div class="btfw-ts-card__body">
+                    <div class="btfw-ts-control">
+                      <label class="btfw-input__label" for="btfw-user-preset-select">Saved presets</label>
+                      <div class="field has-addons">
+                        <div class="control is-expanded">
+                          <select class="btfw-ts-select is-small is-fullwidth" id="btfw-user-preset-select"></select>
+                        </div>
+                        <div class="control">
+                          <button type="button" class="button is-small is-link" id="btfw-user-preset-save">Save</button>
+                        </div>
+                      </div>
+                      <p class="btfw-help">Load a preset or save the current look. Use Apply to persist edits to the active preset.</p>
+                    </div>
+                    <div class="buttons are-small btfw-user-preset-actions">
+                      <button type="button" class="button is-small" id="btfw-user-preset-rename">Rename</button>
+                      <button type="button" class="button is-small is-danger is-light" id="btfw-user-preset-delete">Delete</button>
+                      <button type="button" class="button is-small" id="btfw-user-reset-channel">Reset to channel default</button>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="btfw-ts-card">
+                  <header class="btfw-ts-card__header">
+                    <h3>Palette &amp; tint</h3>
+                    <p>Start from a curated tint, then fine-tune individual swatches.</p>
+                  </header>
+                  <div class="btfw-ts-card__body">
+                    <div class="btfw-ts-control">
+                      <label class="btfw-input__label" for="btfw-user-tint">Preset tint</label>
+                      <select class="btfw-ts-select is-small" id="btfw-user-tint">${buildTintOptionsHtml()}</select>
+                    </div>
+                    <div class="btfw-ts-color-grid">
+                      ${buildColorField("background", "Background")}
+                      ${buildColorField("surface", "Surface")}
+                      ${buildColorField("panel", "Panel")}
+                      ${buildColorField("text", "Primary text")}
+                      ${buildColorField("chatText", "Chat text")}
+                      ${buildColorField("accent", "Accent")}
+                    </div>
+                  </div>
+                </section>
+
+                <section class="btfw-ts-card">
+                  <header class="btfw-ts-card__header">
+                    <h3>Typography</h3>
+                    <p>Font family applied to the BillTube UI for you only.</p>
+                  </header>
+                  <div class="btfw-ts-card__body">
+                    <div class="btfw-ts-control">
+                      <label class="btfw-input__label" for="btfw-user-font">Font preset</label>
+                      <select class="btfw-ts-select is-small" id="btfw-user-font">${buildFontOptionsHtml()}</select>
+                    </div>
+                    <div class="btfw-ts-control" id="btfw-user-font-custom-field" style="display:none;">
+                      <label class="btfw-input__label" for="btfw-user-font-custom">Custom Google font name</label>
+                      <input class="input is-small" type="text" id="btfw-user-font-custom" placeholder="Space Grotesk">
+                    </div>
+                    <div class="btfw-user-font-preview" aria-hidden="true">
+                      <div class="btfw-user-font-preview__label" data-btfw-user-font-label>Inter</div>
+                      <p class="btfw-user-font-preview__sample" data-btfw-user-font-sample>The quick brown fox jumps over the lazy dog.</p>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
 
@@ -184,13 +470,11 @@ BTFW.define("feature:themeSettings", [], async () => {
                   <div class="btfw-ts-card__body">
                     <div class="btfw-ts-control">
                       <label class="btfw-input__label" for="btfw-avatars-mode">Avatar size</label>
-                      <div class="select is-small">
-                        <select id="btfw-avatars-mode">
+                      <select class="btfw-ts-select is-small" id="btfw-avatars-mode">
                           <option value="off">Off</option>
                           <option value="small">Small</option>
                           <option value="big">Big</option>
-                        </select>
-                      </div>
+                      </select>
                     </div>
                     <div class="btfw-ts-control">
                       <span class="btfw-input__label">Chat text size</span>
@@ -211,13 +495,11 @@ BTFW.define("feature:themeSettings", [], async () => {
                   <div class="btfw-ts-card__body">
                     <div class="btfw-ts-control">
                       <label class="btfw-input__label" for="btfw-emote-size">Emote size</label>
-                      <div class="select is-small">
-                        <select id="btfw-emote-size">
+                      <select class="btfw-ts-select is-small" id="btfw-emote-size">
                           <option value="small">Small (100×100)</option>
                           <option value="medium">Medium (130×130)</option>
                           <option value="big">Big (170×170)</option>
-                        </select>
-                      </div>
+                      </select>
                       <p class="btfw-help">Applies to elements with <code>.channel-emote</code> and the GIF picker.</p>
                     </div>
                     <label class="checkbox btfw-checkbox">
@@ -268,12 +550,10 @@ BTFW.define("feature:themeSettings", [], async () => {
                   <div class="btfw-ts-card__body">
                     <div class="btfw-ts-control">
                       <label class="btfw-input__label" for="btfw-chat-side">Layout mode</label>
-                      <div class="select is-small">
-                        <select id="btfw-chat-side">
+                      <select class="btfw-ts-select is-small" id="btfw-chat-side">
                           <option value="right">Video left, chat right</option>
                           <option value="left">Chat left, video right</option>
-                        </select>
-                      </div>
+                      </select>
                     </div>
                     <p class="btfw-help">Mobile screens automatically collapse into a stacked layout.</p>
                   </div>
@@ -426,6 +706,9 @@ BTFW.define("feature:themeSettings", [], async () => {
 
     m._btfwRenderIgnoreList = renderIgnoreList;
 
+    bindGeneralTab(m);
+    syncGeneralTabUI(m);
+
     return m;
   }
 
@@ -460,13 +743,17 @@ BTFW.define("feature:themeSettings", [], async () => {
     document.dispatchEvent(new CustomEvent("btfw:chat:joinNoticesChanged", { detail:{ enabled: !!joinNoticesOn } }));
     document.dispatchEvent(new CustomEvent("btfw:video:localsubs:changed", { detail:{ enabled : !!localSubsOn } }));
     document.dispatchEvent(new CustomEvent("btfw:layout:chatSideChanged",   { detail:{ side    : chatSide } }));
+
+    const userAppearance = applyGeneralAppearance();
+
     document.dispatchEvent(new CustomEvent("btfw:themeSettings:apply",     { detail:{
       values: {
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
         emoteSize, gifAutoplay: !!gifAutoOn,
         localSubs: !!localSubsOn, billcastEnabled: !!billcastOn,
         joinNotices: !!joinNoticesOn,
-        chatSide
+        chatSide,
+        userAppearance
       }
     }}));
   }
@@ -502,6 +789,8 @@ BTFW.define("feature:themeSettings", [], async () => {
     if (layoutSelect) layoutSelect.value = ["left","right"].includes(sideNow) ? sideNow : "right";
 
     if (typeof m._btfwRenderIgnoreList === "function") m._btfwRenderIgnoreList();
+
+    onGeneralTabOpen();
 
     motion.openModal(m);
     document.dispatchEvent(new CustomEvent("btfw:themeSettings:open"));
