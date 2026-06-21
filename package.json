@@ -1,6 +1,6 @@
 {
   "name": "billtube3-slim",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Modular UI enhancement framework for CyTube",
   "type": "module",
   "scripts": {

@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.7.0...v1.8.0) (2026-06-21)
+
+
+### Features
+
+* **ui:** per-user theme presets in Theme Settings modal ([0915b2a](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/0915b2a7cfcc11fe76be5e4a1d89b4b471ee0b97))
+
 # [1.7.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.6.0...v1.7.0) (2026-06-20)
 
 
