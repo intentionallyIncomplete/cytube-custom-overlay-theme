@@ -815,8 +815,7 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
   max-height: none !important;
 }
 
-#messagebuffer img.giphy.chat-picture,
-#messagebuffer img.tenor.chat-picture {
+#messagebuffer img.giphy.chat-picture {
   width: auto !important;
   height: auto !important;
   /* base cap so scale(1.2) on hover stays within --btfw-chat-gif-max-width */

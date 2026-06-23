@@ -5,7 +5,7 @@ BTFW.define("feature:chatMedia", [], async () => {
   const LS_SIZE = "btfw:chat:emoteSize";
   const LS_AUTO = "btfw:chat:gifAutoplay"; // "1" | "0"
   const SIZE_PX = { sm: 100, md: 130, lg: 170 };
-  const SEL = "#messagebuffer img.giphy.chat-picture, #messagebuffer img.tenor.chat-picture";
+  const SEL = "#messagebuffer img.giphy.chat-picture";
 
   function getSize(){ try { return localStorage.getItem(LS_SIZE) || "md"; } catch(_) { return "md"; } }
   function setSize(v){
@@ -25,7 +25,6 @@ BTFW.define("feature:chatMedia", [], async () => {
   }
 
   const isGiphy = (img)=> img.classList.contains("giphy") || /media\d\.giphy\.com\/media\/.+\/.+\.gif/i.test(img.src);
-  const isTenor = (img)=> img.classList.contains("tenor") || /media\.tenor\.com\/.+\.gif/i.test(img.src);
   const toAnimated = (src)=> src
     .replace(/\/giphy_s\.gif$/i, "/giphy.gif")
     .replace(/\/200_s\.gif$/i, "/giphy.gif")
@@ -65,9 +64,6 @@ BTFW.define("feature:chatMedia", [], async () => {
         img.onmouseenter = () => { setSrcIfDifferent(img, toAnimated(img.src)); };
         img.onmouseleave = () => { setSrcIfDifferent(img, toStatic(img.src));   };
       }
-    } else if (isTenor(img)) {
-      img.onmouseenter = null;
-      img.onmouseleave = null;
     }
   }
 
