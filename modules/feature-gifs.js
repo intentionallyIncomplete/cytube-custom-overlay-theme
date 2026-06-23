@@ -5,9 +5,8 @@ BTFW.define("feature:gifs", [], async () => {
   const PER_PAGE = 12;
   const motion = await BTFW.init("util:motion");
 
-  const K = { giphy: "btfw:giphy:key", tenor: "btfw:tenor:key" };
+  const K = { giphy: "btfw:giphy:key" };
   const DEFAULT_GIPHY = "bb2006d9d3454578be1a99cfad65913d";
-  const DEFAULT_TENOR = "5WPAZ4EXST2V";
 
   function getKey(which) {
     try { return (localStorage.getItem(K[which]) || "").trim(); } catch (_) { return ""; }
@@ -18,7 +17,7 @@ BTFW.define("feature:gifs", [], async () => {
   }
 
   const state = {
-    provider: "giphy",  // "giphy" | "tenor" | "favorites"
+    provider: "giphy",  // "giphy" | "favorites"
     query: "",
     page: 1,
     total: 0,
@@ -46,9 +45,7 @@ BTFW.define("feature:gifs", [], async () => {
     input.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
-  function stripQuery(u){ return (u||"").split("?")[0].split("#")[0]; }
   function buildGiphyClassic(id){ return `https://media1.giphy.com/media/${id}/giphy.gif`; }
-  function normTenor(u){ return stripQuery(u); }
 
   function ensureOpeners() {
     ["#btfw-btn-gif", ".btfw-btn-gif", "#giphybtn", "#gifbtn"].forEach(sel=>{
@@ -98,7 +95,6 @@ BTFW.define("feature:gifs", [], async () => {
             <div class="tabs is-boxed is-small btfw-gif-tabs">
               <ul>
                 <li class="is-active" data-p="giphy"><a>Giphy</a></li>
-                <li data-p="tenor"><a>Tenor</a></li>
                 <li data-p="favorites"><a>Favorites</a></li>
               </ul>
             </div>
@@ -186,27 +182,6 @@ BTFW.define("feature:gifs", [], async () => {
     return { items: list, total: list.length };
   }
 
-  async function fetchTenor(q){
-    const key = effKey("tenor", DEFAULT_TENOR);
-    const endpoint = q ? "https://api.tenor.com/v1/search"
-                       : "https://api.tenor.com/v1/trending";
-    const url = new URL(endpoint);
-    url.searchParams.set("key", key);
-    if (q) url.searchParams.set("q", q);
-    url.searchParams.set("limit", "50");
-
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`TENOR_${res.status}`);
-
-    const json = await res.json();
-    const list = (json.results || []).map(t => {
-      const gif  = t.media?.[0]?.gif?.url || t.media?.[0]?.mediumgif?.url || t.media?.[0]?.tinygif?.url || "";
-      const tiny = t.media?.[0]?.nanogif?.url || t.media?.[0]?.tinygif?.url || gif;
-      return { id: t.id, provider: "tenor", thumb: tiny, urlClassic: normTenor(gif) };
-    });
-    return { items: list, total: list.length };
-  }
-
   async function search(){
     const q = ($("#btfw-gif-q", ensureModal()).value || "").trim();
     state.query = q;
@@ -223,7 +198,7 @@ BTFW.define("feature:gifs", [], async () => {
     renderSkeleton();
 
     try {
-      const { items, total } = (state.provider === "giphy") ? await fetchGiphy(q) : await fetchTenor(q);
+      const { items, total } = await fetchGiphy(q);
       state.items = items;
       state.total = total;
       state.loading = false;
@@ -552,7 +527,7 @@ BTFW.define("feature:gifs", [], async () => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed
-          .filter(item => item && typeof item === "object" && item.urlClassic)
+          .filter(item => item && typeof item === "object" && item.urlClassic && item.provider !== "tenor")
           .map(item => ({
             provider: item.provider || "giphy",
             id: item.id || "",
