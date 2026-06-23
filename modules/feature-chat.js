@@ -330,6 +330,7 @@ const CHAT_ACTION_ORDER = [
   "#btfw-ct-open",
   "#btfw-chatcmds-btn",
   "#btfw-users-toggle",
+  "#btfw-drink-counter",
   "#usercount"
 ];
 

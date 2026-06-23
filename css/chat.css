@@ -468,6 +468,174 @@
 }
 .button.btfw-chatbtn{ display:inline-flex; align-items:center; gap:6px; }
 
+/* Channel drink counter (CyTube drinkCount socket) */
+.btfw-drink-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 2px 4px;
+  border-radius: var(--btfw-radius);
+  background: color-mix(in srgb, var(--btfw-color-panel) 85%, transparent 15%);
+  border: 1px solid color-mix(in srgb, var(--btfw-border) 60%, transparent 40%);
+  flex-shrink: 0;
+}
+
+.btfw-drink-counter.is-hidden {
+  display: none;
+}
+
+.btfw-drink-counter__scene {
+  position: relative;
+  width: 56px;
+  height: 50px;
+  flex-shrink: 0;
+  overflow: visible;
+  perspective: 200px;
+}
+
+.btfw-drink-counter__face-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__face-wrap.is-tilted {
+  transform: translateX(-50%) rotateX(42deg);
+}
+
+.btfw-drink-counter__face-svg {
+  display: block;
+  width: 36px;
+  height: 36px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 6px oklch(0 0 0 / 0.25));
+}
+
+.btfw-drink-counter__mouth-outline {
+  transition: d 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__mouth-cavity {
+  transition:
+    rx 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    ry 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    cy 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__mouth-beer {
+  transform: translateY(100%);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__mouth-beer.is-filled {
+  transform: translateY(0%);
+}
+
+.btfw-drink-counter__mouth-foam {
+  transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__teeth {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__tongue {
+  transition:
+    rx 0.45s 0.08s cubic-bezier(0.16, 1, 0.3, 1),
+    ry 0.45s 0.08s cubic-bezier(0.16, 1, 0.3, 1),
+    cy 0.45s 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__brow-l,
+.btfw-drink-counter__brow-r {
+  transition: d 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__eye-l,
+.btfw-drink-counter__eye-r {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
+
+.btfw-drink-counter__glass-wrap {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 16px;
+  transform-origin: bottom center;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btfw-drink-counter__glass-wrap.is-pouring {
+  transform: rotate(-115deg) translate(3px, -7px);
+}
+
+.btfw-drink-counter__glass-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.btfw-drink-counter__stream {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  width: 12px;
+  height: 30px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  overflow: visible;
+}
+
+.btfw-drink-counter__stream.is-flowing {
+  opacity: 1;
+}
+
+.btfw-drink-counter__stream-path {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  transition: stroke-dashoffset 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btfw-drink-counter__stream.is-flowing .btfw-drink-counter__stream-path {
+  stroke-dashoffset: 0;
+}
+
+.btfw-drink-counter--reduce-motion .btfw-drink-counter__face-wrap,
+.btfw-drink-counter--reduce-motion .btfw-drink-counter__glass-wrap,
+.btfw-drink-counter--reduce-motion .btfw-drink-counter__mouth-beer,
+.btfw-drink-counter--reduce-motion .btfw-drink-counter__stream-path {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btfw-drink-counter__face-wrap,
+  .btfw-drink-counter__glass-wrap,
+  .btfw-drink-counter__mouth-beer,
+  .btfw-drink-counter__stream-path {
+    transition: none !important;
+  }
+}
+
+.btfw-drink-counter__count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--btfw-color-chat-text);
+  min-width: 1ch;
+  line-height: 1;
+}
+
+#drinkbarwrap[hidden],
+#drinkbar[hidden] {
+  display: none !important;
+}
+
 /* Bottom bar should not have margin-bottom to avoid extra space */
 #chatwrap .btfw-chat-bottombar:last-child {
   margin-bottom: 0;

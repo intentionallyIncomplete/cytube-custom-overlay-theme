@@ -254,6 +254,7 @@ const DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
       BTFW.init("feature:notification-sounds"),
       BTFW.init("feature:syncGuard"),
       BTFW.init("feature:chat-commands"),
+      BTFW.init("feature:drink-counter"),
       BTFW.init("feature:playlistPerformance"),
       BTFW.init("feature:playlist-tools"),
       BTFW.init("feature:local-subs"),

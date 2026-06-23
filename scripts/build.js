@@ -59,7 +59,8 @@ const bundles = [
       'modules/feature-chat-avatars.js',
       'modules/feature-chat-timestamps.js',
       'modules/feature-chat-ignore.js',
-      'modules/feature-chat-commands.js'
+      'modules/feature-chat-commands.js',
+      'modules/feature-drink-counter.js'
     ]
   },
   {
