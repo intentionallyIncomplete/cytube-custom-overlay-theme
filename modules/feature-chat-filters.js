@@ -18,6 +18,8 @@ const customFilters = [
   { name: "giphy", source: "https?://media\\d+\\.giphy\\.com/media/(?!v1\\.)([^ /\\n]+)/giphy\\.gif", flags: "gi", replace: "<img class=\"giphy chat-picture\" src=\"https://media.giphy.com/media/\\1/giphy_s.gif\" />", active: true, filterlinks: true },
   { name: "giphy i.giphy", source: "https?://i\\.giphy\\.com/([^ /\\n]+)\\.gif", flags: "gi", replace: "<img class=\"giphy chat-picture\" src=\"https://media.giphy.com/media/\\1/giphy_s.gif\" />", active: true, filterlinks: true },
   { name: "giphy page", source: "https?://(?:www\\.)?giphy\\.com/gifs/(?:.*-)?([a-zA-Z0-9]+)", flags: "gi", replace: "<img class=\"giphy chat-picture\" src=\"https://media.giphy.com/media/\\1/giphy_s.gif\" />", active: true, filterlinks: true },
+  { name: "tenor", source: "https?://c\\.tenor\\.com/([\\w-]+)/tenor\\.gif", flags: "gi", replace: "<img class=\"tenor chat-picture\" src=\"https://c.tenor.com/\\1/tenor.gif\" />", active: true, filterlinks: true },
+  { name: "tenor media", source: "https?://media\\.tenor\\.com/([\\w-]+)/tenor\\.gif", flags: "gi", replace: "<img class=\"tenor chat-picture\" src=\"https://media.tenor.com/\\1/tenor.gif\" />", active: true, filterlinks: true },
   { name: "TMDB", source: "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^\\[]+)\\[\\/tmdbcard\\]", flags: "g", replace: "<div class=\"tmdb-card\"><img class=\"tmdb-card__poster\" src=\"https://image.tmdb.org/t/p/w342\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"tmdb-card__content\"><div class=\"tmdb-card__title\">\\1 <span class=\"tmdb-card__year\">(\\2)</span></div><div class=\"tmdb-card__rating\">★ \\3</div><div class=\"tmdb-card__overview\">\\4</div></div></div>", active: true, filterlinks: true }
 ];
 
