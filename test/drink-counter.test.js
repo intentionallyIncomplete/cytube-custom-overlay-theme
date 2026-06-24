@@ -29,6 +29,10 @@ test("drink animation count ignores decrease or flat", () => {
   assert.equal(drinkAnimationCount(5, 0), 0);
 });
 
+function shouldDrool(count, threshold = 10) {
+  return Math.max(0, Number(count) || 0) >= threshold;
+}
+
 test("intox tier thresholds", () => {
   assert.equal(intoxTierForCount(0), 0);
   assert.equal(intoxTierForCount(4), 0);
@@ -42,4 +46,10 @@ test("intox tier thresholds", () => {
   assert.equal(intoxTierForCount(49), 4);
   assert.equal(intoxTierForCount(50), 5);
   assert.equal(intoxTierForCount(120), 5);
+});
+
+test("drool at ten drinks", () => {
+  assert.equal(shouldDrool(9), false);
+  assert.equal(shouldDrool(10), true);
+  assert.equal(shouldDrool(25), true);
 });

@@ -4,6 +4,7 @@ BTFW.define("feature:drink-counter", [], async () => {
 
   const MAX_DRINK_ANIMS = 5;
   const INTOX_THRESHOLDS = [5, 15, 20, 30, 50];
+  const DROOL_THRESHOLD = 10;
   const INTOX_SKIN = ["#f5c07a", "#f2ad60", "#eda84e", "#e89638", "#e07820", "#d45c0a"];
   const INTOX_BLUSH = [0, 0.38, 0.58, 0.74, 0.88, 0.96];
   const INTOX_EYE_SQUINT = [1, 1, 0.82, 0.62, 0.48, 0.38];
@@ -75,6 +76,11 @@ BTFW.define("feature:drink-counter", [], async () => {
           <rect x="54" y="69" width="6" height="7" rx="1.5" fill="white" />
         </g>
         <ellipse class="btfw-drink-counter__tongue" cx="50" cy="80" rx="0.1" ry="0.1" fill="#e8665a" />
+        <g class="btfw-drink-counter__drool" opacity="0">
+          <path class="btfw-drink-counter__drool-stream"
+            d="M57 77 Q58.5 83 56.5 89" fill="none" stroke="#a8cce0" stroke-width="2.6" stroke-linecap="round" />
+          <ellipse class="btfw-drink-counter__drool-drop" cx="56.5" cy="91" rx="2.4" ry="3.2" fill="#8ebad4" />
+        </g>
       </svg>
     </div>
   `;
@@ -95,6 +101,10 @@ BTFW.define("feature:drink-counter", [], async () => {
       if (n >= threshold) tier += 1;
     }
     return tier;
+  }
+
+  function shouldDrool(count) {
+    return Math.max(0, Number(count) || 0) >= DROOL_THRESHOLD;
   }
 
   const BROW_IDLE = [
@@ -145,7 +155,16 @@ BTFW.define("feature:drink-counter", [], async () => {
       faceBase: widget.querySelector(".btfw-drink-counter__face-base"),
       blushL: widget.querySelector(".btfw-drink-counter__blush-l"),
       blushR: widget.querySelector(".btfw-drink-counter__blush-r"),
+      drool: widget.querySelector(".btfw-drink-counter__drool"),
     };
+  }
+
+  function applyDrool(widget, count) {
+    if (!widget) return;
+    const els = getPourEls(widget);
+    const show = shouldDrool(count) && !widget.classList.contains("is-drinking");
+    widget.classList.toggle("is-drooling", shouldDrool(count));
+    els.drool?.setAttribute("opacity", show ? "1" : "0");
   }
 
   function applyIntoxVisuals(widget, count) {
@@ -174,6 +193,8 @@ BTFW.define("feature:drink-counter", [], async () => {
       if (els.eyeL) els.eyeL.style.transform = eyeTransform;
       if (els.eyeR) els.eyeR.style.transform = eyeTransform;
     }
+
+    applyDrool(widget, count);
   }
 
   function openMouth(els) {
@@ -197,6 +218,7 @@ BTFW.define("feature:drink-counter", [], async () => {
     els.browR?.setAttribute("d", "M58 27 Q67 24 78 29");
     if (els.eyeL) els.eyeL.style.transform = "scaleY(1.2)";
     if (els.eyeR) els.eyeR.style.transform = "scaleY(1.2)";
+    if (els.drool) els.drool.setAttribute("opacity", "0");
   }
 
   function closeMouth(els) {
@@ -426,5 +448,5 @@ BTFW.define("feature:drink-counter", [], async () => {
     boot();
   }
 
-  return { name: "feature:drink-counter", updateCount, drinkAnimationCount, intoxTierForCount };
+  return { name: "feature:drink-counter", updateCount, drinkAnimationCount, intoxTierForCount, shouldDrool };
 });
