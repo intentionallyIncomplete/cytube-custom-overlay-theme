@@ -1152,8 +1152,11 @@ const scheduleNormalizeChatActions = (() => {
   }
   let _tsLoading = false;
   async function openThemeSettings(){
-    document.dispatchEvent(new CustomEvent("btfw:openThemeSettings"));
     let modal = $("#btfw-theme-modal");
+    if (modal && modal.dataset.btfwModalState === "open") return;
+
+    document.dispatchEvent(new CustomEvent("btfw:openThemeSettings"));
+    modal = $("#btfw-theme-modal");
     if (modal) { motion.openModal(modal); return; }
     await new Promise(r => setTimeout(r, 40));
     modal = $("#btfw-theme-modal");

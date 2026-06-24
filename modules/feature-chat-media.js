@@ -4,6 +4,7 @@ BTFW.define("feature:chatMedia", [], async () => {
 
   const LS_SIZE = "btfw:chat:emoteSize";
   const LS_AUTO = "btfw:chat:gifAutoplay"; // "1" | "0"
+  const LS_HOVER_MAGNIFY = "btfw:chat:imageHoverMagnify"; // "1" | "0"
   const SIZE_PX = { sm: 100, md: 130, lg: 170 };
   const SEL = "#messagebuffer img.giphy.chat-picture";
 
@@ -17,6 +18,19 @@ BTFW.define("feature:chatMedia", [], async () => {
   function setAutoplay(on){
     try { localStorage.setItem(LS_AUTO, on ? "1" : "0"); } catch(_){}
     applyAutoplay();
+  }
+  function getHoverMagnify(){ try { return localStorage.getItem(LS_HOVER_MAGNIFY) ?? "0"; } catch(_) { return "0"; } }
+  function setHoverMagnify(on){
+    try { localStorage.setItem(LS_HOVER_MAGNIFY, on ? "1" : "0"); } catch(_){}
+    applyHoverMagnify(on);
+  }
+
+  function applyHoverMagnify(on){
+    if (on) {
+      document.documentElement.dataset.btfwChatHoverMagnify = "1";
+    } else {
+      delete document.documentElement.dataset.btfwChatHoverMagnify;
+    }
   }
 
   function applySize(mode){
@@ -96,6 +110,17 @@ BTFW.define("feature:chatMedia", [], async () => {
 
     applySize(getSize());
     applyAutoplay();
+    applyHoverMagnify(getHoverMagnify() === "1");
+
+    document.addEventListener("btfw:chat:imageHoverMagnifyChanged", (event) => {
+      const enabled = !!(event?.detail?.enabled);
+      setHoverMagnify(enabled);
+    });
+    document.addEventListener("btfw:themeSettings:apply", (event) => {
+      const values = event?.detail?.values;
+      if (!values || typeof values.imageHoverMagnify !== "boolean") return;
+      applyHoverMagnify(values.imageHoverMagnify);
+    });
 
     console.log("[BTFW] chatMedia ready (runtime sizing)");
   }
@@ -108,6 +133,8 @@ BTFW.define("feature:chatMedia", [], async () => {
     setEmoteSize: setSize,
     getEmoteSize: getSize,
     setGifAutoplayOn: setAutoplay,
-    getGifAutoplayOn: ()=> getAutoplay()==="1"
+    getGifAutoplayOn: ()=> getAutoplay()==="1",
+    setImageHoverMagnify: setHoverMagnify,
+    getImageHoverMagnify: ()=> getHoverMagnify()==="1"
   };
 });

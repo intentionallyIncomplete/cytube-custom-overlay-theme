@@ -1050,18 +1050,26 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
   border-radius: var(--btfw-radius);
 }
 
-/* Animated GIF emotes: chat-GIF sizing cap (hover scale headroom) */
+/* Animated GIF emotes: wider cap; pre-shrink when hover magnify is on */
 #messagebuffer img.channel-emote[src$=".gif" i] {
-  max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-width: var(--btfw-chat-gif-max-width) !important;
   max-height: none !important;
+}
+
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote[src$=".gif" i] {
+  max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+}
+
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:not([src$=".gif" i]) {
+  max-width: calc(var(--btfw-emote-size) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-height: calc(var(--btfw-emote-size) / var(--btfw-chat-gif-hover-scale)) !important;
 }
 
 #messagebuffer img.giphy.chat-picture,
 #messagebuffer img.tenor.chat-picture {
   width: auto !important;
   height: auto !important;
-  /* base cap so scale(1.2) on hover stays within --btfw-chat-gif-max-width */
-  max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-width: var(--btfw-chat-gif-max-width) !important;
   max-height: none !important;
   object-fit: contain;
   display: inline-block;
@@ -1070,17 +1078,22 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
   border-radius: var(--btfw-radius);
 }
 
-/* Hover grow for inline chat GIFs/images (static emotes, twemoji, avatars excluded) */
-#messagebuffer > div:has(img.chat-picture),
-#messagebuffer > div:has(img.channel-emote[src$=".gif" i]) {
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.giphy.chat-picture,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.tenor.chat-picture {
+  max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+}
+
+/* Hover grow for inline chat images (static emotes, twemoji, avatars excluded) */
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer > div:has(img.chat-picture),
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer > div:has(img.channel-emote) {
   content-visibility: visible;
   contain-intrinsic-size: auto var(--btfw-emote-size, 130px);
   overflow: visible;
 }
 
-#messagebuffer img.chat-picture,
-#messagebuffer img.channel-emote[src$=".gif" i],
-#messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar) {
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-picture,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar) {
   position: relative;
   z-index: 0;
   min-width: 1px;
@@ -1089,29 +1102,29 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
   transform-origin: center center;
 }
 
-#messagebuffer img.chat-picture:hover,
-#messagebuffer img.channel-emote[src$=".gif" i]:hover,
-#messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar):hover {
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-picture:hover,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:hover,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar):hover {
   transform: scale(var(--btfw-chat-gif-hover-scale, 1.2));
   z-index: 3;
   box-shadow: 0 6px 20px color-mix(in srgb, var(--btfw-color-bg) 55%, transparent 45%);
 }
 
-#messagebuffer > div:has(img.chat-picture:hover),
-#messagebuffer > div:has(img.channel-emote[src$=".gif" i]:hover) {
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer > div:has(img.chat-picture:hover),
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer > div:has(img.channel-emote:hover) {
   z-index: 2;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #messagebuffer img.chat-picture,
-  #messagebuffer img.channel-emote[src$=".gif" i],
-  #messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar) {
+  html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-picture,
+  html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote,
+  html[data-btfw-chat-hover-magnify="1"] #messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar) {
     transition: none;
   }
 
-  #messagebuffer img.chat-picture:hover,
-  #messagebuffer img.channel-emote[src$=".gif" i]:hover,
-  #messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar):hover {
+  html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-picture:hover,
+  html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:hover,
+  html[data-btfw-chat-hover-magnify="1"] #messagebuffer .chat-msg img:not(.channel-emote):not(.twemoji):not(.btfw-chat-avatar):hover {
     transform: none;
     box-shadow: none;
   }
