@@ -928,6 +928,10 @@ body.btfw-resizing {
   padding: 10px 12px;
 }
 
+#btfw-stack [data-bind="motd-group"] #togglemotd {
+  display: none !important;
+}
+
 #btfw-stack [data-bind="poll-group"] .btfw-group-body > #pollwrap:not(.btfw-poll-idle),
 #btfw-stack [data-bind="poll-group"] #pollwrap:not(.btfw-poll-idle) {
   padding: 10px 12px;
