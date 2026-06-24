@@ -870,11 +870,19 @@ body.btfw-resizing {
 }
 
 /* Nested feature blocks — each major block gets its own glass sheet */
-#btfw-stack [data-bind="motd-group"] .btfw-group-body > #motdwrap,
-#btfw-stack [data-bind="motd-group"] .btfw-group-body > #motdrow,
 #btfw-stack [data-bind="playlist-group"] #pollwrap,
 #btfw-stack [data-bind="playlist-group"] .poll-controls {
   display: none !important;
+}
+
+#btfw-stack [data-bind="motd-group"] .btfw-group-body > #motdwrap.btfw-motd-empty,
+#btfw-stack [data-bind="motd-group"] .btfw-group-body > #motdrow.btfw-motd-empty {
+  display: none !important;
+}
+
+#btfw-stack [data-bind="motd-group"].is-open .btfw-group-body > #motdwrap:not(.btfw-motd-empty),
+#btfw-stack [data-bind="motd-group"].is-open .btfw-group-body > #motdrow:not(.btfw-motd-empty) {
+  display: block !important;
 }
 
 #btfw-stack [data-bind="poll-group"] #pollwrap {
@@ -918,6 +926,10 @@ body.btfw-resizing {
 #btfw-stack [data-bind="motd-group"] .btfw-group-body > #motdwrap,
 #btfw-stack [data-bind="motd-group"] .btfw-group-body > #motdrow {
   padding: 10px 12px;
+}
+
+#btfw-stack [data-bind="motd-group"] #togglemotd {
+  display: none !important;
 }
 
 #btfw-stack [data-bind="poll-group"] .btfw-group-body > #pollwrap:not(.btfw-poll-idle),

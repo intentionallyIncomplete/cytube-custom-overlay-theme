@@ -61,26 +61,29 @@ BTFW.define("feature:motd-editor", [], async () => {
 
   function getMotdContent(){
     const csMotd = $("#cs-motdtext");
-    if (csMotd && csMotd.value && csMotd.value.trim()) {
+    if (csMotd && csMotd.value && !isMotdHtmlEmpty(csMotd.value)) {
       return csMotd.value;
     }
-    
-    const motdDisplay = $("#motd");
-    if (motdDisplay && motdDisplay.innerHTML && motdDisplay.innerHTML.trim()) {
+
+    const motdDisplay = resolveMotdDisplay();
+    if (motdDisplay && !isMotdHtmlEmpty(motdDisplay.innerHTML)) {
       return motdDisplay.innerHTML;
     }
-    
-    const motdWrap = $("#motdwrap");
-    if (motdWrap && motdWrap.innerHTML && motdWrap.innerHTML.trim()) {
-      return motdWrap.innerHTML;
-    }
-    
+
     return "";
   }
 
   function buildModal(){
     const existing = $("#btfw-motd-modal");
-    if (existing) existing.remove();
+    if (existing) {
+      if (window.jQuery && window.jQuery.fn.summernote) {
+        const host = $("#btfw-motd-editor", existing);
+        if (host && jQuery(host).next(".note-editor").length) {
+          jQuery(host).summernote("destroy");
+        }
+      }
+      existing.remove();
+    }
     
     const m = document.createElement("div");
     m.id = "btfw-motd-modal";
@@ -104,17 +107,37 @@ BTFW.define("feature:motd-editor", [], async () => {
       </footer>
     </div>`;
     document.body.appendChild(m);
-    const dismiss = () => motion.closeModal(m);
-    $(".modal-background", m).addEventListener("click", dismiss);
-    $(".delete", m).addEventListener("click", dismiss);
-    $("#btfw-motd-cancel", m).addEventListener("click", dismiss);
-
     return m;
   }
 
+  function wireModalDismiss(m, onDismiss) {
+    const dismiss = () => {
+      const host = $("#btfw-motd-editor", m);
+      if (window.jQuery && window.jQuery.fn.summernote && host) {
+        const hasEditor = jQuery(host).next(".note-editor").length;
+        if (hasEditor) jQuery(host).summernote("destroy");
+      }
+      motion.closeModal(m);
+      if (typeof onDismiss === "function") onDismiss();
+    };
+    $(".modal-background", m)?.addEventListener("click", dismiss);
+    $(".delete", m)?.addEventListener("click", dismiss);
+    $("#btfw-motd-cancel", m)?.addEventListener("click", dismiss);
+    return dismiss;
+  }
+
   async function openEditor(){
+    if (editorModalOpen) return;
+    editorModalOpen = true;
+
+    const stack = await getStackApi();
+    if (stack?.normalizeMotdStructure) {
+      stack.normalizeMotdStructure();
+    }
+
     const initialHTML = getMotdContent();
     const m = buildModal();
+    const closeEditor = wireModalDismiss(m, () => { editorModalOpen = false; });
     
     // Load dependencies in order: jQuery → Summernote CSS → Summernote JS
     try {
@@ -130,12 +153,14 @@ BTFW.define("feature:motd-editor", [], async () => {
         host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:monospace;">${initialHTML}</textarea>`;
       }
       motion.openModal(m);
+      editorModalOpen = false;
       return;
     }
     
     const host = $("#btfw-motd-editor", m);
     if (!host) {
       console.error('[motd-editor] Editor host not found');
+      editorModalOpen = false;
       return;
     }
 
@@ -171,10 +196,9 @@ BTFW.define("feature:motd-editor", [], async () => {
       host.innerHTML = `<textarea class="textarea" style="height:400px;">${initialHTML}</textarea>`;
     }
 
-    // Save handler
     const saveBtn = $("#btfw-motd-save", m);
     if (saveBtn) {
-      saveBtn.onclick = ()=>{
+      saveBtn.onclick = async ()=>{
         const html = window.jQuery && window.jQuery.fn.summernote 
           ? jQuery(host).summernote('code') 
           : ($("#btfw-motd-editor textarea")?.value || "");
@@ -188,19 +212,18 @@ BTFW.define("feature:motd-editor", [], async () => {
         } catch(e){ 
           console.warn("[motd-editor] setMotd emit failed", e); 
         }
-        
-        const motdDisplay = $("#motd"); 
-        if (motdDisplay) motdDisplay.innerHTML = html;
-        
-        const csMotd = $("#cs-motdtext");
-        if (csMotd) csMotd.value = html;
-        
-        // Destroy editor before closing
-        if (window.jQuery && window.jQuery.fn.summernote) {
-          jQuery(host).summernote('destroy');
+
+        const stackModule = await getStackApi();
+        if (stackModule?.applyMotdUpdate) {
+          stackModule.applyMotdUpdate(html);
+        } else {
+          const motdDisplay = resolveMotdDisplay();
+          if (motdDisplay) motdDisplay.innerHTML = html;
+          const csMotd = $("#cs-motdtext");
+          if (csMotd) csMotd.value = html;
         }
         
-        motion.closeModal(m);
+        closeEditor();
       };
     }
 
@@ -291,6 +314,34 @@ BTFW.define("feature:motd-editor", [], async () => {
   const MOTD_EDIT_BTN_HTML = '<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD';
   const MOTD_EDIT_BTN_CLASS = "btfw-stack-header-btn";
   let injectButtonTimer = null;
+  let editorModalOpen = false;
+  let stackApi = null;
+
+  async function getStackApi() {
+    if (!stackApi) {
+      try { stackApi = await BTFW.init("feature:stack"); } catch (_) {}
+    }
+    return stackApi;
+  }
+
+  function resolveMotdDisplay() {
+    const wrap = $("#motdwrap");
+    if (wrap) {
+      const direct = wrap.querySelector(":scope > #motd");
+      if (direct) return direct;
+      const nested = wrap.querySelector("#motd");
+      if (nested) return nested;
+    }
+    return $("#motd");
+  }
+
+  function isMotdHtmlEmpty(html = "") {
+    const raw = String(html || "").trim();
+    if (!raw) return true;
+    const probe = document.createElement("div");
+    probe.innerHTML = raw;
+    return !Boolean((probe.textContent || "").replace(/\u00a0/g, " ").trim());
+  }
 
   function injectButton(){
     const existingBtn = document.getElementById("btfw-motd-editbtn");
@@ -364,17 +415,24 @@ BTFW.define("feature:motd-editor", [], async () => {
   }
 
   function scheduleInjectButton() {
+    if (editorModalOpen) return;
     if (injectButtonTimer) return;
     injectButtonTimer = requestAnimationFrame(() => {
       injectButtonTimer = null;
-      injectButton();
+      if (!editorModalOpen) injectButton();
     });
   }
 
   function boot(){
     injectButton();
-    const mo = new MutationObserver(() => scheduleInjectButton());
-    mo.observe(document.body, { childList:true, subtree:true });
+    const stackRoot = document.getElementById("btfw-stack");
+    if (stackRoot) {
+      const mo = new MutationObserver(() => scheduleInjectButton());
+      mo.observe(stackRoot, { childList: true, subtree: true });
+    } else {
+      const mo = new MutationObserver(() => scheduleInjectButton());
+      mo.observe(document.body, { childList: true, subtree: false });
+    }
     watchChannelSettings();
   }
 
