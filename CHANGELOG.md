@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.9.0...v1.10.0) (2026-06-24)
+
+
+### Features
+
+* **chat:** intoxication tiers on drink counter face ([#105](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/105)) ([92258fd](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/92258fd2dbff37b17d792a8d4c746d65b60c3c70))
+
 # [1.9.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.8.2...v1.9.0) (2026-06-23)
 
 
