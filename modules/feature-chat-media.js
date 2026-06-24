@@ -19,7 +19,7 @@ BTFW.define("feature:chatMedia", [], async () => {
     try { localStorage.setItem(LS_AUTO, on ? "1" : "0"); } catch(_){}
     applyAutoplay();
   }
-  function getHoverMagnify(){ try { return localStorage.getItem(LS_HOVER_MAGNIFY) ?? "1"; } catch(_) { return "1"; } }
+  function getHoverMagnify(){ try { return localStorage.getItem(LS_HOVER_MAGNIFY) ?? "0"; } catch(_) { return "0"; } }
   function setHoverMagnify(on){
     try { localStorage.setItem(LS_HOVER_MAGNIFY, on ? "1" : "0"); } catch(_){}
     applyHoverMagnify(on);

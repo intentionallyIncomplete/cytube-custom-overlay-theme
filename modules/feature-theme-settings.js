@@ -788,7 +788,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     if (chatLabel) chatLabel.textContent = `${chatPxNow}px`;
     $("#btfw-emote-size").value   = get(TS_KEYS.emoteSize,   "medium");
     $("#btfw-gif-autoplay").checked = get(TS_KEYS.gifAutoplay, "1") === "1";
-    $("#btfw-image-hover-magnify").checked = get(TS_KEYS.imageHoverMagnify, "1") === "1";
+    $("#btfw-image-hover-magnify").checked = get(TS_KEYS.imageHoverMagnify, "0") === "1";
     $("#btfw-chat-join-notices").checked = get(TS_KEYS.chatJoinNotices, "1") === "1";
     $("#btfw-localsubs-toggle").checked = get(TS_KEYS.localSubs, "1") === "1";
     const bc = $("#btfw-billcast-toggle"); if (bc) bc.checked = get(TS_KEYS.billcastEnabled, "1") === "1";

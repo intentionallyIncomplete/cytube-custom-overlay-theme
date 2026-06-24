@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 const LS_HOVER_MAGNIFY = "btfw:chat:imageHoverMagnify";
 
 function parseHoverMagnify(stored) {
-  return (stored ?? "1") === "1";
+  return (stored ?? "0") === "1";
 }
 
 function applyHoverMagnify(doc, on) {
@@ -12,8 +12,8 @@ function applyHoverMagnify(doc, on) {
   else delete doc.documentElement.dataset.btfwChatHoverMagnify;
 }
 
-test("hover magnify defaults on", () => {
-  assert.equal(parseHoverMagnify(null), true);
+test("hover magnify defaults off", () => {
+  assert.equal(parseHoverMagnify(null), false);
   assert.equal(parseHoverMagnify("1"), true);
   assert.equal(parseHoverMagnify("0"), false);
 });
