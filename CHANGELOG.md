@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.10.1...v1.11.0) (2026-06-24)
+
+
+### Features
+
+* **chat:** optional hover magnify for channel emote images ([#107](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/107)) ([b18b73c](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/b18b73caeb826cbd357b078b0736005bfbe3cdf1))
+
 ## [1.10.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.10.0...v1.10.1) (2026-06-24)
 
 
