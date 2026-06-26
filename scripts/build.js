@@ -110,6 +110,7 @@ const bundles = [
       'modules/feature-emoji-compat.js',
       'modules/feature-emoji-loader.js',
       'modules/util-giphy-proxy.js',
+      'modules/util-klipy-proxy.js',
       'modules/feature-gifs.js',
       'modules/feature-poll-overlay.js',
       'modules/feature-notify.js',

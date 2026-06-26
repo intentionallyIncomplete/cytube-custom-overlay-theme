@@ -9,6 +9,7 @@
  *   GET  /api/search, /api/history, /api/genres, /api/meta
  *   GET  /api/tmdb/{tmdb-path}  → TMDB proxy (server-side API key)
  *   GET  /api/giphy/search, /api/giphy/trending  → Giphy proxy (server-side API key)
+ *   GET  /api/klipy/search, /api/klipy/trending, POST /api/klipy/share/{slug}  → KLIPY proxy
  *   POST /api/suggestions
  */
 
@@ -16,6 +17,7 @@ export interface Env {
   MOVIE_SUGGESTIONS: KVNamespace;
   TMDB_API_KEY: string;
   GIPHY_API_KEY?: string;
+  KLIPY_APP_KEY?: string;
   ALLOWED_ORIGINS?: string;
 }
 
@@ -158,6 +160,14 @@ function requireGiphyKey(env: Env): string {
   return key;
 }
 
+function requireKlipyKey(env: Env): string {
+  const key = (env.KLIPY_APP_KEY || "").trim();
+  if (!key) {
+    throw new Error("KLIPY_APP_KEY is not configured on the worker");
+  }
+  return key;
+}
+
 async function tmdbFetch<T>(env: Env, path: string, params: Record<string, string | number | boolean | undefined>): Promise<T> {
   const apiKey = requireTmdbKey(env);
   const url = new URL(`https://api.themoviedb.org/3${path}`);
@@ -195,6 +205,34 @@ async function giphyFetch<T>(env: Env, path: string, params: Record<string, stri
   if (!response.ok) {
     const body = await response.text();
     throw new Error(`Giphy ${response.status}: ${body.slice(0, 240)}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function klipyFetch<T>(
+  env: Env,
+  endpoint: "search" | "trending",
+  params: Record<string, string | number | boolean | undefined>,
+  userAgent: string,
+): Promise<T> {
+  const appKey = requireKlipyKey(env);
+  const url = new URL(`https://api.klipy.com/api/v1/${appKey}/gifs/${endpoint}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    url.searchParams.set(key, String(value));
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      accept: "application/json",
+      "User-Agent": userAgent,
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`KLIPY ${response.status}: ${body.slice(0, 240)}`);
   }
 
   return response.json() as Promise<T>;
@@ -312,6 +350,70 @@ async function handleGiphyProxy(env: Env, requestUrl: URL, endpoint: "search" | 
   if (!params.limit) params.limit = "50";
 
   const data = await giphyFetch(env, endpoint, params);
+  return json(data, {}, corsOrigin);
+}
+
+async function handleKlipyProxy(
+  env: Env,
+  request: Request,
+  requestUrl: URL,
+  endpoint: "search" | "trending",
+  corsOrigin: string | null,
+): Promise<Response> {
+  const params: Record<string, string | number | boolean | undefined> = {};
+  requestUrl.searchParams.forEach((value, key) => {
+    if (key === "app_key" || key === "api_key") return;
+    params[key] = value;
+  });
+
+  if (!params.locale) params.locale = "us";
+  if (!params.content_filter) params.content_filter = "high";
+  if (!params.format_filter) params.format_filter = "gif,jpg";
+  if (!params.per_page) params.per_page = "50";
+  if (!params.page) params.page = "1";
+
+  const userAgent = request.headers.get("User-Agent") || "BillTube/1.0";
+  const data = await klipyFetch(env, endpoint, params, userAgent);
+  return json(data, {}, corsOrigin);
+}
+
+async function handleKlipyShare(
+  env: Env,
+  request: Request,
+  slug: string,
+  corsOrigin: string | null,
+): Promise<Response> {
+  const normalizedSlug = slug.replace(/^\/+/, "").trim();
+  if (!normalizedSlug || normalizedSlug.includes("..")) {
+    return errorResponse(400, "Invalid KLIPY slug", corsOrigin);
+  }
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = await request.json() as Record<string, unknown>;
+  } catch {
+    return errorResponse(400, "Invalid JSON body", corsOrigin);
+  }
+
+  const appKey = requireKlipyKey(env);
+  const url = `https://api.klipy.com/api/v1/${appKey}/gifs/share/${encodeURIComponent(normalizedSlug)}`;
+  const userAgent = request.headers.get("User-Agent") || "BillTube/1.0";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": userAgent,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    return errorResponse(response.status, `KLIPY share failed: ${text.slice(0, 240)}`, corsOrigin);
+  }
+
+  const data = await response.json().catch(() => ({}));
   return json(data, {}, corsOrigin);
 }
 
@@ -526,6 +628,19 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return handleGiphyProxy(env, url, "trending", corsOrigin);
     }
 
+    if (request.method === "GET" && path === "/api/klipy/search") {
+      return handleKlipyProxy(env, request, url, "search", corsOrigin);
+    }
+
+    if (request.method === "GET" && path === "/api/klipy/trending") {
+      return handleKlipyProxy(env, request, url, "trending", corsOrigin);
+    }
+
+    if (request.method === "POST" && path.startsWith("/api/klipy/share/")) {
+      const slug = path.slice("/api/klipy/share/".length);
+      return handleKlipyShare(env, request, slug, corsOrigin);
+    }
+
     if (request.method === "POST" && path === "/api/suggestions") {
       return handleCreateSuggestion(request, env, corsOrigin, false);
     }
@@ -534,7 +649,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     console.error("[movies-storage]", message);
-    const status = message.includes("TMDB_API_KEY") || message.includes("GIPHY_API_KEY") ? 503 : 500;
+    const status = message.includes("TMDB_API_KEY") || message.includes("GIPHY_API_KEY") || message.includes("KLIPY_APP_KEY") ? 503 : 500;
     return errorResponse(status, message, corsOrigin);
   }
 }

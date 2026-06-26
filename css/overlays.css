@@ -777,6 +777,24 @@
   display: none;
 }
 
+.btfw-klipy-branding {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: auto;
+}
+
+.btfw-klipy-branding.is-hidden {
+  display: none;
+}
+
+.btfw-klipy-powered {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 140px;
+  opacity: 0.95;
+}
+
 #btfw-gif-modal .btfw-gif-tabs li a,
 #btfw-gif-modal .btfw-gif-tabs li.is-active a {
   border-radius: 4px;

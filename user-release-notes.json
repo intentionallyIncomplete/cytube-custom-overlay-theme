@@ -1,6 +1,34 @@
 {
   "releases": [
     {
+      "version": "1.13.0",
+      "date": "2026-06-21",
+      "summary": "Search KLIPY GIFs alongside Giphy in chat, with partner branding on picks and sent messages.",
+      "categories": {
+        "features": [
+          "GIF picker: new KLIPY tab for search and trending, next to Giphy and Favorites.",
+          "KLIPY GIFs you send show a small partner watermark in chat so attribution stays visible."
+        ],
+        "improvements": [
+          "GIF picker: KLIPY tab shows Search KLIPY and Powered by KLIPY branding while the modal is open.",
+          "KLIPY lookups run through the same channel backend as Giphy and movie tools—no API key in the page."
+        ],
+        "deprecations": [
+          "Tenor GIF chat filters are removed. Use Giphy or KLIPY URLs in chat instead."
+        ],
+        "breaking": [
+          "Action required (channel operators): deploy the movies-storage worker with a KLIPY_APP_KEY secret and re-import chat filters after updating channel JavaScript."
+        ]
+      },
+      "highlights": [
+        "GIF picker: KLIPY tab for search and trending.",
+        "Powered by KLIPY branding in the picker; watermark on GIFs you send.",
+        "KLIPY search runs through the channel backend like Giphy.",
+        "Tenor chat embed filters removed—use Giphy or KLIPY.",
+        "Channel operators: set KLIPY_APP_KEY on the worker when updating."
+      ]
+    },
+    {
       "version": "1.12.0",
       "date": "2026-06-25",
       "summary": "GIF search in chat runs through the channel backend so lookups stay reliable and secure.",
@@ -89,15 +117,6 @@
       "highlights": [
         "Connected users breakdown: hovering the user count in the chat bar keeps the full tooltip visible instead of clipping off the edge of the screen.",
         "User count display shows only the number again instead of the long admin breakdown string."
-      ]
-    },
-    {
-      "version": "1.1.1",
-      "date": "2026-06-04",
-      "summary": "Movie suggestions and audio tools are more reliable.",
-      "highlights": [
-        "Movie suggestions no longer show invalid or empty entries.",
-        "Audio enhancer loads correctly when the channel starts."
       ]
     }
   ]

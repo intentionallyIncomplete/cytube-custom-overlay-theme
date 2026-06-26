@@ -6,7 +6,7 @@ BTFW.define("feature:chatMedia", [], async () => {
   const LS_AUTO = "btfw:chat:gifAutoplay"; // "1" | "0"
   const LS_HOVER_MAGNIFY = "btfw:chat:imageHoverMagnify"; // "1" | "0"
   const SIZE_PX = { sm: 100, md: 130, lg: 170 };
-  const SEL = "#messagebuffer img.giphy.chat-picture";
+  const SEL = "#messagebuffer img.giphy.chat-picture, #messagebuffer img.klipy.chat-picture";
 
   function getSize(){ try { return localStorage.getItem(LS_SIZE) || "md"; } catch(_) { return "md"; } }
   function setSize(v){

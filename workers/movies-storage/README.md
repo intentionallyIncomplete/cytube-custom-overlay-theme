@@ -10,6 +10,7 @@ npm install
 npx wrangler kv namespace create MOVIE_SUGGESTIONS   # first time only
 npx wrangler secret put TMDB_API_KEY
 npx wrangler secret put GIPHY_API_KEY
+npx wrangler secret put KLIPY_APP_KEY
 npm run deploy
 ```
 
@@ -31,6 +32,9 @@ npm run deploy
 | GET | `/api/tmdb/*` | Generic TMDB proxy (key stays on worker) |
 | GET | `/api/giphy/search` | Giphy search (`q`, `limit`, `rating`) |
 | GET | `/api/giphy/trending` | Giphy trending (`limit`, `rating`) |
+| GET | `/api/klipy/search` | KLIPY search (`q`, `page`, `per_page`, `customer_id`, `locale`, `content_filter`) |
+| GET | `/api/klipy/trending` | KLIPY trending (`page`, `per_page`, `customer_id`, `locale`, `content_filter`) |
+| POST | `/api/klipy/share/{slug}` | KLIPY share attribution (`customer_id`, optional `q` in JSON body) |
 | POST | `/api/suggestions` | Save a suggestion |
 
 ## Verify
@@ -39,4 +43,5 @@ npm run deploy
 curl https://empty-bar-d620.movies-storage-a.workers.dev/
 curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/tmdb/search/movie?query=Fight%20Club"
 curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/giphy/trending?limit=5"
+curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/klipy/trending?per_page=5&customer_id=dev"
 ```

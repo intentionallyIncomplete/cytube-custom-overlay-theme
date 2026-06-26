@@ -1,13 +1,15 @@
 
-BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
+BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ init }) => {
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const PER_PAGE = 12;
   const motion = await BTFW.init("util:motion");
   const giphyProxy = await init("util:giphy-proxy");
+  const klipyProxy = await init("util:klipy-proxy");
+  const BASE = (window.BTFW && BTFW.BASE ? BTFW.BASE.replace(/\/+$/,'') : "");
 
   const state = {
-    provider: "giphy",  // "giphy" | "favorites"
+    provider: "giphy",  // "giphy" | "klipy" | "favorites"
     query: "",
     page: 1,
     total: 0,
@@ -36,6 +38,36 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
   }
 
   function buildGiphyClassic(id){ return `https://media1.giphy.com/media/${id}/giphy.gif`; }
+
+  function assetUrl(...segments) {
+    const encoded = segments.map((segment) => String(segment).split("/").map(encodeURIComponent).join("/")).join("/");
+    return BASE ? `${BASE}/${encoded}` : `/${encoded}`;
+  }
+
+  const KLIPY_POWERED_BY_URL = assetUrl(
+    "assets/klipy/search-interface-branding/SVG Files/Powered by KLIPY  - white.svg"
+  );
+  const KLIPY_WATERMARK_URL = assetUrl("assets/klipy/card-branding/KLIPY Light with logo.svg");
+
+  function getCustomerId() {
+    try {
+      if (window.CLIENT && window.CLIENT.name) return String(window.CLIENT.name);
+      if (window.CLIENT && window.CLIENT.login) return String(window.CLIENT.login);
+    } catch (_) {}
+    return "guest";
+  }
+
+  function mapKlipyItem(item) {
+    if (!item || item.type === "ad") return null;
+    const slug = item.slug || "";
+    const id = String(item.id || slug || "");
+    if (!id) return null;
+    const file = item.file || {};
+    const thumb = file.sm?.gif?.url || file.xs?.gif?.url || file.sm?.jpg?.url || file.xs?.jpg?.url || "";
+    const urlClassic = file.hd?.gif?.url || file.md?.gif?.url || file.sm?.gif?.url || "";
+    if (!urlClassic) return null;
+    return { id, slug, provider: "klipy", thumb: thumb || urlClassic, urlClassic };
+  }
 
   function ensureOpeners() {
     ["#btfw-btn-gif", ".btfw-btn-gif", "#giphybtn", "#gifbtn"].forEach(sel=>{
@@ -85,6 +117,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
             <div class="tabs is-boxed is-small btfw-gif-tabs">
               <ul>
                 <li class="is-active" data-p="giphy"><a>Giphy</a></li>
+                <li data-p="klipy"><a>KLIPY</a></li>
                 <li data-p="favorites"><a>Favorites</a></li>
               </ul>
             </div>
@@ -92,6 +125,9 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
               <input id="btfw-gif-q" class="input is-small" type="text" placeholder="Search GIFs…">
               <button id="btfw-gif-go" class="button is-link is-small">Search</button>
               <button id="btfw-gif-trending" class="button is-dark is-small">Trending</button>
+            </div>
+            <div id="btfw-klipy-branding" class="btfw-klipy-branding is-hidden" aria-hidden="true">
+              <img class="btfw-klipy-powered" src="" alt="Powered by KLIPY">
             </div>
           </div>
 
@@ -138,6 +174,11 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
       if (state.page < totalPages) { state.page++; debouncedRender(); }
     });
 
+    const powered = $(".btfw-klipy-powered", modal);
+    if (powered && !powered.getAttribute("src")) {
+      powered.src = KLIPY_POWERED_BY_URL;
+    }
+
     return modal;
   }
 
@@ -163,6 +204,23 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
     return { items: list, total: list.length };
   }
 
+  async function fetchKlipy(q) {
+    const params = {
+      per_page: "50",
+      page: "1",
+      customer_id: getCustomerId(),
+      locale: "us",
+      content_filter: "high",
+      format_filter: "gif,jpg",
+    };
+    if (q) params.q = q;
+
+    const json = await klipyProxy.klipyFetch(q ? "search" : "trending", params);
+    const rows = (json && json.data && Array.isArray(json.data.data)) ? json.data.data : [];
+    const list = rows.map(mapKlipyItem).filter(Boolean);
+    return { items: list, total: list.length };
+  }
+
   async function search(){
     const q = ($("#btfw-gif-q", ensureModal()).value || "").trim();
     state.query = q;
@@ -179,7 +237,8 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
     renderSkeleton();
 
     try {
-      const { items, total } = await fetchGiphy(q);
+      const fetcher = state.provider === "klipy" ? fetchKlipy : fetchGiphy;
+      const { items, total } = await fetcher(q);
       state.items = items;
       state.total = total;
       state.loading = false;
@@ -189,7 +248,8 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
       state.items = [];
       state.total = 0;
       state.loading = false;
-      showNotice("Failed to load GIFs (proxy unavailable or network). Try again later.");
+      const label = state.provider === "klipy" ? "KLIPY" : "GIF";
+      showNotice(`Failed to load ${label}s (proxy unavailable or network). Try again later.`);
       render();
     }
   }
@@ -251,6 +311,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
 
     renderedItems = pageItems.map(item => ({
       id: item.id,
+      slug: item.slug || "",
       provider: item.provider,
       thumb: item.thumb,
       urlClassic: item.urlClassic
@@ -278,6 +339,13 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
 
       const url = cell.dataset.url;
       if (!url) return;
+
+      if (cell.dataset.provider === "klipy" && cell.dataset.slug) {
+        klipyProxy.klipyShare(cell.dataset.slug, {
+          customer_id: getCustomerId(),
+          q: state.query || undefined,
+        }).catch(() => {});
+      }
 
       const input = document.getElementById("chatline");
       if (!input) return;
@@ -326,6 +394,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
     // Update data attribute
     cell.dataset.url = item.urlClassic || "";
     cell.dataset.id = item.id || "";
+    cell.dataset.slug = item.slug || "";
     cell.dataset.thumb = item.thumb || "";
     cell.dataset.provider = item.provider || state.provider || "";
     cell.dataset.favKey = makeFavoriteKey(item);
@@ -366,6 +435,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
 
     cell.dataset.url = item.urlClassic || "";
     cell.dataset.id = item.id || "";
+    cell.dataset.slug = item.slug || "";
     cell.dataset.thumb = item.thumb || "";
     cell.dataset.provider = item.provider || state.provider || "";
     cell.dataset.favKey = makeFavoriteKey(item);
@@ -460,6 +530,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
     showNotice("");
     state.page = 1;
     state.provider = modal.querySelector(".btfw-gif-tabs li.is-active")?.getAttribute("data-p") || "giphy";
+    updateToolbarForProvider();
     if (state.provider !== "favorites") {
       renderSkeleton();
     }
@@ -487,10 +558,21 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
   }
 
   function updateToolbarForProvider() {
-    const searchBar = $(".btfw-gif-search", modal || document);
+    const m = modal || document;
+    const searchBar = $(".btfw-gif-search", m);
+    const branding = $("#btfw-klipy-branding", m);
+    const input = $("#btfw-gif-q", m);
     if (!searchBar) return;
-    const shouldHide = state.provider === "favorites";
-    searchBar.classList.toggle("is-hidden", shouldHide);
+    const isFavorites = state.provider === "favorites";
+    const isKlipy = state.provider === "klipy";
+    searchBar.classList.toggle("is-hidden", isFavorites);
+    if (branding) {
+      branding.classList.toggle("is-hidden", !isKlipy);
+      branding.setAttribute("aria-hidden", isKlipy ? "false" : "true");
+    }
+    if (input) {
+      input.placeholder = isKlipy ? "Search KLIPY" : "Search GIFs…";
+    }
   }
 
   function makeFavoriteKey(item) {
@@ -508,7 +590,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed
-          .filter(item => item && typeof item === "object" && item.urlClassic && item.provider !== "tenor")
+          .filter(item => item && typeof item === "object" && item.urlClassic)
           .map(item => ({
             provider: item.provider || "giphy",
             id: item.id || "",
@@ -546,9 +628,10 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
     if (!cell) return null;
     const provider = cell.dataset.provider || state.provider || "";
     const id = cell.dataset.id || "";
+    const slug = cell.dataset.slug || "";
     const thumb = cell.dataset.thumb || "";
     const urlClassic = cell.dataset.url || "";
-    const item = { provider, id, thumb, urlClassic };
+    const item = { provider, id, slug, thumb, urlClassic };
     item.favKey = cell.dataset.favKey || makeFavoriteKey(item);
     return item;
   }
@@ -601,7 +684,15 @@ BTFW.define("feature:gifs", ["util:giphy-proxy"], async ({ init }) => {
     return true;
   }
 
-  function boot(){ ensureOpeners(); }
+  function boot(){
+    ensureOpeners();
+    if (KLIPY_WATERMARK_URL) {
+      document.documentElement.style.setProperty(
+        "--btfw-klipy-watermark-url",
+        `url("${KLIPY_WATERMARK_URL}")`
+      );
+    }
+  }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 
