@@ -1,5 +1,14 @@
 :root {
   --btfw-top: 64px;
+  --btfw-nav-real-height: var(--btfw-top);
+  --btfw-top-effective: var(--btfw-top);
+  --btfw-viewport-h: 100dvh;
+  --btfw-primary-budget: calc(var(--btfw-viewport-h) - var(--btfw-top-effective) - var(--btfw-gap) * 2);
+  --btfw-video-share: 0.55;
+  --btfw-video-max-h: min(
+    calc(var(--btfw-primary-budget) * var(--btfw-video-share)),
+    calc((100vw - var(--btfw-chat-min, 320px) - var(--btfw-split-width, 8px) - var(--btfw-gap) * 3) * 9 / 16)
+  );
   --btfw-gap: 10px;
   --btfw-color-bg: var(--btfw-theme-bg, #0b0f12);
   --btfw-color-surface: var(--btfw-theme-surface, #11161d);

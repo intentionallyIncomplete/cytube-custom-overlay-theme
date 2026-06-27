@@ -3,8 +3,14 @@ BTFW.define("feature:navbar", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
 
   const MOBILE_BREAKPOINT = 768;
+  const AUTOHIDE_REVEAL_MS = 3200;
   let mobileNavActive = false;
   let mobileNavHandlersBound = false;
+  let autohideActive = false;
+  let autohideHidden = true;
+  let autohideRevealTimer = null;
+  let autohideScrollLastY = 0;
+  let autohideHandlersBound = false;
   let lastMobileDispatch = { open: null, mobile: null };
 
   function getUserName(){
@@ -332,6 +338,102 @@ BTFW.define("feature:navbar", [], async () => {
     setMobileNavOpen(!isMobileNavOpen());
   }
 
+  function dispatchAutohideState(){
+    document.dispatchEvent(new CustomEvent("btfw:navbar:autohide", {
+      detail: {
+        active: autohideActive,
+        hidden: autohideHidden
+      }
+    }));
+  }
+
+  function ensureNavRevealZone(){
+    let zone = document.getElementById("btfw-nav-reveal-zone");
+    if (!zone) {
+      zone = document.createElement("button");
+      zone.type = "button";
+      zone.id = "btfw-nav-reveal-zone";
+      zone.setAttribute("aria-label", "Show navigation");
+      zone.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        revealAutohideNav({ autoHideAfter: AUTOHIDE_REVEAL_MS });
+      });
+      document.body.appendChild(zone);
+    }
+    return zone;
+  }
+
+  function setAutohideNavHidden(hidden){
+    const host = document.getElementById("btfw-navhost");
+    if (!host || !autohideActive) return;
+    autohideHidden = !!hidden;
+    host.setAttribute("data-nav-hidden", autohideHidden ? "true" : "false");
+    host.setAttribute("data-nav-revealed", autohideHidden ? "false" : "true");
+    const zone = ensureNavRevealZone();
+    zone.classList.toggle("is-active", autohideHidden);
+    dispatchAutohideState();
+  }
+
+  function revealAutohideNav(opts = {}){
+    if (!autohideActive) return;
+    setAutohideNavHidden(false);
+    if (autohideRevealTimer) clearTimeout(autohideRevealTimer);
+    const delay = opts.autoHideAfter;
+    if (Number.isFinite(delay) && delay > 0) {
+      autohideRevealTimer = setTimeout(() => {
+        autohideRevealTimer = null;
+        setAutohideNavHidden(true);
+      }, delay);
+    }
+  }
+
+  function onAutohideScroll(){
+    if (!autohideActive) return;
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    const delta = y - autohideScrollLastY;
+    autohideScrollLastY = y;
+    if (delta < -8) revealAutohideNav({ autoHideAfter: AUTOHIDE_REVEAL_MS });
+    else if (delta > 12 && y > 24) setAutohideNavHidden(true);
+  }
+
+  function updateVerticalAutohideState(){
+    const host = document.getElementById("btfw-navhost");
+    const grid = document.getElementById("btfw-grid");
+    if (!host) return;
+
+    const shouldAutohide = Boolean(grid && grid.classList.contains("btfw-grid--vertical")
+      && window.innerWidth > MOBILE_BREAKPOINT);
+    host.classList.toggle("btfw-navhost--autohide", shouldAutohide);
+    autohideActive = shouldAutohide;
+
+    if (!shouldAutohide) {
+      if (autohideRevealTimer) {
+        clearTimeout(autohideRevealTimer);
+        autohideRevealTimer = null;
+      }
+      autohideHidden = false;
+      host.removeAttribute("data-nav-hidden");
+      host.removeAttribute("data-nav-revealed");
+      const zone = document.getElementById("btfw-nav-reveal-zone");
+      if (zone) zone.classList.remove("is-active");
+      dispatchAutohideState();
+      return;
+    }
+
+    ensureNavRevealZone();
+    autohideScrollLastY = window.scrollY || 0;
+    setAutohideNavHidden(true);
+  }
+
+  function setupVerticalAutohide(){
+    updateVerticalAutohideState();
+    if (autohideHandlersBound) return;
+    autohideHandlersBound = true;
+    document.addEventListener("btfw:layout:orientation", () => updateVerticalAutohideState());
+    window.addEventListener("resize", () => updateVerticalAutohideState());
+    window.addEventListener("scroll", onAutohideScroll, { passive: true });
+  }
+
   function updateMobileNavState(){
     const host = document.getElementById("btfw-navhost");
     if (!host) return;
@@ -349,6 +451,7 @@ BTFW.define("feature:navbar", [], async () => {
       mobileNavActive = false;
       setMobileNavOpen(true);
     }
+    updateVerticalAutohideState();
   }
 
   function setupMobileNav(){
@@ -356,6 +459,7 @@ BTFW.define("feature:navbar", [], async () => {
     if (!host) return;
     ensureMobileCloseButton();
     updateMobileNavState();
+    setupVerticalAutohide();
     if (mobileNavHandlersBound) return;
     mobileNavHandlersBound = true;
     window.addEventListener("resize", () => updateMobileNavState());

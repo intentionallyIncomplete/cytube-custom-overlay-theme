@@ -1,6 +1,8 @@
 #videowrap{
   width: 100%;
   min-width: 0;
+  max-height: var(--btfw-video-max-h);
+  flex: 0 0 auto;
   position: relative; /* anchor overlay chrome */
   display: grid;
   place-items: stretch;
@@ -704,6 +706,8 @@
     display: none;
     position: relative;
     overflow: hidden;
+    isolation: isolate;
+    contain: layout style;
 }
 
 .btfw-addmedia-panel.is-open {

@@ -533,7 +533,7 @@ a:hover {
   padding: 0 var(--btfw-gap) var(--btfw-gap);
   width: 100%;
   box-sizing: border-box;
-  min-height: calc(100vh - var(--btfw-top) - var(--btfw-gap));
+  min-height: calc(100dvh - var(--btfw-top-effective) - var(--btfw-gap));
   position: relative;
   z-index: 0;
 }
@@ -571,6 +571,8 @@ a:hover {
 #btfw-leftpad{
   grid-area: video;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -578,8 +580,8 @@ a:hover {
 #btfw-chatcol{
   grid-area: chat;
   position: sticky;
-  top: calc(var(--btfw-top) + var(--btfw-gap));
-  height: calc(100vh - var(--btfw-top) - var(--btfw-gap) * 2);
+  top: calc(var(--btfw-top-effective) + var(--btfw-gap));
+  height: calc(100dvh - var(--btfw-top-effective) - var(--btfw-gap) * 2);
   display: flex;
   flex-direction: column;
   min-width: 280px;
@@ -661,7 +663,7 @@ body.btfw-resizing {
     "video split chat";
 }
 
-/* Vertical (mobile) layout: video, sticky chat, modules below chat */
+/* Vertical (mobile) layout: video, chat, modules below — no sticky overlap */
 #btfw-grid.btfw-grid--vertical{
   grid-template-columns: 1fr;
   grid-template-areas:
@@ -669,15 +671,31 @@ body.btfw-resizing {
     "video"
     "chat"
     "stack";
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows:
+    auto
+    minmax(0, min(var(--btfw-video-max-h), 40dvh))
+    minmax(clamp(220px, 32dvh, 420px), 1fr)
+    auto;
   grid-row-gap: var(--btfw-gap);
-  min-height: calc(100dvh - var(--btfw-top));
-  height: auto;
-  max-height: none;
-  align-content: start;
-  overflow: visible;
+  min-height: calc(100dvh - var(--btfw-top-effective));
+  height: calc(100dvh - var(--btfw-top-effective));
+  max-height: calc(100dvh - var(--btfw-top-effective));
+  align-content: stretch;
+  overflow: hidden;
   --btfw-emote-size: 92px;
   --btfw-chat-gif-max-width: 60%;
+  --btfw-video-share: 0.38;
+}
+
+#btfw-grid.btfw-grid--vertical.btfw-grid--stack-hidden{
+  grid-template-areas:
+    "nav"
+    "video"
+    "chat";
+  grid-template-rows:
+    auto
+    minmax(0, min(var(--btfw-video-max-h), 52dvh))
+    minmax(clamp(240px, 38dvh, 1fr), 1fr);
 }
 
 body.btfw-mobile-stack-enabled {
@@ -702,8 +720,9 @@ body.btfw-mobile-stack-enabled {
   flex: 0 0 auto;
   min-height: 0 !important;
   width: 100%;
-  max-height: min(34dvh, 58vw);
+  max-height: min(var(--btfw-video-max-h), 40dvh, 58vw);
   aspect-ratio: var(--btfw-video-aspect, 16 / 9);
+  height: auto;
 }
 
 #btfw-grid.btfw-grid--vertical #videowrap iframe,
@@ -713,18 +732,19 @@ body.btfw-mobile-stack-enabled {
 
 #btfw-grid.btfw-grid--vertical #btfw-chatcol{
   grid-area: chat;
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
+  position: relative;
   top: auto;
-  height: auto;
-  min-height: clamp(240px, 38dvh, 400px);
-  max-height: min(48dvh, 480px);
+  bottom: auto;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-radius: var(--btfw-radius);
-  box-shadow: 0 -8px 24px color-mix(in srgb, var(--btfw-color-bg) 55%, transparent 45%);
+  box-shadow: none;
+  isolation: isolate;
 }
 
 #btfw-grid.btfw-grid--vertical #chatwrap{
@@ -738,9 +758,16 @@ body.btfw-mobile-stack-enabled {
   grid-area: stack;
   width: 100%;
   min-height: 0;
+  max-height: min(36dvh, 420px);
   flex: none;
   margin-top: 0;
   padding-bottom: var(--btfw-gap);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+#btfw-grid.btfw-grid--vertical > #btfw-stack.btfw-stack--all-hidden{
+  display: none !important;
 }
 
 /* ---------- Content Stack under video ---------- */
@@ -777,10 +804,11 @@ body.btfw-mobile-stack-enabled {
   gap: var(--btfw-stack-gap);
   margin-top: var(--btfw-gap);
   flex: 1;
+  min-height: 0;
   padding: 0;
   background: transparent;
   border: 0;
-  overflow: visible;
+  overflow: auto;
 }
 .btfw-stack-item{
   border: 0;
@@ -2013,17 +2041,10 @@ nav.pagination.is-centered.btfw-gif-pager {
   #btfw-grid.btfw-grid--vertical{
     grid-template-columns: 1fr;
     grid-row-gap: var(--btfw-gap);
-    min-height: calc(100dvh - var(--btfw-top));
-    height: auto;
+    min-height: calc(100dvh - var(--btfw-top-effective));
+    height: calc(100dvh - var(--btfw-top-effective));
   }
   #btfw-grid.btfw-grid--vertical #btfw-vsplit{ display:none; }
-  #btfw-grid.btfw-grid--vertical #btfw-chatcol{
-    position: sticky;
-    bottom: 0;
-    height: auto;
-    min-height: clamp(240px, 38dvh, 400px);
-    max-height: min(48dvh, 480px);
-  }
 }
 
 /* Utility */
@@ -2074,6 +2095,40 @@ body:not(.is-scrolling) #queue li {
 }
 .btfw-stack-item[data-open="false"] .btfw-stack-item__body {
   display: none !important;
+}
+
+.btfw-stack-item[data-hidden="true"] {
+  display: none !important;
+}
+
+#btfw-stack.btfw-stack--all-hidden {
+  display: none !important;
+  flex: 0 0 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#btfw-grid:not(.btfw-grid--vertical) #btfw-leftpad.btfw-leftpad--stack-hidden #btfw-stack {
+  display: none !important;
+}
+
+.btfw-stack-hide-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--btfw-color-text-muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.btfw-stack-hide-panel input {
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--btfw-color-accent);
 }
 
 /* Summernote Dark Theme for BTFW */

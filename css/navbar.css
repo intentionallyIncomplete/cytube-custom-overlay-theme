@@ -357,3 +357,47 @@ form#logoutform.btfw-logoutform--hidden,
   outline: none;
 }
 
+/* ---------- Vertical-stack auto-hide (reclaim vertical space) ---------- */
+#btfw-navhost.btfw-navhost--autohide {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  will-change: transform;
+}
+
+#btfw-navhost.btfw-navhost--autohide[data-nav-hidden="true"] {
+  transform: translateY(calc(-100% - 4px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+#btfw-navhost.btfw-navhost--autohide[data-nav-hidden="true"] > :is(nav.navbar, .navbar, #navbar, .navbar-fixed-top) {
+  pointer-events: none;
+}
+
+#btfw-nav-reveal-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  z-index: 5999;
+  display: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+#btfw-nav-reveal-zone.is-active {
+  display: block;
+}
+
+#btfw-navhost.btfw-navhost--autohide[data-nav-revealed="true"] {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: none;
+}
+
+#btfw-navhost.btfw-navhost--autohide[data-nav-revealed="true"] > :is(nav.navbar, .navbar, #navbar, .navbar-fixed-top) {
+  pointer-events: auto;
+}

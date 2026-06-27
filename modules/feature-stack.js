@@ -4,6 +4,12 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   const PLAYLIST_VISIBILITY_KEY = "btfw-stack-playlist-open";
   const POLL_VISIBILITY_KEY = "btfw-stack-poll-open";
 
+  const HIDDEN_KEYS = {
+    "motd-group": "btfw-stack-motd-hidden",
+    "playlist-group": "btfw-stack-playlist-hidden",
+    "poll-group": "btfw-stack-poll-hidden"
+  };
+
   const STACK_VISIBILITY = {
     "motd-group": {
       storageKey: MOTD_VISIBILITY_KEY,
@@ -637,6 +643,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 
     const vis = STACK_VISIBILITY[group.id];
     if (vis) attachStackVisibilityToggle(wrapper, vis);
+    attachPanelHideCheckbox(wrapper, group.id);
 
     // Wire up/down buttons
     wrapper.querySelector(".btfw-up").onclick = function(){
@@ -688,6 +695,88 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     try{
       localStorage.setItem(key, isOpen ? "true" : "false");
     }catch(e){}
+  }
+
+  function getStoredHidden(key){
+    try{
+      const stored = localStorage.getItem(key);
+      if (stored === null) return false;
+      return stored === "true";
+    }catch(e){
+      return false;
+    }
+  }
+
+  function storeHidden(key, isHidden){
+    try{
+      localStorage.setItem(key, isHidden ? "true" : "false");
+    }catch(e){}
+  }
+
+  function dispatchStackVisibility(){
+    const items = Array.from(document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']"));
+    const visibleItems = items.filter((el) => el.dataset.hidden !== "true");
+    const allHidden = items.length > 0 && visibleItems.length === 0;
+    const stack = document.getElementById("btfw-stack");
+    const leftpad = document.getElementById("btfw-leftpad");
+    const grid = document.getElementById("btfw-grid");
+    if (stack) stack.classList.toggle("btfw-stack--all-hidden", allHidden);
+    if (leftpad) leftpad.classList.toggle("btfw-leftpad--stack-hidden", allHidden);
+    if (grid) grid.classList.toggle("btfw-grid--stack-hidden", allHidden);
+    document.dispatchEvent(new CustomEvent("btfw:layout:stackVisibility", {
+      detail: {
+        allHidden,
+        visibleCount: visibleItems.length,
+        totalCount: items.length
+      }
+    }));
+  }
+
+  function setPanelHidden(wrapper, hidden, opts = {}){
+    if (!wrapper) return;
+    const isHidden = !!hidden;
+    const suppressPersist = opts.persist === false;
+    wrapper.dataset.hidden = isHidden ? "true" : "false";
+    const groupId = wrapper.dataset.bind;
+    const hiddenKey = HIDDEN_KEYS[groupId];
+    const checkbox = wrapper.querySelector(".btfw-stack-hide-panel input");
+    if (checkbox && checkbox.checked !== isHidden) checkbox.checked = isHidden;
+    if (!suppressPersist && hiddenKey) storeHidden(hiddenKey, isHidden);
+    dispatchStackVisibility();
+  }
+
+  function attachPanelHideCheckbox(wrapper, groupId){
+    const hiddenKey = HIDDEN_KEYS[groupId];
+    if (!hiddenKey) return;
+
+    const header = wrapper.querySelector(".btfw-stack-item__header");
+    if (!header || header.querySelector(".btfw-stack-hide-panel")) return;
+
+    const storedHidden = getStoredHidden(hiddenKey);
+    wrapper.dataset.hidden = storedHidden ? "true" : "false";
+
+    const label = document.createElement("label");
+    label.className = "btfw-stack-hide-panel";
+    label.title = "Hide this panel and give more space to video and chat";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = storedHidden;
+    input.setAttribute("aria-label", `Hide ${groupId.replace("-group", "")} panel`);
+
+    const text = document.createElement("span");
+    text.textContent = "Hide";
+
+    label.appendChild(input);
+    label.appendChild(text);
+
+    input.addEventListener("change", () => {
+      setPanelHidden(wrapper, input.checked);
+    });
+
+    const arrows = header.querySelector(".btfw-stack-arrows");
+    if (arrows) header.insertBefore(label, arrows);
+    else header.appendChild(label);
   }
 
   function getStoredPlaylistVisibility(){
@@ -785,6 +874,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 
     arrows.insertBefore(toggleBtn, arrows.firstChild);
     wrapper._btfwSetOpenState = setOpenState;
+    attachPanelHideCheckbox(wrapper, wrapper.dataset.bind);
   }
 
   function detachPollWrapFromPlaylist() {
@@ -1239,7 +1329,14 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       pollGroup.classList.toggle('is-open', shouldPollOpen);
     }
 
+    document.querySelectorAll('#btfw-stack .btfw-stack-item[data-group="true"]').forEach((item) => {
+      const hiddenKey = HIDDEN_KEYS[item.dataset.bind];
+      if (!hiddenKey) return;
+      setPanelHidden(item, getStoredHidden(hiddenKey), { persist: false });
+    });
+
     syncPollPanelVisibility(refs);
+    dispatchStackVisibility();
   }, 1000);
   let n=0;
   const iv=setInterval(()=>{

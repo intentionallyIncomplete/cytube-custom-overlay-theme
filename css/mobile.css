@@ -1,21 +1,21 @@
-/* --------- Tablet & down (<= 1100px): stack columns, sticky chat --------- */
+/* --------- Tablet & down (<= 1100px): stack columns --------- */
 @media (max-width: 1100px){
   #btfw-grid.btfw-grid--vertical{
     padding: var(--btfw-gap, 10px) 8px;
     margin-top: 0;
-    min-height: calc(100dvh - var(--btfw-top));
-    height: auto;
+    min-height: calc(100dvh - var(--btfw-top-effective));
+    height: calc(100dvh - var(--btfw-top-effective));
     --btfw-emote-size: 84px;
     --btfw-chat-gif-max-width: 56%;
-  }
-
-  #btfw-grid.btfw-grid--vertical #btfw-chatcol{
-    min-height: clamp(220px, 36dvh, 380px);
-    max-height: min(46dvh, 460px);
+    --btfw-video-share: 0.36;
   }
 
   #btfw-grid.btfw-grid--vertical #videowrap{
-    max-height: min(32dvh, 54vw);
+    max-height: min(var(--btfw-video-max-h), 38dvh, 54vw);
+  }
+
+  #btfw-grid.btfw-grid--vertical > #btfw-stack{
+    max-height: min(32dvh, 380px);
   }
 }
 
