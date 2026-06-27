@@ -1,8 +1,9 @@
-BTFW.define("feature:chat-commands", ["util:tmdb-proxy"], async ({ init }) => {
+BTFW.define("feature:chat-commands", ["util:tmdb-proxy", "util:chatAutoscroll"], async ({ init }) => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const motion = await BTFW.init("util:motion");
   const tmdb = await init("util:tmdb-proxy");
+  const chatAutoscroll = await init("util:chatAutoscroll");
   const now = ()=>Date.now();
 
   function sendChat(msg){
@@ -15,7 +16,9 @@ BTFW.define("feature:chat-commands", ["util:tmdb-proxy"], async ({ init }) => {
     d.className = "server-msg btfw-cmd";
     d.textContent = text;
     buf.appendChild(d);
-    buf.scrollTop = buf.scrollHeight;
+    if (chatAutoscroll.shouldAutoScroll()) {
+      buf.scrollTop = buf.scrollHeight;
+    }
   }
   function getUser(){ try { return (window.CLIENT && CLIENT.name) ? CLIENT.name : ""; } catch(_) { return ""; } }
   function getRank(){ try { return (window.CLIENT && (CLIENT.rank|0)) || 0; } catch(_) { return 0; } }

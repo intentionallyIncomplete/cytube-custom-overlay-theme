@@ -51,6 +51,7 @@ const bundles = [
   {
     name: 'chat',
     modules: [
+      'modules/util-chat-autoscroll.js',
       'modules/feature-chat.js',
       'modules/feature-chat-tools.js',
       'modules/feature-chat-filters.js',

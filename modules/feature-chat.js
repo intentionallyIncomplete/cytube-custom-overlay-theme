@@ -1,5 +1,6 @@
-BTFW.define("feature:chat", ["feature:layout"], async ({ init }) => {
+BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll"], async ({ init }) => {
   const motion = await init("util:motion");
+  const chatAutoscroll = await init("util:chatAutoscroll");
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const MESSAGE_SELECTOR = ".chat-msg, .message, [class*=message]";
@@ -570,21 +571,18 @@ const scheduleNormalizeChatActions = (() => {
     if (!buffer) return;
 
     const sock = window.socket;
-    if (sock && typeof sock.on === "function") {
+    if (sock && typeof sock.on === "function" && !sock._btfwScrollWired) {
+      sock._btfwScrollWired = true;
       sock.on("chatMsg", () => {
-        if (typeof window.scrollChat === "function") {
-          window.scrollChat();
-          setTimeout(() => window.scrollChat(), 100);
-          setTimeout(() => window.scrollChat(), 250);
-        }
+        chatAutoscroll.scrollChatIfAllowed();
+        setTimeout(() => chatAutoscroll.scrollChatIfAllowed(), 100);
+        setTimeout(() => chatAutoscroll.scrollChatIfAllowed(), 250);
       });
     }
 
     processPendingChatMessages();
 
-    if (typeof window.scrollChat === "function") {
-      setTimeout(() => window.scrollChat(), 80);
-    }
+    setTimeout(() => chatAutoscroll.scrollChatIfAllowed(), 80);
   }
 
   function escapeHTML(str){
@@ -895,15 +893,7 @@ const scheduleNormalizeChatActions = (() => {
       top.appendChild(topActions);
     }
 
-    if (!topActions.querySelector("#btfw-mobile-modules-toggle")) {
-      const btn = document.createElement("button");
-      btn.id = "btfw-mobile-modules-toggle";
-      btn.className = "button is-dark is-small btfw-chatbtn";
-      btn.title = "Open navigation menu";
-      btn.setAttribute("aria-label", "Open navigation menu");
-      btn.innerHTML = '<i class="fa fa-bars"></i>';
-      topActions.appendChild(btn);
-    }
+    topActions.querySelector("#btfw-mobile-modules-toggle")?.remove();
 
     let bottom = cw.querySelector(".btfw-chat-bottombar");
     if (!bottom) {

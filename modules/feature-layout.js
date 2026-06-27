@@ -8,12 +8,17 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
   const CHAT_MIN_PX = 360;
   const WIDTH_BUFFER = 20;
   const MOBILE_THRESHOLD_MIN = 900;
-  const MOBILE_THRESHOLD_MAX = 940;
+  const MOBILE_THRESHOLD_MAX = 1100;
+  const STACK_HYSTERESIS_PX = 40;
+  const RATIO_KEY = "btfw:grid:videoRatio";
+  const MIN_VIDEO_RATIO = 0.35;
+  const MAX_VIDEO_RATIO = 0.78;
+  const DEFAULT_VIDEO_RATIO = 0.62;
 
   let videoColumnPx = null;
+  let videoColumnRatio = null;
   let chatSidePref = "right";
   let isVertical = false;
-  let mobileToggleEl = null;
 
   function refreshVideoSizing(){
     const wrap = document.getElementById("videowrap");
@@ -49,13 +54,61 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
 
   function loadVideoColumnWidth(){
     try {
+      const storedRatio = parseFloat(localStorage.getItem(RATIO_KEY) || "", 10);
+      if (!isNaN(storedRatio) && storedRatio >= MIN_VIDEO_RATIO && storedRatio <= MAX_VIDEO_RATIO) {
+        videoColumnRatio = storedRatio;
+        return;
+      }
+
       const saved = parseInt(localStorage.getItem(SPLIT_KEY) || "", 10);
       if (!isNaN(saved) && saved >= VIDEO_MIN_PX) {
         videoColumnPx = saved;
+        const available = Math.max(window.innerWidth - WIDTH_BUFFER, VIDEO_MIN_PX + CHAT_MIN_PX);
+        persistVideoRatio(saved / available);
       }
     } catch (_) {
       videoColumnPx = null;
+      videoColumnRatio = null;
     }
+  }
+
+  function clampRatio(ratio){
+    return Math.min(MAX_VIDEO_RATIO, Math.max(MIN_VIDEO_RATIO, ratio));
+  }
+
+  function getGridAvailableWidth(grid){
+    const rect = grid?.getBoundingClientRect?.();
+    const width = rect?.width || window.innerWidth || 0;
+    const splitWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--btfw-split-width")) || 8;
+    return Math.max(width - splitWidth, VIDEO_MIN_PX + CHAT_MIN_PX);
+  }
+
+  function resolveVideoRatio(grid){
+    const available = getGridAvailableWidth(grid);
+    let ratio = videoColumnRatio !== null ? videoColumnRatio : DEFAULT_VIDEO_RATIO;
+
+    if (available > 0) {
+      const minRatio = VIDEO_MIN_PX / available;
+      const maxRatio = (available - CHAT_MIN_PX) / available;
+      ratio = Math.min(Math.max(ratio, minRatio), maxRatio);
+    }
+
+    return clampRatio(ratio);
+  }
+
+  function persistVideoRatio(ratio){
+    videoColumnRatio = clampRatio(ratio);
+    try { localStorage.setItem(RATIO_KEY, String(videoColumnRatio)); } catch (_) {}
+  }
+
+  function ratioToFrSegments(ratio){
+    const videoShare = clampRatio(ratio);
+    const chatShare = 1 - videoShare;
+    const scale = 100;
+    return {
+      video: `minmax(0, ${Math.max(1, Math.round(videoShare * scale))}fr)`,
+      chat: `minmax(var(--btfw-chat-min, 280px), ${Math.max(1, Math.round(chatShare * scale))}fr)`
+    };
   }
 
   function applyColumnTemplate(){
@@ -68,18 +121,10 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
       return;
     }
 
-    const stored = videoColumnPx ? Math.max(videoColumnPx, VIDEO_MIN_PX) : null;
-    const fallbackVideo = `minmax(${VIDEO_MIN_PX}px, 7fr)`;
-    const fallbackChat = "minmax(var(--btfw-chat-min, 320px), 3fr)";
-    const videoSegment = stored
-      ? `minmax(${VIDEO_MIN_PX}px, ${stored}px)`
-      : fallbackVideo;
-    const chatSegment = stored
-      ? "minmax(var(--btfw-chat-min, 320px), 1fr)"
-      : fallbackChat;
+    const { video, chat } = ratioToFrSegments(resolveVideoRatio(grid));
     const template = chatSidePref === "left"
-      ? `${chatSegment} var(--btfw-split-width, 8px) ${videoSegment}`
-      : `${videoSegment} var(--btfw-split-width, 8px) ${chatSegment}`;
+      ? `${chat} var(--btfw-split-width, 8px) ${video}`
+      : `${video} var(--btfw-split-width, 8px) ${chat}`;
 
     grid.style.gridTemplateColumns = template;
     grid.classList.toggle("btfw-grid--chat-left", chatSidePref === "left");
@@ -88,19 +133,31 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
 
   function setVideoColumnWidth(px){
     if (!Number.isFinite(px)) return;
-    const width = Math.max(px, VIDEO_MIN_PX);
+    const grid = document.getElementById("btfw-grid");
+    const available = getGridAvailableWidth(grid);
+    const width = Math.min(Math.max(px, VIDEO_MIN_PX), available - CHAT_MIN_PX);
     videoColumnPx = width;
+    persistVideoRatio(width / available);
     try { localStorage.setItem(SPLIT_KEY, String(width)); } catch (_) {}
     applyColumnTemplate();
   }
 
-  function computeThreshold(){
-    const stored = Math.max(videoColumnPx || DEFAULT_VIDEO_TARGET, VIDEO_MIN_PX);
-    const comfortable = stored + CHAT_MIN_PX + WIDTH_BUFFER;
+  function computeStackEnterThreshold(){
+    const available = window.innerWidth;
+    const ratio = videoColumnRatio !== null ? videoColumnRatio : DEFAULT_VIDEO_RATIO;
+    const videoNeed = Math.max(VIDEO_MIN_PX, available * clampRatio(ratio));
+    const comfortable = videoNeed + CHAT_MIN_PX + WIDTH_BUFFER;
     return Math.min(
       Math.max(comfortable, MOBILE_THRESHOLD_MIN),
       MOBILE_THRESHOLD_MAX
     );
+  }
+
+  function shouldUseVerticalLayout(){
+    const width = window.innerWidth;
+    const enter = computeStackEnterThreshold();
+    if (isVertical) return width < enter + STACK_HYSTERESIS_PX;
+    return width < enter;
   }
 
   function placeStackInLayout(){
@@ -108,93 +165,43 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     if (!stack) return;
 
     if (isVertical) {
-      stack.classList.add("btfw-stack--in-chat");
-      const chatcol = document.getElementById("btfw-chatcol");
-      if (!chatcol) return;
-      const chatwrap = document.getElementById("chatwrap");
-      if (chatwrap && chatwrap.parentElement === chatcol) {
-        if (chatwrap.nextSibling !== stack) {
-          chatcol.insertBefore(stack, chatwrap.nextSibling);
-        }
-      } else if (stack.parentElement !== chatcol) {
-        chatcol.appendChild(stack);
-      }
-    } else {
+      stack.classList.add("btfw-stack--below-chat");
       stack.classList.remove("btfw-stack--in-chat");
-      const left = document.getElementById("btfw-leftpad");
-      if (!left) return;
-      const video = document.getElementById("videowrap");
-      const overlay = document.getElementById("btfw-video-overlay");
-      const anchor = (overlay && overlay.parentElement === left) ? overlay : video;
-      if (anchor && anchor.parentElement === left) {
-        if (anchor.nextSibling !== stack) {
-          if (anchor.nextSibling) left.insertBefore(stack, anchor.nextSibling);
-          else left.appendChild(stack);
-        }
-      } else if (stack.parentElement !== left) {
-        left.appendChild(stack);
+      const grid = document.getElementById("btfw-grid");
+      const chatcol = document.getElementById("btfw-chatcol");
+      if (!grid || !chatcol) return;
+      if (stack.parentElement !== grid) {
+        if (chatcol.nextSibling) grid.insertBefore(stack, chatcol.nextSibling);
+        else grid.appendChild(stack);
+      } else if (stack.previousElementSibling !== chatcol) {
+        if (chatcol.nextSibling) grid.insertBefore(stack, chatcol.nextSibling);
+        else grid.appendChild(stack);
       }
-    }
-  }
-
-  function wireMobileToggle(){
-    const toggle = document.getElementById("btfw-mobile-modules-toggle");
-    if (!toggle) return;
-    if (toggle === mobileToggleEl && toggle._btfwNavWired) return;
-
-    if (mobileToggleEl && mobileToggleEl._btfwNavStateHandler) {
-      document.removeEventListener("btfw:navbar:mobileState", mobileToggleEl._btfwNavStateHandler);
+      return;
     }
 
-    mobileToggleEl = toggle;
-    toggle._btfwNavWired = true;
-    toggle.setAttribute("aria-haspopup", "menu");
-
-    const applyState = (open, mobile) => {
-      const navHost = document.getElementById("btfw-navhost");
-      const isMobile = mobile ?? (navHost ? navHost.classList.contains("btfw-navhost--mobile") : false);
-      const isOpen = !!open && isMobile;
-      toggle.setAttribute("aria-expanded", isMobile && isOpen ? "true" : "false");
-      const label = isMobile
-        ? (isOpen ? "Close navigation menu" : "Open navigation menu")
-        : "Open navigation menu";
-      toggle.setAttribute("aria-label", label);
-      toggle.title = label;
-      toggle.classList.toggle("btfw-mobile-modules-toggle--active", isMobile && isOpen);
-    };
-
-    const handleState = (ev) => {
-      applyState(ev?.detail?.open, ev?.detail?.mobile);
-    };
-    document.addEventListener("btfw:navbar:mobileState", handleState);
-    toggle._btfwNavStateHandler = handleState;
-
-    toggle.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      const toggleFn = document._btfw_nav_toggleMobile;
-      const setFn = document._btfw_nav_setMobileOpen;
-      if (typeof toggleFn === "function") {
-        toggleFn();
-      } else if (typeof setFn === "function") {
-        const next = !(typeof document._btfw_nav_isMobileOpen === "function" && document._btfw_nav_isMobileOpen());
-        setFn(next);
+    stack.classList.remove("btfw-stack--below-chat");
+    stack.classList.remove("btfw-stack--in-chat");
+    const left = document.getElementById("btfw-leftpad");
+    if (!left) return;
+    const video = document.getElementById("videowrap");
+    const overlay = document.getElementById("btfw-video-overlay");
+    const anchor = (overlay && overlay.parentElement === left) ? overlay : video;
+    if (anchor && anchor.parentElement === left) {
+      if (anchor.nextSibling !== stack) {
+        if (anchor.nextSibling) left.insertBefore(stack, anchor.nextSibling);
+        else left.appendChild(stack);
       }
-    });
-
-    const initialOpen = typeof document._btfw_nav_isMobileOpen === "function"
-      ? document._btfw_nav_isMobileOpen()
-      : false;
-    const initialMobile = document.getElementById("btfw-navhost")?.classList.contains("btfw-navhost--mobile") || false;
-    applyState(initialOpen, initialMobile);
+    } else if (stack.parentElement !== left) {
+      left.appendChild(stack);
+    }
   }
 
   function updateResponsiveLayout(){
     const grid = document.getElementById("btfw-grid");
     if (!grid) return;
 
-    wireMobileToggle();
-
-    const shouldVertical = window.innerWidth < computeThreshold();
+    const shouldVertical = shouldUseVerticalLayout();
     if (shouldVertical !== isVertical) {
       isVertical = shouldVertical;
       grid.classList.toggle("btfw-grid--vertical", shouldVertical);
@@ -438,6 +445,16 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     }
   }
 
+  let layoutFrame = 0;
+
+  function scheduleResponsiveLayout(){
+    if (layoutFrame) return;
+    layoutFrame = requestAnimationFrame(() => {
+      layoutFrame = 0;
+      updateResponsiveLayout();
+    });
+  }
+
   function init() {
     loadVideoColumnWidth();
     chatSidePref = getStoredChatSide();
@@ -448,16 +465,14 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     if (navbar) {
       const resizeObserver = new ResizeObserver(() => {
         setTimeout(setTop, 0);
-        setTimeout(updateResponsiveLayout, 0);
+        scheduleResponsiveLayout();
       });
       resizeObserver.observe(navbar);
     }
 
     window.addEventListener('resize', () => {
-      setTimeout(() => {
-        setTop();
-        updateResponsiveLayout();
-      }, 0);
+      setTimeout(setTop, 0);
+      scheduleResponsiveLayout();
     });
   }
 
@@ -469,7 +484,6 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
   });
 
   document.addEventListener("btfw:chat:barsReady", () => {
-    wireMobileToggle();
     placeStackInLayout();
   });
 

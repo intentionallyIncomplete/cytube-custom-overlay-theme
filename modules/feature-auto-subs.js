@@ -564,7 +564,7 @@ BTFW.define("feature:auto-subs", ["util:tmdb-proxy"], async ({ init }) => {
     });
     state.datasetObserver.observe(body, {
       attributes: true,
-      attributeFilter: ["data-btfw-auto-subs-enabled", "data-tmdb-key"]
+      attributeFilter: ["data-btfw-auto-subs-enabled"]
     });
   }
 

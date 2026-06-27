@@ -39,6 +39,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   let motdSocketWired = false;
   let populateActive = false;
   let populateTimer = null;
+  let bootWired = false;
 
   function hasPollContent(doc = document) {
     if (!doc || typeof doc.querySelector !== "function") return false;
@@ -748,10 +749,17 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 
     const setOpenState = (open, opts = {}) => {
       const isOpen = !!open;
+      const suppressPersist = opts.persist === false;
+      if (suppressPersist) wrapper._btfwSuppressPersist = true;
       wrapper.dataset.open = isOpen ? "true" : "false";
       updateToggle();
-      if (opts.persist !== false) {
+      if (!suppressPersist) {
         storeVisibility(storageKey, isOpen);
+      }
+      if (suppressPersist) {
+        queueMicrotask(() => {
+          wrapper._btfwSuppressPersist = false;
+        });
       }
     };
 
@@ -767,7 +775,9 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
           updateToggle();
-          storeVisibility(storageKey, wrapper.dataset.open !== "false");
+          if (!wrapper._btfwSuppressPersist) {
+            storeVisibility(storageKey, wrapper.dataset.open !== "false");
+          }
         }
       }
     });
@@ -844,11 +854,15 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     if (!motdGroup) {
       motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
     }
-    if (motdGroup && hasContent && motdGroup._btfwSetOpenState) {
-      motdGroup._btfwSetOpenState(true, { persist: false });
-    } else if (motdGroup && hasContent) {
-      motdGroup.dataset.open = "true";
-      motdGroup.classList.add("is-open");
+    if (motdGroup && hasContent) {
+      const stored = getStoredVisibility(MOTD_VISIBILITY_KEY);
+      const shouldOpen = getDefaultPollOpen(stored, true);
+      if (motdGroup._btfwSetOpenState) {
+        motdGroup._btfwSetOpenState(shouldOpen, { persist: false });
+      } else {
+        motdGroup.dataset.open = shouldOpen ? "true" : "false";
+        motdGroup.classList.toggle("is-open", shouldOpen);
+      }
     }
   }
 
@@ -1182,6 +1196,8 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   wireMotdSocket(refs);
   wirePollObservers(refs);
   wirePollSocket(refs);
+  if (bootWired) return;
+  bootWired = true;
     const observer=new MutationObserver(() => {
       if (populateTimer) return;
       populateTimer = requestAnimationFrame(() => {
@@ -1224,7 +1240,6 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     }
 
     syncPollPanelVisibility(refs);
-    ensureMotdStackPanel(refs);
   }, 1000);
   let n=0;
   const iv=setInterval(()=>{
