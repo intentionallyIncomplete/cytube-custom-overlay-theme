@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.13.1...v1.13.2) (2026-06-27)
+
+
+### Bug Fixes
+
+* **chat:** use static rainbow gradient for Quigly username ([#114](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/114)) ([38c7534](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/38c753497edeecd3081585bd4c342d3ca3aa6e41))
+
 ## [1.13.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.13.0...v1.13.1) (2026-06-27)
 
 
