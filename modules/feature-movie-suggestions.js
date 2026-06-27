@@ -1,7 +1,8 @@
 // BTFW — ext:movie-suggestion
 // TMDB movie requests via movies-storage worker
-BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy"], async ({ init }) => {
+BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], async ({ init }) => {
   const tmdb = await init("util:tmdb-proxy");
+  const monkeyPaw = await init("feature:monkeyPaw");
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
@@ -665,6 +666,8 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy"], async ({ init }) => {
     closeConfirmModal();
 
     try {
+      await monkeyPaw.play();
+
       await workerFetch("/api/suggestions", {
         method: "POST",
         body: {
