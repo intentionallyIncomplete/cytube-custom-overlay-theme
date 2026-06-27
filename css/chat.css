@@ -1352,11 +1352,10 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
 
 /* Quigly — developer rainbow username */
 .chat-msg-Quigly .username {
-    -webkit-background-clip: border-box, text !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
-    animation: logfo-animation 4s linear infinite !important;
-    background-image: url(https://i.ibb.co/fQh97LR/particles-log-fo.gif), repeating-linear-gradient(90deg, #fff 0%, #FF0000 15%, #FF8000 25%, #F7FF00 35%, #FF0000 45%, #55FF00 55%, #03FFFF 65%, #0022FF 75%, #A100FF 85%, #FF00E6 95%, #fff 100%) !important;
-    background-size: 4em, 500px !important;
+    background-image: linear-gradient(90deg, #FF0000 0%, #FF8000 14%, #F7FF00 28%, #55FF00 42%, #03FFFF 57%, #0022FF 71%, #A100FF 85%, #FF00E6 100%) !important;
     filter: saturate(2) !important;
     font-weight: 600 !important;
 }
