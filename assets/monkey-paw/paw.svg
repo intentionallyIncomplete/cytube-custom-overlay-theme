@@ -1,0 +1,374 @@
+<svg id="paw" viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- SVG filter for fur texture -->
+        <filter id="furTex" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9 0.4" numOctaves="4" seed="3" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <!-- Rougher fur for hair tips -->
+        <filter id="hairTip" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="turbulence" baseFrequency="0.6 0.3" numOctaves="3" seed="7" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <!-- Skin bump texture -->
+        <filter id="skinTex" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" seed="12" result="noise"/>
+          <feComposite in="SourceGraphic" in2="noise" operator="arithmetic" k1="0" k2="0.92" k3="0.08" k4="0"/>
+        </filter>
+
+        <!-- Palm skin gradient — leathery -->
+        <radialGradient id="palmG" cx="50%" cy="55%" r="58%">
+          <stop offset="0%"   stop-color="#b86828"/>
+          <stop offset="45%"  stop-color="#8c4d18"/>
+          <stop offset="85%"  stop-color="#5c2e0a"/>
+          <stop offset="100%" stop-color="#3a1a04"/>
+        </radialGradient>
+
+        <!-- Fur base gradient — very dark brown -->
+        <linearGradient id="furG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#2a1204"/>
+          <stop offset="50%" stop-color="#3d1c08"/>
+          <stop offset="100%" stop-color="#1e0c02"/>
+        </linearGradient>
+
+        <!-- Finger skin gradient -->
+        <linearGradient id="fingerSkinG" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stop-color="#3d1c08"/>
+          <stop offset="35%"  stop-color="#7a3c14"/>
+          <stop offset="65%"  stop-color="#8c4a18"/>
+          <stop offset="100%" stop-color="#2e1204"/>
+        </linearGradient>
+
+        <!-- Nail gradient -->
+        <linearGradient id="nailG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#120803"/>
+          <stop offset="60%"  stop-color="#2a1408"/>
+          <stop offset="100%" stop-color="#1a0c04"/>
+        </linearGradient>
+
+        <!-- Palm highlight -->
+        <radialGradient id="palmHL" cx="42%" cy="38%" r="40%">
+          <stop offset="0%"   stop-color="rgba(200,140,60,0.18)"/>
+          <stop offset="100%" stop-color="rgba(200,140,60,0)"/>
+        </radialGradient>
+
+        <!-- Clip paths for each finger (keep hair from overflowing too much) -->
+        <clipPath id="clipPinky"><rect x="145" y="30" width="30" height="130" rx="12"/></clipPath>
+        <clipPath id="clipRing"><rect x="118" y="15" width="30" height="145" rx="12"/></clipPath>
+        <clipPath id="clipMiddle"><rect x="90" y="8" width="30" height="155" rx="12"/></clipPath>
+        <clipPath id="clipIndex"><rect x="60" y="15" width="30" height="145" rx="12"/></clipPath>
+        <clipPath id="clipThumb"><rect x="8" y="100" width="58" height="80" rx="14"/></clipPath>
+      </defs>
+
+      <!-- ═══════════════════════════════════════════════
+           WRIST
+           ═══════════════════════════════════════════════ -->
+      <rect x="60" y="218" width="95" height="52" rx="12" fill="url(#furG)" filter="url(#furTex)"/>
+      <!-- Wrist hair tufts -->
+      <g stroke="#1a0a02" stroke-linecap="round" fill="none" opacity="0.85">
+        <!-- dense hair rows on wrist -->
+        <line x1="65"  y1="222" x2="60"  y2="242"/> <line x1="68"  y1="220" x2="64"  y2="240"/>
+        <line x1="72"  y1="219" x2="69"  y2="239"/> <line x1="76"  y1="218" x2="74"  y2="238"/>
+        <line x1="80"  y1="218" x2="79"  y2="238"/> <line x1="84"  y1="218" x2="83"  y2="238"/>
+        <line x1="88"  y1="218" x2="88"  y2="238"/> <line x1="92"  y1="218" x2="93"  y2="238"/>
+        <line x1="96"  y1="218" x2="97"  y2="238"/> <line x1="100" y1="218" x2="101" y2="238"/>
+        <line x1="104" y1="218" x2="105" y2="238"/> <line x1="108" y1="218" x2="110" y2="238"/>
+        <line x1="112" y1="219" x2="115" y2="239"/> <line x1="116" y1="220" x2="120" y2="240"/>
+        <line x1="120" y1="222" x2="125" y2="242"/> <line x1="124" y1="224" x2="130" y2="244"/>
+        <!-- second sparse row -->
+        <line x1="67"  y1="232" x2="63"  y2="248"/> <line x1="75"  y1="230" x2="72"  y2="246"/>
+        <line x1="85"  y1="229" x2="83"  y2="245"/> <line x1="95"  y1="229" x2="95"  y2="245"/>
+        <line x1="105" y1="229" x2="107" y2="245"/> <line x1="115" y1="230" x2="118" y2="246"/>
+        <line x1="123" y1="232" x2="128" y2="248"/>
+      </g>
+      <!-- Wrist hair stroke widths vary -->
+      <g stroke="#261006" stroke-linecap="round" fill="none" opacity="0.5">
+        <line x1="70"  y1="220" x2="65"  y2="237" stroke-width="1.5"/>
+        <line x1="82"  y1="218" x2="80"  y2="236" stroke-width="1.2"/>
+        <line x1="94"  y1="218" x2="94"  y2="236" stroke-width="1.4"/>
+        <line x1="106" y1="218" x2="107" y2="236" stroke-width="1.3"/>
+        <line x1="118" y1="219" x2="121" y2="237" stroke-width="1.5"/>
+      </g>
+
+      <!-- ═══════════════════════════════════════════════
+           PALM
+           ═══════════════════════════════════════════════ -->
+      <!-- Fur back-of-hand base -->
+      <ellipse cx="107" cy="200" rx="72" ry="52" fill="url(#furG)" filter="url(#furTex)"/>
+      <!-- Skin patch (palm face) -->
+      <ellipse cx="107" cy="206" rx="52" ry="40" fill="url(#palmG)"/>
+      <ellipse cx="107" cy="200" rx="52" ry="40" fill="url(#palmHL)"/>
+
+      <!-- Back-of-hand hair — many thin strokes radiating from wrist up -->
+      <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+        <!-- radiating upward from wrist across dorsal surface -->
+        <line x1="68"  y1="218" x2="60"  y2="186" stroke-width="0.9" opacity="0.9"/>
+        <line x1="73"  y1="217" x2="67"  y2="183" stroke-width="0.8" opacity="0.85"/>
+        <line x1="79"  y1="216" x2="74"  y2="180" stroke-width="0.9" opacity="0.9"/>
+        <line x1="85"  y1="215" x2="81"  y2="178" stroke-width="0.8" opacity="0.8"/>
+        <line x1="91"  y1="214" x2="88"  y2="176" stroke-width="1.0" opacity="0.9"/>
+        <line x1="97"  y1="214" x2="95"  y2="175" stroke-width="0.9" opacity="0.85"/>
+        <line x1="103" y1="214" x2="102" y2="174" stroke-width="0.8" opacity="0.8"/>
+        <line x1="109" y1="214" x2="109" y2="173" stroke-width="1.0" opacity="0.9"/>
+        <line x1="115" y1="214" x2="116" y2="174" stroke-width="0.9" opacity="0.85"/>
+        <line x1="121" y1="215" x2="123" y2="176" stroke-width="0.8" opacity="0.8"/>
+        <line x1="127" y1="216" x2="130" y2="178" stroke-width="0.9" opacity="0.85"/>
+        <line x1="133" y1="217" x2="137" y2="181" stroke-width="0.8" opacity="0.8"/>
+        <line x1="139" y1="218" x2="144" y2="186" stroke-width="0.9" opacity="0.85"/>
+        <!-- second layer shorter, between main hairs -->
+        <line x1="71"  y1="214" x2="65"  y2="196" stroke-width="0.7" opacity="0.6"/>
+        <line x1="77"  y1="213" x2="73"  y2="194" stroke-width="0.6" opacity="0.55"/>
+        <line x1="83"  y1="212" x2="80"  y2="192" stroke-width="0.7" opacity="0.6"/>
+        <line x1="89"  y1="212" x2="87"  y2="190" stroke-width="0.6" opacity="0.55"/>
+        <line x1="95"  y1="211" x2="93"  y2="189" stroke-width="0.7" opacity="0.6"/>
+        <line x1="101" y1="211" x2="100" y2="188" stroke-width="0.6" opacity="0.55"/>
+        <line x1="107" y1="211" x2="107" y2="187" stroke-width="0.7" opacity="0.6"/>
+        <line x1="113" y1="211" x2="114" y2="188" stroke-width="0.6" opacity="0.55"/>
+        <line x1="119" y1="212" x2="121" y2="190" stroke-width="0.7" opacity="0.6"/>
+        <line x1="125" y1="213" x2="128" y2="192" stroke-width="0.6" opacity="0.55"/>
+        <line x1="131" y1="214" x2="135" y2="195" stroke-width="0.7" opacity="0.6"/>
+        <line x1="137" y1="215" x2="142" y2="198" stroke-width="0.6" opacity="0.55"/>
+      </g>
+      <!-- Slightly lighter highlight hairs -->
+      <g stroke="#3d2008" stroke-linecap="round" fill="none" opacity="0.4">
+        <line x1="80"  y1="212" x2="77"  y2="195" stroke-width="0.8"/>
+        <line x1="95"  y1="210" x2="93"  y2="192" stroke-width="0.8"/>
+        <line x1="109" y1="210" x2="109" y2="190" stroke-width="0.8"/>
+        <line x1="124" y1="211" x2="126" y2="193" stroke-width="0.8"/>
+        <line x1="138" y1="213" x2="142" y2="196" stroke-width="0.8"/>
+      </g>
+      <!-- Palm crease lines -->
+      <path d="M72 210 Q107 202 142 210" fill="none" stroke="#3a1808" stroke-width="1.2" opacity="0.5"/>
+      <path d="M78 220 Q107 213 136 220" fill="none" stroke="#3a1808" stroke-width="1" opacity="0.4"/>
+      <!-- Knuckle bumps at base of fingers -->
+      <ellipse cx="75"  cy="182" rx="10" ry="6" fill="#3a1808" opacity="0.5"/>
+      <ellipse cx="100" cy="174" rx="10" ry="6" fill="#3a1808" opacity="0.5"/>
+      <ellipse cx="125" cy="174" rx="10" ry="6" fill="#3a1808" opacity="0.5"/>
+      <ellipse cx="150" cy="182" rx="9"  ry="5" fill="#3a1808" opacity="0.5"/>
+
+      <!-- Vein lines on dorsal -->
+      <g fill="none" stroke="#1e0a02" stroke-linecap="round" opacity="0.28">
+        <path d="M95  218 Q92  205 94  190 Q96  178 100 170" stroke-width="1.8"/>
+        <path d="M107 218 Q105 205 107 190 Q109 178 109 170" stroke-width="2"/>
+        <path d="M119 218 Q118 205 118 190 Q118 178 116 170" stroke-width="1.8"/>
+        <path d="M107 200 Q94  194 82  190" stroke-width="1.4"/>
+        <path d="M107 198 Q120 192 132 188" stroke-width="1.4"/>
+      </g>
+
+      <!-- ═══════════════════════════════════════════════
+           THUMB
+           pivot at (45, 195)
+           starts splayed left, curls up/across palm
+           ═══════════════════════════════════════════════ -->
+      <g id="f-thumb"
+         class="f-root"
+         style="transform-origin: 52px 192px; transform: rotate(-18deg);">
+        <!-- Lower segment -->
+        <rect x="22" y="170" width="42" height="24" rx="11" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+        <!-- Knuckle -->
+        <ellipse cx="54" cy="182" rx="12" ry="9" fill="#3a1808" opacity="0.6"/>
+        <!-- Thumb tip group -->
+        <g id="f-thumb-tip" class="f-tip" style="transform-origin: 28px 182px; transform: rotate(0deg);">
+          <rect x="10" y="162" width="36" height="22" rx="10" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+          <!-- Nail -->
+          <ellipse cx="16" cy="172" rx="9" ry="7" fill="url(#nailG)"/>
+          <ellipse cx="15" cy="170" rx="7" ry="4" fill="#0e0602" opacity="0.7"/>
+          <!-- Thumb hair -->
+          <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+            <line x1="14" y1="178" x2="10" y2="188" stroke-width="0.9" opacity="0.9"/>
+            <line x1="18" y1="177" x2="15" y2="187" stroke-width="0.8" opacity="0.8"/>
+            <line x1="22" y1="176" x2="20" y2="186" stroke-width="0.9" opacity="0.85"/>
+            <line x1="26" y1="176" x2="25" y2="186" stroke-width="0.8" opacity="0.8"/>
+            <line x1="30" y1="176" x2="30" y2="186" stroke-width="0.9" opacity="0.85"/>
+            <line x1="34" y1="176" x2="35" y2="186" stroke-width="0.8" opacity="0.8"/>
+            <line x1="38" y1="177" x2="40" y2="186" stroke-width="0.7" opacity="0.75"/>
+            <!-- second shorter layer -->
+            <line x1="16" y1="182" x2="12" y2="190" stroke-width="0.6" opacity="0.55"/>
+            <line x1="24" y1="181" x2="22" y2="189" stroke-width="0.6" opacity="0.5"/>
+            <line x1="32" y1="181" x2="32" y2="189" stroke-width="0.6" opacity="0.55"/>
+          </g>
+        </g>
+        <!-- Lower segment hair -->
+        <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+          <line x1="26" y1="174" x2="22" y2="184" stroke-width="0.9" opacity="0.9"/>
+          <line x1="31" y1="173" x2="28" y2="183" stroke-width="0.8" opacity="0.8"/>
+          <line x1="36" y1="172" x2="34" y2="182" stroke-width="0.9" opacity="0.85"/>
+          <line x1="41" y1="172" x2="40" y2="182" stroke-width="0.8" opacity="0.8"/>
+          <line x1="46" y1="172" x2="46" y2="182" stroke-width="0.9" opacity="0.85"/>
+          <line x1="51" y1="172" x2="53" y2="182" stroke-width="0.8" opacity="0.8"/>
+          <line x1="56" y1="173" x2="59" y2="183" stroke-width="0.7" opacity="0.75"/>
+        </g>
+      </g>
+
+      <!-- ═══════════════════════════════════════════════
+           INDEX FINGER
+           pivot at (75, 182)
+           ═══════════════════════════════════════════════ -->
+      <g id="f-index"
+         class="f-root"
+         style="transform-origin: 75px 182px; transform: rotate(0deg);">
+        <!-- Lower phalanx -->
+        <rect x="63" y="118" width="24" height="66" rx="11" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+        <ellipse cx="75" cy="182" rx="13" ry="8" fill="#3a1808" opacity="0.55"/>
+        <!-- Mid knuckle -->
+        <ellipse cx="75" cy="142" rx="12" ry="7" fill="#3a1808" opacity="0.45"/>
+        <!-- Hair on lower index -->
+        <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+          <line x1="67"  y1="126" x2="64"  y2="150" stroke-width="0.9" opacity="0.9"/>
+          <line x1="71"  y1="124" x2="69"  y2="148" stroke-width="0.8" opacity="0.8"/>
+          <line x1="75"  y1="122" x2="75"  y2="146" stroke-width="0.9" opacity="0.85"/>
+          <line x1="79"  y1="124" x2="81"  y2="148" stroke-width="0.8" opacity="0.8"/>
+          <line x1="83"  y1="126" x2="86"  y2="150" stroke-width="0.9" opacity="0.85"/>
+          <!-- second layer -->
+          <line x1="69"  y1="138" x2="66"  y2="158" stroke-width="0.7" opacity="0.6"/>
+          <line x1="75"  y1="136" x2="75"  y2="156" stroke-width="0.7" opacity="0.55"/>
+          <line x1="81"  y1="138" x2="84"  y2="158" stroke-width="0.7" opacity="0.6"/>
+        </g>
+        <!-- Upper phalanx + tip -->
+        <g id="f-index-tip" class="f-tip" style="transform-origin: 75px 118px; transform: rotate(0deg);">
+          <rect x="64" y="62" width="22" height="58" rx="10" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+          <ellipse cx="75" cy="118" rx="12" ry="7" fill="#3a1808" opacity="0.4"/>
+          <!-- Nail -->
+          <ellipse cx="75" cy="67" rx="9" ry="7" fill="url(#nailG)"/>
+          <ellipse cx="75" cy="65" rx="7" ry="4" fill="#0e0602" opacity="0.65"/>
+          <!-- Hair upper index -->
+          <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+            <line x1="68"  y1="75"  x2="65"  y2="96"  stroke-width="0.9" opacity="0.9"/>
+            <line x1="72"  y1="73"  x2="70"  y2="94"  stroke-width="0.8" opacity="0.8"/>
+            <line x1="75"  y1="72"  x2="75"  y2="93"  stroke-width="0.9" opacity="0.85"/>
+            <line x1="78"  y1="73"  x2="80"  y2="94"  stroke-width="0.8" opacity="0.8"/>
+            <line x1="82"  y1="75"  x2="85"  y2="96"  stroke-width="0.9" opacity="0.85"/>
+            <line x1="70"  y1="88"  x2="67"  y2="106" stroke-width="0.7" opacity="0.55"/>
+            <line x1="75"  y1="86"  x2="75"  y2="104" stroke-width="0.7" opacity="0.5"/>
+            <line x1="80"  y1="88"  x2="83"  y2="106" stroke-width="0.7" opacity="0.55"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- ═══════════════════════════════════════════════
+           MIDDLE FINGER — stays up!
+           pivot at (100, 174)
+           ═══════════════════════════════════════════════ -->
+      <g id="f-middle"
+         class="f-root"
+         style="transform-origin: 100px 174px; transform: rotate(0deg);">
+        <rect x="88" y="104" width="24" height="72" rx="11" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+        <ellipse cx="100" cy="174" rx="13" ry="8" fill="#3a1808" opacity="0.55"/>
+        <ellipse cx="100" cy="136" rx="12" ry="7" fill="#3a1808" opacity="0.45"/>
+        <!-- Hair lower middle -->
+        <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+          <line x1="92"  y1="112" x2="89"  y2="136" stroke-width="0.9" opacity="0.9"/>
+          <line x1="96"  y1="110" x2="94"  y2="134" stroke-width="0.8" opacity="0.8"/>
+          <line x1="100" y1="108" x2="100" y2="132" stroke-width="0.9" opacity="0.85"/>
+          <line x1="104" y1="110" x2="106" y2="134" stroke-width="0.8" opacity="0.8"/>
+          <line x1="108" y1="112" x2="111" y2="136" stroke-width="0.9" opacity="0.85"/>
+          <line x1="94"  y1="125" x2="91"  y2="146" stroke-width="0.7" opacity="0.6"/>
+          <line x1="100" y1="123" x2="100" y2="144" stroke-width="0.7" opacity="0.55"/>
+          <line x1="106" y1="125" x2="109" y2="146" stroke-width="0.7" opacity="0.6"/>
+        </g>
+        <!-- Upper tip -->
+        <g id="f-middle-tip" class="f-tip" style="transform-origin: 100px 104px; transform: rotate(0deg);">
+          <rect x="89" y="44" width="22" height="62" rx="10" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+          <ellipse cx="100" cy="104" rx="12" ry="7" fill="#3a1808" opacity="0.4"/>
+          <!-- Nail -->
+          <ellipse cx="100" cy="50" rx="9" ry="7" fill="url(#nailG)"/>
+          <ellipse cx="100" cy="47" rx="7" ry="4" fill="#0e0602" opacity="0.65"/>
+          <!-- Hair upper middle -->
+          <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+            <line x1="93"  y1="58"  x2="90"  y2="80"  stroke-width="0.9" opacity="0.9"/>
+            <line x1="97"  y1="56"  x2="95"  y2="78"  stroke-width="0.8" opacity="0.8"/>
+            <line x1="100" y1="55"  x2="100" y2="77"  stroke-width="0.9" opacity="0.85"/>
+            <line x1="103" y1="56"  x2="105" y2="78"  stroke-width="0.8" opacity="0.8"/>
+            <line x1="107" y1="58"  x2="110" y2="80"  stroke-width="0.9" opacity="0.85"/>
+            <line x1="95"  y1="70"  x2="92"  y2="90"  stroke-width="0.7" opacity="0.55"/>
+            <line x1="100" y1="68"  x2="100" y2="88"  stroke-width="0.7" opacity="0.5"/>
+            <line x1="105" y1="70"  x2="108" y2="90"  stroke-width="0.7" opacity="0.55"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- ═══════════════════════════════════════════════
+           RING FINGER
+           pivot at (125, 174)
+           ═══════════════════════════════════════════════ -->
+      <g id="f-ring"
+         class="f-root"
+         style="transform-origin: 125px 174px; transform: rotate(0deg);">
+        <rect x="113" y="108" width="24" height="68" rx="11" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+        <ellipse cx="125" cy="174" rx="13" ry="8" fill="#3a1808" opacity="0.55"/>
+        <ellipse cx="125" cy="138" rx="12" ry="7" fill="#3a1808" opacity="0.45"/>
+        <!-- Hair lower ring -->
+        <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+          <line x1="117" y1="116" x2="114" y2="140" stroke-width="0.9" opacity="0.9"/>
+          <line x1="121" y1="114" x2="119" y2="138" stroke-width="0.8" opacity="0.8"/>
+          <line x1="125" y1="112" x2="125" y2="136" stroke-width="0.9" opacity="0.85"/>
+          <line x1="129" y1="114" x2="131" y2="138" stroke-width="0.8" opacity="0.8"/>
+          <line x1="133" y1="116" x2="136" y2="140" stroke-width="0.9" opacity="0.85"/>
+          <line x1="119" y1="130" x2="116" y2="150" stroke-width="0.7" opacity="0.6"/>
+          <line x1="125" y1="128" x2="125" y2="148" stroke-width="0.7" opacity="0.55"/>
+          <line x1="131" y1="130" x2="134" y2="150" stroke-width="0.7" opacity="0.6"/>
+        </g>
+        <!-- Upper tip -->
+        <g id="f-ring-tip" class="f-tip" style="transform-origin: 125px 108px; transform: rotate(0deg);">
+          <rect x="114" y="50" width="22" height="60" rx="10" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+          <ellipse cx="125" cy="108" rx="12" ry="7" fill="#3a1808" opacity="0.4"/>
+          <!-- Nail -->
+          <ellipse cx="125" cy="55" rx="9" ry="7" fill="url(#nailG)"/>
+          <ellipse cx="125" cy="52" rx="7" ry="4" fill="#0e0602" opacity="0.65"/>
+          <!-- Hair upper ring -->
+          <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+            <line x1="118" y1="63"  x2="115" y2="84"  stroke-width="0.9" opacity="0.9"/>
+            <line x1="122" y1="61"  x2="120" y2="82"  stroke-width="0.8" opacity="0.8"/>
+            <line x1="125" y1="60"  x2="125" y2="81"  stroke-width="0.9" opacity="0.85"/>
+            <line x1="128" y1="61"  x2="130" y2="82"  stroke-width="0.8" opacity="0.8"/>
+            <line x1="132" y1="63"  x2="135" y2="84"  stroke-width="0.9" opacity="0.85"/>
+            <line x1="120" y1="76"  x2="117" y2="95"  stroke-width="0.7" opacity="0.55"/>
+            <line x1="125" y1="74"  x2="125" y2="93"  stroke-width="0.7" opacity="0.5"/>
+            <line x1="130" y1="76"  x2="133" y2="95"  stroke-width="0.7" opacity="0.55"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- ═══════════════════════════════════════════════
+           PINKY FINGER
+           pivot at (150, 182)
+           ═══════════════════════════════════════════════ -->
+      <g id="f-pinky"
+         class="f-root"
+         style="transform-origin: 150px 182px; transform: rotate(0deg);">
+        <rect x="139" y="128" width="22" height="56" rx="10" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+        <ellipse cx="150" cy="182" rx="12" ry="7" fill="#3a1808" opacity="0.55"/>
+        <ellipse cx="150" cy="152" rx="11" ry="6" fill="#3a1808" opacity="0.45"/>
+        <!-- Hair lower pinky -->
+        <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+          <line x1="143" y1="136" x2="140" y2="156" stroke-width="0.9" opacity="0.9"/>
+          <line x1="147" y1="134" x2="145" y2="154" stroke-width="0.8" opacity="0.8"/>
+          <line x1="150" y1="132" x2="150" y2="152" stroke-width="0.9" opacity="0.85"/>
+          <line x1="153" y1="134" x2="155" y2="154" stroke-width="0.8" opacity="0.8"/>
+          <line x1="157" y1="136" x2="160" y2="156" stroke-width="0.9" opacity="0.85"/>
+          <line x1="145" y1="146" x2="142" y2="162" stroke-width="0.7" opacity="0.6"/>
+          <line x1="150" y1="144" x2="150" y2="160" stroke-width="0.7" opacity="0.55"/>
+          <line x1="155" y1="146" x2="158" y2="162" stroke-width="0.7" opacity="0.6"/>
+        </g>
+        <!-- Upper tip -->
+        <g id="f-pinky-tip" class="f-tip" style="transform-origin: 150px 128px; transform: rotate(0deg);">
+          <rect x="140" y="78" width="20" height="52" rx="9" fill="url(#fingerSkinG)" filter="url(#furTex)"/>
+          <ellipse cx="150" cy="128" rx="11" ry="6" fill="#3a1808" opacity="0.4"/>
+          <!-- Nail -->
+          <ellipse cx="150" cy="83" rx="8" ry="6" fill="url(#nailG)"/>
+          <ellipse cx="150" cy="81" rx="6" ry="3.5" fill="#0e0602" opacity="0.65"/>
+          <!-- Hair upper pinky -->
+          <g stroke="#1a0a02" stroke-linecap="round" fill="none">
+            <line x1="144" y1="90"  x2="141" y2="108" stroke-width="0.9" opacity="0.9"/>
+            <line x1="147" y1="88"  x2="145" y2="106" stroke-width="0.8" opacity="0.8"/>
+            <line x1="150" y1="87"  x2="150" y2="105" stroke-width="0.9" opacity="0.85"/>
+            <line x1="153" y1="88"  x2="155" y2="106" stroke-width="0.8" opacity="0.8"/>
+            <line x1="156" y1="90"  x2="159" y2="108" stroke-width="0.9" opacity="0.85"/>
+            <line x1="146" y1="100" x2="143" y2="116" stroke-width="0.7" opacity="0.55"/>
+            <line x1="150" y1="98"  x2="150" y2="114" stroke-width="0.7" opacity="0.5"/>
+            <line x1="154" y1="100" x2="157" y2="116" stroke-width="0.7" opacity="0.55"/>
+          </g>
+        </g>
+      </g>
+
+    </svg>

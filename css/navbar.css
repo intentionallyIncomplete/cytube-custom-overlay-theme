@@ -182,6 +182,24 @@
   opacity: 0.85;
 }
 
+.btfw-theme-icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+}
+
+.btfw-chatbtn .btfw-theme-icon,
+.btfw-stack-header-btn .btfw-theme-icon,
+#btfw-perf-toggle .btfw-theme-icon {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.btfw-theme-icon-host--themed {
+  line-height: 0;
+}
+
 #btfw-navhost .btfw-nav-avatar-item {
   margin-left: 6px;
   position: relative;

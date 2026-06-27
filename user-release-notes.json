@@ -1,6 +1,26 @@
 {
   "releases": [
     {
+      "version": "1.14.0",
+      "date": "2026-06-27",
+      "summary": "A royal gag theme with crest icons, plus a Monkey Paw ritual when you confirm a movie request.",
+      "categories": {
+        "features": [
+          "Theme Settings: Continental Royal tint restyles the room with navy, gold, and burgundy colors and swaps toolbar icons for crest artwork.",
+          "Movie requests: clicking Yes on the confirmation plays a short Monkey Paw curl-and-shake animation before your suggestion is sent."
+        ],
+        "improvements": [
+          "Theme icon packs: choosing a themed tint can now replace common toolbar icons automatically, setting up more joke presets later."
+        ]
+      },
+      "highlights": [
+        "Continental Royal tint with custom royal icons in the nav bar, chat tools, and stack headers.",
+        "Monkey Paw animation plays when you confirm a movie request.",
+        "Switch back to any other tint and the usual icons return.",
+        "Reduced-motion preference skips the paw animation but still submits your request."
+      ]
+    },
+    {
       "version": "1.13.0",
       "date": "2026-06-21",
       "summary": "Search KLIPY GIFs alongside Giphy in chat, with partner branding on picks and sent messages.",
@@ -108,15 +128,6 @@
         "Movie tools load through the channel backend — no TMDB key in channel JavaScript.",
         "Poll panel hides when no poll is running, so the sidebar stays clean.",
         "Fixed a loading freeze when enabling the BillTube theme."
-      ]
-    },
-    {
-      "version": "1.4.4",
-      "date": "2026-06-17",
-      "summary": "Connected-user tooltip stays on screen in the chat bar.",
-      "highlights": [
-        "Connected users breakdown: hovering the user count in the chat bar keeps the full tooltip visible instead of clipping off the edge of the screen.",
-        "User count display shows only the number again instead of the long admin breakdown string."
       ]
     }
   ]

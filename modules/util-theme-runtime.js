@@ -47,6 +47,18 @@ BTFW.define("util:themeRuntime", [], async () => {
         chatText: "#f6cea3",
         accent: "#ff914d"
       }
+    },
+    continental: {
+      name: "Continental Royal",
+      iconPack: "continental",
+      colors: {
+        background: "#0a1628",
+        surface: "#0f1f3d",
+        panel: "#2a1520",
+        text: "#f5f0e6",
+        chatText: "#e8dcc8",
+        accent: "#ffcc00"
+      }
     }
   };
 
@@ -121,7 +133,9 @@ BTFW.define("util:themeRuntime", [], async () => {
     typography: {
       preset: FONT_DEFAULT_ID,
       customFamily: ""
-    }
+    },
+    iconPack: "",
+    icons: {}
   };
 
   function cloneAppearance(source) {
@@ -361,7 +375,16 @@ BTFW.define("util:themeRuntime", [], async () => {
     if (typography.preset !== "custom" && !getFontPreset(typography.preset)) {
       typography.preset = FONT_DEFAULT_ID;
     }
-    return { tint, colors, typography };
+    let iconPack = typeof input.iconPack === "string" ? input.iconPack.trim().toLowerCase() : "";
+    if (tint !== "custom" && TINT_PRESETS[tint]?.iconPack) {
+      iconPack = iconPack || TINT_PRESETS[tint].iconPack;
+    }
+    const icons = {};
+    const iconSrc = input.icons && typeof input.icons === "object" ? input.icons : {};
+    Object.entries(iconSrc).forEach(([slotId, value]) => {
+      if (typeof value === "string" && value.trim()) icons[slotId] = value.trim();
+    });
+    return { tint, colors, typography, iconPack, icons };
   }
 
   function extractAppearanceFromChannelConfig(cfg) {
@@ -369,7 +392,9 @@ BTFW.define("util:themeRuntime", [], async () => {
     return normalizeAppearanceConfig({
       tint: cfg.tint,
       colors: cfg.colors,
-      typography: cfg.typography
+      typography: cfg.typography,
+      iconPack: cfg.iconPack,
+      icons: cfg.icons
     });
   }
 

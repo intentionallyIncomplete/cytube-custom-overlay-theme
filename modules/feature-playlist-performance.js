@@ -9,6 +9,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
   const INITIAL_BATCH = 120;
   const BATCH_SIZE = 80;
   const SCROLL_THRESHOLD = 300;
+  const PERF_ICON_HTML = '<span data-btfw-icon-slot="perf-rocket" aria-hidden="true"><i class="fa fa-rocket"></i></span>';
 
   function getQueue() {
     return $('#queue');
@@ -271,7 +272,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
     const btn = document.createElement('button');
     btn.id = 'btfw-perf-toggle';
     btn.className = 'btn btn-xs btn-default';
-    btn.innerHTML = '<i class="fa fa-rocket"></i> Performance';
+    btn.innerHTML = `${PERF_ICON_HTML} Performance`;
     btn.title = 'Toggle performance mode for smooth scrolling';
     btn.style.marginLeft = '5px';
     
@@ -279,11 +280,11 @@ BTFW.define("feature:playlistPerformance", [], function() {
       if (isOptimized) {
         restorePlaylist();
         btn.classList.remove('btn-success');
-        btn.innerHTML = '<i class="fa fa-rocket"></i> Performance';
+        btn.innerHTML = `${PERF_ICON_HTML} Performance`;
       } else {
         optimizePlaylist();
         btn.classList.add('btn-success');
-        btn.innerHTML = '<i class="fa fa-rocket"></i> Performance ON';
+        btn.innerHTML = `${PERF_ICON_HTML} Performance ON`;
       }
     });
 
@@ -368,7 +369,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
       const btn = $('#btfw-perf-toggle');
       if (btn) {
         btn.classList.add('btn-success');
-        btn.innerHTML = '<i class="fa fa-rocket"></i> Performance ON';
+        btn.innerHTML = `${PERF_ICON_HTML} Performance ON`;
       }
     }
   }

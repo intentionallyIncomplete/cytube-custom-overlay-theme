@@ -476,7 +476,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
         addMediaBtn.id = "btfw-addmedia-btn";
         addMediaBtn.type = "button";
         addMediaBtn.className = "button is-small";
-        addMediaBtn.innerHTML = `<i class="fa fa-plus"></i><span>Add media</span>`;
+        addMediaBtn.innerHTML = `<span data-btfw-icon-slot="stack-add-media" aria-hidden="true"><i class="fa fa-plus"></i></span><span>Add media</span>`;
         actionsCluster.prepend(addMediaBtn);
       } else if (!actionsCluster.contains(addMediaBtn)) {
         actionsCluster.prepend(addMediaBtn);
@@ -514,7 +514,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       addMediaBtn.classList.remove("is-dark");
       addMediaBtn.classList.add("is-primary");
       if (!addMediaBtn.dataset.iconified) {
-        addMediaBtn.innerHTML = `<i class="fa fa-plus"></i><span>Add media</span>`;
+        addMediaBtn.innerHTML = `<span data-btfw-icon-slot="stack-add-media" aria-hidden="true"><i class="fa fa-plus"></i></span><span>Add media</span>`;
         addMediaBtn.dataset.iconified = "1";
       }
       addMediaBtn.setAttribute("aria-controls", "btfw-addmedia-panel");
@@ -1052,7 +1052,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     const pollSlot = ensureStackHeaderActionsSlot("poll-group");
     const pollBtn = document.getElementById("newpollbtn");
     if (pollSlot && pollBtn) {
-      styleStackHeaderButton(pollBtn, '<i class="fa fa-plus" aria-hidden="true"></i> New Poll');
+      styleStackHeaderButton(pollBtn, '<span data-btfw-icon-slot="stack-new-poll" aria-hidden="true"><i class="fa fa-plus"></i></span> New Poll');
       if (pollBtn.parentElement !== pollSlot) pollSlot.appendChild(pollBtn);
       const controls = document.querySelector("#pollwrap > .poll-controls");
       if (controls && controls.children.length === 0) controls.remove();
@@ -1061,7 +1061,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     const motdSlot = ensureStackHeaderActionsSlot("motd-group");
     const motdBtn = document.getElementById("btfw-motd-editbtn");
     if (motdSlot && motdBtn) {
-      styleStackHeaderButton(motdBtn, '<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD');
+      styleStackHeaderButton(motdBtn, '<span data-btfw-icon-slot="stack-edit-motd" aria-hidden="true"><i class="fa fa-plus"></i></span> Edit MOTD');
       if (motdBtn.parentElement !== motdSlot) motdSlot.appendChild(motdBtn);
       const row = motdBtn.closest(".btfw-motd-editrow");
       if (row && row.parentElement) row.remove();

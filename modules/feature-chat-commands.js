@@ -425,7 +425,7 @@ addCommand("cast", async (ctx)=>{
     const btn = document.createElement("button");
     btn.id = "btfw-chatcmds-btn";
     btn.className = "button is-dark is-small btfw-chatbtn";
-    btn.innerHTML = `<i class="fa fa-question-circle" aria-hidden="true"></i>`;
+    btn.innerHTML = `<span data-btfw-icon-slot="chat-commands-help" aria-hidden="true"><i class="fa fa-question-circle"></i></span>`;
     btn.title = "Commands";
     btn.addEventListener("click", (e)=>{ e.preventDefault(); openCommandsModal(); });
     into.appendChild(btn);

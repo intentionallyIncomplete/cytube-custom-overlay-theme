@@ -314,6 +314,7 @@
         BTFW.init("feature:chat-avatars"),
         BTFW.init("feature:chat-timestamps"),
         BTFW.init("feature:chat-ignore"),
+        BTFW.init("feature:themeIcons"),
         BTFW.init("feature:navbar"),
         BTFW.init("feature:modal-skin"),
         BTFW.init("feature:nowplaying"),

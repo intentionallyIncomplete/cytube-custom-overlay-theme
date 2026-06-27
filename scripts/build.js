@@ -78,6 +78,7 @@ const bundles = [
       'modules/feature-audio-enhancer.js',
       'modules/feature-auto-subs.js',
       'modules/feature-movie-info.js',
+      'modules/feature-monkey-paw.js',
       'modules/feature-movie-suggestions.js'
     ]
   },
@@ -95,6 +96,7 @@ const bundles = [
     modules: [
       'modules/user-release-notes.generated.js',
       'modules/util-theme-runtime.js',
+      'modules/util-theme-icon-packs.js',
       'modules/util-theme-presets.js',
       'modules/feature-channel-theme-admin.js',
       'modules/feature-theme-settings.js',
@@ -105,6 +107,7 @@ const bundles = [
     name: 'features',
     modules: [
       'modules/feature-footer.js',
+      'modules/feature-theme-icons.js',
       'modules/feature-navbar.js',
       'modules/feature-modal-skin.js',
       'modules/feature-emotes.js',

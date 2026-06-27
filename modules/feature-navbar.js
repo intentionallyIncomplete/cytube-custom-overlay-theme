@@ -103,7 +103,7 @@ BTFW.define("feature:navbar", [], async () => {
     const li = document.createElement("li");
     const a  = document.createElement("a");
     a.innerHTML = `
-      <span class="btfw-nav-pill__icon" aria-hidden="true"><i class="fa fa-sliders"></i></span>
+      <span class="btfw-nav-pill__icon" data-btfw-icon-slot="nav-theme" aria-hidden="true"><i class="fa fa-sliders"></i></span>
       <span class="btfw-nav-pill__label">Theme</span>
     `;
     a.href = "javascript:void(0)";

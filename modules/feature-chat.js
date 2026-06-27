@@ -292,7 +292,7 @@ function normalizeChatActionButtons() {
     b.id = "btfw-btn-emotes";
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "Emotes / Emoji";
-    b.innerHTML = '<i class="fa fa-smile"></i>';
+    b.innerHTML = '<span data-btfw-icon-slot="chat-emotes" aria-hidden="true"><i class="fa fa-smile"></i></span>';
     actions.appendChild(b);
   }
   if (!document.getElementById("btfw-btn-gif")) {
@@ -937,7 +937,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-emotes";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Emotes / Emoji";
-      b.innerHTML = '<i class="fa fa-smile"></i>';
+      b.innerHTML = '<span data-btfw-icon-slot="chat-emotes" aria-hidden="true"><i class="fa fa-smile"></i></span>';
       actions.appendChild(b);
     }
 
@@ -949,7 +949,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-gif";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "GIFs";
-      b.innerHTML = '<i class="fa fa-file-video-o"></i>';
+      b.innerHTML = '<span data-btfw-icon-slot="chat-gif" aria-hidden="true"><i class="fa fa-file-video-o"></i></span>';
       actions.appendChild(b);
     }
 
@@ -964,7 +964,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-users-toggle";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Users";
-      b.innerHTML = '<i class="fa fa-users"></i>';
+      b.innerHTML = '<span data-btfw-icon-slot="chat-users" aria-hidden="true"><i class="fa fa-users"></i></span>';
       actions.appendChild(b);
     }
 
