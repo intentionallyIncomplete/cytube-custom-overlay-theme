@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.13.0...v1.13.1) (2026-06-27)
+
+
+### Bug Fixes
+
+* **ui:** MOTD hide, chat auto-scroll, layout, and TMDB key scrub ([#113](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/113)) ([492a9f4](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/492a9f4b1b727a04d43fb75818c0edb387e1c4e6)), closes [#112](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/112)
+
 # [1.13.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.12.0...v1.13.0) (2026-06-26)
 
 
