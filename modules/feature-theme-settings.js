@@ -12,6 +12,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     avatarsMode : "btfw:chat:avatars",
     emoteSize   : "btfw:chat:emoteSize",
     gifAutoplay : "btfw:chat:gifAutoplay",
+    chatAutoScroll: "btfw:chat:autoScroll",
     imageHoverMagnify: "btfw:chat:imageHoverMagnify",
     chatJoinNotices: "btfw:chat:joinNotices",
     localSubs   : "btfw:video:localsubs",
@@ -515,6 +516,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
                       <input type="checkbox" id="btfw-gif-autoplay"> <span>Autoplay GIFs in chat (otherwise play on hover)</span>
                     </label>
                     <label class="checkbox btfw-checkbox">
+                      <input type="checkbox" id="btfw-chat-autoscroll"> <span>Auto-scroll to new messages</span>
+                    </label>
+                    <label class="checkbox btfw-checkbox">
                       <input type="checkbox" id="btfw-image-hover-magnify"> <span>Magnify images and emotes on hover</span>
                     </label>
                   </div>
@@ -737,6 +741,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     const chatTextPx  = $("#btfw-chat-textsize", m)?.value || "14";
     const emoteSize   = $("#btfw-emote-size", m)?.value   || "medium";
     const gifAutoOn   = $("#btfw-gif-autoplay", m)?.checked;
+    const autoScrollOn = $("#btfw-chat-autoscroll", m)?.checked;
     const hoverMagnifyOn = $("#btfw-image-hover-magnify", m)?.checked;
     const joinNoticesOn = $("#btfw-chat-join-notices", m)?.checked;
     const localSubsOn = $("#btfw-localsubs-toggle", m)?.checked;
@@ -747,6 +752,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     set(TS_KEYS.chatTextPx, chatTextPx);
     set(TS_KEYS.emoteSize, emoteSize);
     set(TS_KEYS.gifAutoplay, gifAutoOn ? "1":"0");
+    set(TS_KEYS.chatAutoScroll, autoScrollOn ? "1" : "0");
     set(TS_KEYS.imageHoverMagnify, hoverMagnifyOn ? "1" : "0");
     set(TS_KEYS.chatJoinNotices, joinNoticesOn ? "1":"0");
     set(TS_KEYS.localSubs,   localSubsOn ? "1":"0");
@@ -760,6 +766,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     applyEmoteSize(emoteSize);
 
     document.dispatchEvent(new CustomEvent("btfw:chat:gifAutoplayChanged", { detail:{ autoplay: !!gifAutoOn } }));
+    document.dispatchEvent(new CustomEvent("btfw:chat:autoScrollChanged", { detail:{ enabled: !!autoScrollOn } }));
     document.dispatchEvent(new CustomEvent("btfw:chat:imageHoverMagnifyChanged", { detail:{ enabled: !!hoverMagnifyOn } }));
     document.dispatchEvent(new CustomEvent("btfw:chat:joinNoticesChanged", { detail:{ enabled: !!joinNoticesOn } }));
     document.dispatchEvent(new CustomEvent("btfw:video:localsubs:changed", { detail:{ enabled : !!localSubsOn } }));
@@ -770,7 +777,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     document.dispatchEvent(new CustomEvent("btfw:themeSettings:apply",     { detail:{
       values: {
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
-        emoteSize, gifAutoplay: !!gifAutoOn, imageHoverMagnify: !!hoverMagnifyOn,
+        emoteSize, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
         localSubs: !!localSubsOn, billcastEnabled: !!billcastOn,
         joinNotices: !!joinNoticesOn,
         chatSide,
@@ -804,6 +811,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
       if (chatLabel) chatLabel.textContent = `${chatPxNow}px`;
       $("#btfw-emote-size", m).value   = get(TS_KEYS.emoteSize,   "medium");
       $("#btfw-gif-autoplay", m).checked = get(TS_KEYS.gifAutoplay, "1") === "1";
+      $("#btfw-chat-autoscroll", m).checked = get(TS_KEYS.chatAutoScroll, "1") === "1";
       $("#btfw-image-hover-magnify", m).checked = get(TS_KEYS.imageHoverMagnify, "0") === "1";
       $("#btfw-chat-join-notices", m).checked = get(TS_KEYS.chatJoinNotices, "1") === "1";
       $("#btfw-localsubs-toggle", m).checked = get(TS_KEYS.localSubs, "1") === "1";

@@ -97,7 +97,7 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
     const body = document.body;
     if (!body) return;
     configObserver = new MutationObserver(() => evaluateActivation());
-    configObserver.observe(body, { attributes: true, attributeFilter: ["data-btfw-movie-info-enabled", "data-tmdb-key"] });
+    configObserver.observe(body, { attributes: true, attributeFilter: ["data-btfw-movie-info-enabled"] });
   }
 
   function attachGlobalListeners() {

@@ -40,6 +40,11 @@ BTFW.define("feature:chat-username-colors", [], async () => {
 
   function tint(el, name){
     if (!el || !name) return;
+    if (name === "Quigly") {
+      el.style.removeProperty("--btfw-name-color");
+      el.classList.remove("btfw-username-colored");
+      return;
+    }
     const on = getEnabled();
     if (!on) {
       el.style.removeProperty("--btfw-name-color");

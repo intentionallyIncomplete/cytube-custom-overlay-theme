@@ -311,11 +311,10 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     integrations.audioEnhancer.enabled = audioEnhancerEnabled;
     if (typeof window !== "undefined") {
       window.BTFW_CONFIG = window.BTFW_CONFIG || {};
-      if (typeof window.BTFW_CONFIG.tmdb !== "object") {
-        window.BTFW_CONFIG.tmdb = {};
+      if (typeof window.BTFW_CONFIG.tmdb === "object") {
+        try { delete window.BTFW_CONFIG.tmdb.apiKey; } catch (_) { window.BTFW_CONFIG.tmdb.apiKey = ""; }
       }
-      window.BTFW_CONFIG.tmdb.apiKey = key;
-      window.BTFW_CONFIG.tmdbKey = key;
+      try { delete window.BTFW_CONFIG.tmdbKey; } catch (_) { window.BTFW_CONFIG.tmdbKey = ""; }
       window.BTFW_CONFIG.integrationsEnabled = integrations.enabled;
       if (typeof window.BTFW_CONFIG.ratings !== "object") {
         window.BTFW_CONFIG.ratings = {};
@@ -350,8 +349,8 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
         try { delete window.BTFW_RATINGS_ENDPOINT; } catch (_) { window.BTFW_RATINGS_ENDPOINT = ""; }
       }
       try {
-        if (document?.body && document.body.dataset.tmdbKey !== key) {
-          document.body.dataset.tmdbKey = key;
+        if (document?.body?.dataset?.tmdbKey) {
+          delete document.body.dataset.tmdbKey;
         }
         if (document?.body) {
           if (ratingsEndpoint) {
@@ -381,7 +380,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       document?.dispatchEvent?.(new CustomEvent("btfw:channelIntegrationsChanged", {
         detail: {
           enabled: integrations.enabled,
-          tmdbKey: key,
           ratingsEndpoint,
           movieInfoEnabled,
           autoSubsEnabled,

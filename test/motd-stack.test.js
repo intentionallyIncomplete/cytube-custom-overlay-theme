@@ -25,3 +25,16 @@ test("motd content detection", () => {
   assert.equal(hasMotdContent("<p>&nbsp;</p>"), false);
   assert.equal(hasMotdContent("<p>Welcome</p>"), true);
 });
+
+function getMotdShouldOpen(stored, hasContent) {
+  if (!hasContent) return false;
+  if (stored !== null && stored !== undefined) return !!stored;
+  return true;
+}
+
+test("motd hide preference is respected when content exists", () => {
+  assert.equal(getMotdShouldOpen(false, true), false);
+  assert.equal(getMotdShouldOpen(true, true), true);
+  assert.equal(getMotdShouldOpen(null, true), true);
+  assert.equal(getMotdShouldOpen(null, false), false);
+});

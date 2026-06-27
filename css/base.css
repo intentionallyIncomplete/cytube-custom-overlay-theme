@@ -522,7 +522,7 @@ a:hover {
 /* ---------- Main 2-column grid: left content + splitter + right chat ---------- */
 #btfw-grid{
   display: grid;
-  grid-template-columns: minmax(520px,7fr) var(--btfw-split-width) minmax(var(--btfw-chat-min),3fr);
+  grid-template-columns: minmax(0, 7fr) var(--btfw-split-width) minmax(var(--btfw-chat-min, 280px), 3fr);
   grid-template-areas:
     "nav nav nav"
     "video split chat";
@@ -531,6 +531,8 @@ a:hover {
   grid-row-gap: var(--btfw-gap);
   margin-top: 0;
   padding: 0 var(--btfw-gap) var(--btfw-gap);
+  width: 100%;
+  box-sizing: border-box;
   min-height: calc(100vh - var(--btfw-top) - var(--btfw-gap));
   position: relative;
   z-index: 0;
@@ -646,39 +648,51 @@ body.btfw-resizing {
 
 /* Allow swapping chat/video positions on desktop */
 #btfw-grid.btfw-grid--chat-left{
-  grid-template-columns: minmax(var(--btfw-chat-min),3fr) var(--btfw-split-width) minmax(520px,7fr);
+  grid-template-columns: minmax(var(--btfw-chat-min, 280px), 3fr) var(--btfw-split-width) minmax(0, 7fr);
   grid-template-areas:
     "nav nav nav"
     "chat split video";
 }
 
 #btfw-grid.btfw-grid--chat-right{
-  grid-template-columns: minmax(520px,7fr) var(--btfw-split-width) minmax(var(--btfw-chat-min),3fr);
+  grid-template-columns: minmax(0, 7fr) var(--btfw-split-width) minmax(var(--btfw-chat-min, 280px), 3fr);
   grid-template-areas:
     "nav nav nav"
     "video split chat";
 }
 
-/* Vertical (mobile) layout with video stacked above chat */
+/* Vertical (mobile) layout: video, sticky chat, modules below chat */
 #btfw-grid.btfw-grid--vertical{
   grid-template-columns: 1fr;
   grid-template-areas:
     "nav"
     "video"
-    "chat";
-  grid-template-rows: auto auto auto;
+    "chat"
+    "stack";
+  grid-template-rows: auto auto auto auto;
   grid-row-gap: var(--btfw-gap);
-  min-height: calc(100vh - var(--btfw-top) - var(--btfw-gap));
+  min-height: calc(100dvh - var(--btfw-top));
   height: auto;
+  max-height: none;
   align-content: start;
+  overflow: visible;
+  --btfw-emote-size: 92px;
+  --btfw-chat-gif-max-width: 60%;
+}
+
+body.btfw-mobile-stack-enabled {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-vsplit{ display:none; }
 
 #btfw-grid.btfw-grid--vertical #btfw-leftpad{
+  grid-area: video;
   min-height: 0;
   height: auto;
   max-height: none;
+  overflow: visible;
   position: relative;
   padding-left: 0;
   padding-right: 0;
@@ -686,6 +700,10 @@ body.btfw-resizing {
 
 #btfw-grid.btfw-grid--vertical #videowrap{
   flex: 0 0 auto;
+  min-height: 0 !important;
+  width: 100%;
+  max-height: min(34dvh, 58vw);
+  aspect-ratio: var(--btfw-video-aspect, 16 / 9);
 }
 
 #btfw-grid.btfw-grid--vertical #videowrap iframe,
@@ -694,17 +712,35 @@ body.btfw-resizing {
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-chatcol{
-  position: relative;
-  top: 0;
+  grid-area: chat;
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  top: auto;
   height: auto;
-  min-height: 0;
+  min-height: clamp(240px, 38dvh, 400px);
+  max-height: min(48dvh, 480px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: var(--btfw-radius);
+  box-shadow: 0 -8px 24px color-mix(in srgb, var(--btfw-color-bg) 55%, transparent 45%);
 }
 
 #btfw-grid.btfw-grid--vertical #chatwrap{
   flex: 1 1 auto;
   min-height: 0;
-  height: auto;
+  height: 100%;
+  overflow: hidden;
+}
+
+#btfw-grid.btfw-grid--vertical > #btfw-stack{
+  grid-area: stack;
+  width: 100%;
+  min-height: 0;
+  flex: none;
+  margin-top: 0;
+  padding-bottom: var(--btfw-gap);
 }
 
 /* ---------- Content Stack under video ---------- */
@@ -718,6 +754,11 @@ body.btfw-resizing {
   flex: 0 0 auto;
   width: 100%;
   margin-top: var(--btfw-gap);
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-stack{
+  flex: none;
+  min-height: 0;
 }
 #btfw-stack.btfw-stack--in-chat .btfw-stack-list{
   margin-top: var(--btfw-gap);
@@ -1969,18 +2010,19 @@ nav.pagination.is-centered.btfw-gif-pager {
 
 /* ---------- Responsive: stack chat under content on narrow screens ---------- */
 @media (max-width: 1100px){
-  #btfw-grid{
+  #btfw-grid.btfw-grid--vertical{
     grid-template-columns: 1fr;
     grid-row-gap: var(--btfw-gap);
-    min-height: auto; /* Reset min-height on mobile */
+    min-height: calc(100dvh - var(--btfw-top));
+    height: auto;
   }
-  #btfw-vsplit{ display:none; }
-  #btfw-chatcol{
-    position: relative;
-    top: auto; 
-    height: auto; 
-    min-height: 420px;
-    max-height: none; /* Remove height constraints on mobile */
+  #btfw-grid.btfw-grid--vertical #btfw-vsplit{ display:none; }
+  #btfw-grid.btfw-grid--vertical #btfw-chatcol{
+    position: sticky;
+    bottom: 0;
+    height: auto;
+    min-height: clamp(240px, 38dvh, 400px);
+    max-height: min(48dvh, 480px);
   }
 }
 

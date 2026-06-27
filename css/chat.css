@@ -225,17 +225,6 @@
   }
 }
 
-#btfw-mobile-modules-toggle{
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-}
-
-#btfw-grid.btfw-grid--vertical #btfw-mobile-modules-toggle{
-  display: inline-flex;
-}
-
 #messagebuffer{
   flex: 1 1 auto;
   overflow: auto;
@@ -1359,6 +1348,17 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
     font-weight: 1000;
     position: relative;
     transition: .3s;
+}
+
+/* Quigly — developer rainbow username */
+.chat-msg-Quigly .username {
+    -webkit-background-clip: border-box, text !important;
+    -webkit-text-fill-color: transparent !important;
+    animation: logfo-animation 4s linear infinite !important;
+    background-image: url(https://i.ibb.co/fQh97LR/particles-log-fo.gif), repeating-linear-gradient(90deg, #fff 0%, #FF0000 15%, #FF8000 25%, #F7FF00 35%, #FF0000 45%, #55FF00 55%, #03FFFF 65%, #0022FF 75%, #A100FF 85%, #FF00E6 95%, #fff 100%) !important;
+    background-size: 4em, 500px !important;
+    filter: saturate(2) !important;
+    font-weight: 600 !important;
 }
 .chat-msg-J44J .username {
 text-shadow: 6px 6px 2px #424242b3, 5px 5px 2px #808080, 9px 2px 3px #808080a6 !important;
