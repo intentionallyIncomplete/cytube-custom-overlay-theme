@@ -52,7 +52,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     const maxStack = Math.max(100, primaryRowH - videoMin - 12);
 
     if (isVertical) {
-      return Math.min(320, Math.floor(primaryRowH * 0.34), maxStack);
+      return Math.min(480, Math.floor(primaryRowH * 0.44), maxStack);
     }
 
     const measured = stack.offsetHeight || 0;
@@ -90,7 +90,6 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
       : (leftpad?.getBoundingClientRect().width || window.innerWidth * DEFAULT_VIDEO_RATIO);
     const aspectCap = colW * (9 / 16);
 
-    let videoMaxH;
     if (!isVertical) {
       const stageH = primaryRowH;
       root.style.setProperty("--btfw-video-stage-h", `${Math.floor(stageH)}px`);
@@ -101,14 +100,19 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
 
     const chatMin = 220;
     const pairBudget = primaryRowH - stackReserved - gap * 2;
-    videoMaxH = Math.min(
-      pairBudget - chatMin,
+    const overlayH = measureOverlayHeight();
+    let videowrapMaxH = Math.min(
+      pairBudget - chatMin - overlayH,
       aspectCap,
-      Math.floor(pairBudget * 0.55)
+      Math.floor((pairBudget - overlayH) * 0.55)
     );
 
-    videoMaxH = Math.max(VIDEO_MIN_HEIGHT_PX, Math.floor(videoMaxH));
-    root.style.setProperty("--btfw-video-max-h", `${videoMaxH}px`);
+    videowrapMaxH = Math.max(VIDEO_MIN_HEIGHT_PX, Math.floor(videowrapMaxH));
+    const videoRowH = videowrapMaxH + overlayH;
+    root.style.setProperty("--btfw-video-chrome-h", `${overlayH}px`);
+    root.style.setProperty("--btfw-videowrap-max-h", `${videowrapMaxH}px`);
+    root.style.setProperty("--btfw-video-row-h", `${videoRowH}px`);
+    root.style.setProperty("--btfw-video-max-h", `${videoRowH}px`);
   }
 
   function alignPrimaryRowBottoms(){
@@ -126,7 +130,11 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
 
     const overflow = maxBottom - (viewportH - margin);
     const currentStack = parseFloat(getComputedStyle(root).getPropertyValue("--btfw-stack-max-h")) || 0;
-    const currentVideo = parseFloat(getComputedStyle(root).getPropertyValue("--btfw-video-max-h")) || 0;
+    const currentVideoRow = parseFloat(getComputedStyle(root).getPropertyValue("--btfw-video-row-h"))
+      || parseFloat(getComputedStyle(root).getPropertyValue("--btfw-video-max-h"))
+      || 0;
+    const overlayH = measureOverlayHeight();
+    const currentVideowrap = Math.max(0, currentVideoRow - overlayH);
 
     if (currentStack > 100) {
       root.style.setProperty("--btfw-stack-max-h", `${Math.max(80, Math.floor(currentStack - overflow))}px`);
@@ -135,8 +143,12 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
       return;
     }
 
-    if (currentVideo > VIDEO_MIN_HEIGHT_PX) {
-      root.style.setProperty("--btfw-video-max-h", `${Math.max(VIDEO_MIN_HEIGHT_PX, Math.floor(currentVideo - overflow))}px`);
+    if (currentVideowrap > VIDEO_MIN_HEIGHT_PX) {
+      const nextVideowrap = Math.max(VIDEO_MIN_HEIGHT_PX, Math.floor(currentVideowrap - overflow));
+      const nextRowH = nextVideowrap + overlayH;
+      root.style.setProperty("--btfw-videowrap-max-h", `${nextVideowrap}px`);
+      root.style.setProperty("--btfw-video-row-h", `${nextRowH}px`);
+      root.style.setProperty("--btfw-video-max-h", `${nextRowH}px`);
       refreshVideoSizing();
     }
   }
@@ -374,6 +386,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     applyViewportBudget();
     syncStackLayoutClasses();
     refreshVideoSizing();
+    wireVideoChromeObserver();
     requestAnimationFrame(() => {
       applyViewportBudget();
       alignPrimaryRowBottoms();
@@ -627,6 +640,20 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
       updateResponsiveLayout();
     });
   }
+
+  function wireVideoChromeObserver(){
+    const overlay = document.getElementById("btfw-video-overlay");
+    if (!overlay || overlay._btfwChromeObs) return;
+    overlay._btfwChromeObs = true;
+    const ro = new ResizeObserver(() => {
+      if (!isVertical) return;
+      applyViewportBudget();
+      requestAnimationFrame(alignPrimaryRowBottoms);
+    });
+    ro.observe(overlay);
+  }
+
+  document.addEventListener("btfw:layoutReady", wireVideoChromeObserver);
 
   function init() {
     loadVideoColumnWidth();

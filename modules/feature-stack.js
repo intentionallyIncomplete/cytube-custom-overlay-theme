@@ -33,6 +33,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 
   let panelBarWired = false;
   let activeFlyoutGroup = null;
+  let lastPanelBarSignature = "";
   let flyoutCloseTimer = null;
   let queuePreviewObserver = null;
   let queuePreviewHost = null;
@@ -848,20 +849,11 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       actions.insertBefore(shell, actions.firstChild);
     }
     if (!panelBarWired) {
-      wirePanelLauncher(shell);
       wirePanelDismiss();
       panelBarWired = true;
     }
     document.getElementById("btfw-stack-drawer")?.remove();
     return shell;
-  }
-
-  function updatePanelsMenuBtnLabel(btn, barOpen, hovered = false){
-    const label = btn?.querySelector(".btfw-panels-menu-btn__label");
-    if (!label) return;
-    const expanded = barOpen || hovered;
-    label.textContent = expanded ? "Docked panels" : "Panels";
-    btn.classList.toggle("is-wide", expanded);
   }
 
   function onPanelsMenuButtonClick(ev){
@@ -881,7 +873,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       btn.id = "btfw-panels-menu-btn";
       btn.className = "button btfw-chatbtn btfw-panels-menu-btn";
       btn.innerHTML = '<span class="btfw-panels-menu-btn__label">Panels</span>';
-      btn.title = "Docked channel panels";
+      btn.title = "Docked Panels";
       btn.setAttribute("aria-expanded", "false");
       btn.hidden = true;
       shell.appendChild(btn);
@@ -889,25 +881,15 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       shell.appendChild(btn);
     }
 
+    btn.title = "Docked Panels";
+    const label = btn.querySelector(".btfw-panels-menu-btn__label");
+    if (label) label.textContent = "Panels";
+    btn.classList.remove("is-wide");
     if (!btn.dataset.btfwPanelsWired) {
       btn.addEventListener("click", onPanelsMenuButtonClick);
       btn.dataset.btfwPanelsWired = "1";
     }
     return btn;
-  }
-
-  function wirePanelLauncher(shell){
-    const btn = () => document.getElementById("btfw-panels-menu-btn");
-    const bar = () => document.getElementById("btfw-panel-bar");
-
-    shell.addEventListener("mouseenter", () => {
-      const b = btn();
-      if (b) updatePanelsMenuBtnLabel(b, bar()?.classList.contains("open"), true);
-    });
-    shell.addEventListener("mouseleave", () => {
-      const b = btn();
-      if (b) updatePanelsMenuBtnLabel(b, bar()?.classList.contains("open"), false);
-    });
   }
 
   function getQueueEntryUid(entry){
@@ -1113,6 +1095,7 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
         play.className = "btfw-panel-playlist__play";
         play.textContent = "Play";
         play.dataset.queueUid = String(uid);
+        const nativePlay = entry?.querySelector(".qbtn-play");
         if (!nativePlay && !(window.socket && typeof window.socket.emit === "function")) {
           play.disabled = true;
         }
@@ -1144,6 +1127,9 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
         <span class="btfw-panel-playlist__link-caption">Link</span>
         <input type="url" class="btfw-panel-playlist__link-input input is-small" placeholder="https://..." autocomplete="off" required>
       </label>
+      <div class="btfw-panel-playlist__add-actions">
+        <button type="submit" class="button is-small is-primary btfw-panel-playlist__submit">Add to queue</button>
+      </div>
     `;
     return addForm;
   }
@@ -1209,7 +1195,6 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     if (btn) {
       btn.classList.toggle("is-expanded", open);
       btn.setAttribute("aria-expanded", open ? "true" : "false");
-      updatePanelsMenuBtnLabel(btn, open, false);
     }
     if (!open) closeAllFlyouts();
   }
@@ -1360,12 +1345,28 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     const bar = shell?.querySelector("#btfw-panel-bar");
     if (!bar) return;
 
+    const docked = Array.from(document.querySelectorAll('#btfw-stack .btfw-stack-item[data-docked="true"]'))
+      .sort((a, b) => (PANEL_GROUP_ORDER[a.dataset.bind] || 99) - (PANEL_GROUP_ORDER[b.dataset.bind] || 99));
+
+    const signature = docked.map((item) => item.dataset.bind).join("|");
+    const menuBtn = document.getElementById("btfw-panels-menu-btn");
+    if (menuBtn) {
+      menuBtn.hidden = docked.length === 0;
+      if (docked.length === 0) {
+        lastPanelBarSignature = "";
+        closePanelBar();
+        return;
+      }
+    }
+
+    if (signature === lastPanelBarSignature && bar.childElementCount === docked.length) {
+      return;
+    }
+    lastPanelBarSignature = signature;
+
     const wasOpen = bar.classList.contains("open");
     const reopenGroup = activeFlyoutGroup;
     closeAllFlyouts();
-
-    const docked = Array.from(document.querySelectorAll('#btfw-stack .btfw-stack-item[data-docked="true"]'))
-      .sort((a, b) => (PANEL_GROUP_ORDER[a.dataset.bind] || 99) - (PANEL_GROUP_ORDER[b.dataset.bind] || 99));
 
     bar.replaceChildren();
     bar.style.setProperty("--btfw-panel-bar-count", String(Math.max(docked.length, 1)));
@@ -1389,15 +1390,6 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       bar.appendChild(btn);
       wirePanelBtn(btn, groupId);
     });
-
-    const menuBtn = document.getElementById("btfw-panels-menu-btn");
-    if (menuBtn) {
-      menuBtn.hidden = docked.length === 0;
-      if (docked.length === 0) {
-        closePanelBar();
-        return;
-      }
-    }
 
     if (wasOpen) {
       setPanelBarOpen(true);
@@ -1467,7 +1459,8 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     dockBtn.addEventListener("click", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
-      setPanelDocked(wrapper, wrapper.dataset.docked !== "true");
+      if (wrapper.dataset.docked === "true") return;
+      setPanelDocked(wrapper, true);
     });
 
     arrows.insertBefore(dockBtn, arrows.firstChild);

@@ -979,13 +979,16 @@ const scheduleNormalizeChatActions = (() => {
     wireChatUsernameContextMenu();
     adoptNewMessageIndicator();
 
-    document.dispatchEvent(new CustomEvent("btfw:chat:barsReady", {
-      detail: {
-        topbar: top,
-        bottombar: bottom,
-        actions: topActions
-      }
-    }));
+    if (!cw.dataset.btfwBarsReady) {
+      cw.dataset.btfwBarsReady = "1";
+      document.dispatchEvent(new CustomEvent("btfw:chat:barsReady", {
+        detail: {
+          topbar: top,
+          bottombar: bottom,
+          actions: topActions
+        }
+      }));
+    }
   }
 
   function refreshChatDom(){

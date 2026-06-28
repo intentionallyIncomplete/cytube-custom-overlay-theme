@@ -747,7 +747,7 @@ body.btfw-resizing {
     "stack";
   grid-template-rows:
     auto
-    minmax(0, var(--btfw-video-max-h))
+    minmax(0, var(--btfw-video-row-h, var(--btfw-video-max-h)))
     minmax(clamp(220px, 28dvh, 1fr), 1fr)
     minmax(0, var(--btfw-stack-max-h, 0px));
   grid-row-gap: var(--btfw-gap);
@@ -767,7 +767,7 @@ body.btfw-resizing {
     "chat";
   grid-template-rows:
     auto
-    minmax(0, var(--btfw-video-max-h))
+    minmax(0, var(--btfw-video-row-h, var(--btfw-video-max-h)))
     minmax(clamp(240px, 32dvh, 1fr), 1fr);
 }
 
@@ -788,20 +788,34 @@ body.btfw-desktop-scroll-enabled {
   grid-area: video;
   min-height: 0;
   height: auto;
-  max-height: none;
-  overflow: visible;
+  max-height: var(--btfw-video-row-h, var(--btfw-video-max-h));
+  overflow: hidden;
   position: relative;
   padding-left: 0;
   padding-right: 0;
 }
 
+#btfw-grid.btfw-grid--vertical .btfw-video-stage {
+  display: flex;
+  flex-direction: column;
+  max-height: var(--btfw-video-row-h, var(--btfw-video-max-h));
+  min-height: 0;
+  overflow: hidden;
+}
+
 #btfw-grid.btfw-grid--vertical #videowrap{
-  flex: 0 0 auto;
+  flex: 1 1 0;
   min-height: 0 !important;
   width: 100%;
-  max-height: var(--btfw-video-max-h);
+  max-height: var(--btfw-videowrap-max-h, var(--btfw-video-max-h));
   aspect-ratio: var(--btfw-video-aspect, 16 / 9);
   height: auto;
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-video-overlay {
+  flex: 0 0 auto;
+  margin: 0;
+  padding-top: 4px;
 }
 
 #btfw-grid.btfw-grid--vertical #videowrap iframe,
@@ -847,6 +861,49 @@ body.btfw-desktop-scroll-enabled {
 
 #btfw-grid.btfw-grid--vertical > #btfw-stack.btfw-stack--all-hidden{
   display: none !important;
+}
+
+/* Vertical stack: open playlist panel fills budget; queue scrolls inside body */
+#btfw-grid.btfw-grid--vertical #btfw-stack .btfw-stack-item.btfw-group-item.is-open {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-stack .btfw-stack-item.btfw-group-item.is-open .btfw-stack-item__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-stack [data-bind="playlist-group"].is-open .btfw-group-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-stack [data-bind="playlist-group"] .btfw-plbar {
+  flex: 0 0 auto;
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-stack [data-bind="playlist-group"] #playlistwrap,
+#btfw-grid.btfw-grid--vertical #btfw-stack [data-bind="playlist-group"] #playlistrow {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-stack [data-bind="playlist-group"] #queuecontainer,
+#btfw-grid.btfw-grid--vertical #btfw-stack [data-bind="playlist-group"] #queue {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: none !important;
 }
 
 /* ---------- Content Stack under video ---------- */
@@ -2476,6 +2533,16 @@ html.btfw-panels-flyout-open .btfw-chat-actions {
 .btfw-panel-playlist__link-input {
   width: 100%;
   font-size: 12px;
+}
+
+.btfw-panel-playlist__add-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btfw-panel-playlist__submit {
+  font-size: 11px;
+  min-height: 28px;
 }
 
 .btfw-panel-playlist__item {
