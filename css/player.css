@@ -57,8 +57,8 @@
 #videowrap.vjs-playing video {
   will-change: auto;  
 }
-#videowrap .embed-responsive{
-  position: relative;
+#videowrap .embed-responsive {
+  position: unset;
   width: 100%;
   height: 100%;
   display: block;
@@ -66,10 +66,11 @@
   background: var(--btfw-video-bg);
   border-radius: inherit;
 }
-#videowrap .embed-responsive::before{
-  content: "";
-  display: block;
-  padding-top: 0;
+#videowrap .embed-responsive::before {
+  display: none !important;
+  content: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 #videowrap .embed-responsive .embed-responsive-item,
 #videowrap .embed-responsive embed,
@@ -77,15 +78,19 @@
 #videowrap .embed-responsive object,
 #videowrap .embed-responsive video{
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: 0 !important;
+  left: 0 !important;
   right: 0;
-  width: 100%;
-  height: 100%;
+  bottom: 0;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
   display: block;
   border: 0;
   border-radius: inherit;
+  object-fit: contain;
+  object-position: center center;
 }
 
 /* If no wrapper, modern browsers can use aspect-ratio on iframe */
@@ -105,7 +110,34 @@
 #videowrap .flowplayer{
   width: 100% !important;
   height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  padding-top: 0 !important;
+  margin: 0 !important;
   border-radius: inherit;
+  overflow: hidden;
+}
+
+#videowrap .video-js.vjs-fluid {
+  padding-top: 0 !important;
+}
+
+#videowrap .video-js .vjs-tech,
+#videowrap .video-js video.vjs-tech {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
 }
 
 /* ===== Video.js streamlined theme ===== */

@@ -91,20 +91,21 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     const aspectCap = colW * (9 / 16);
 
     let videoMaxH;
-    const overlayH = !isVertical ? measureOverlayHeight() : 0;
     if (!isVertical) {
+      const stageH = primaryRowH;
+      root.style.setProperty("--btfw-video-stage-h", `${Math.floor(stageH)}px`);
       root.style.setProperty("--btfw-stack-max-h", "none");
-      videoMaxH = primaryRowH - overlayH - (overlayH > 0 ? gap : 0);
-      videoMaxH = Math.min(videoMaxH, aspectCap);
-    } else {
-      const chatMin = 220;
-      const pairBudget = primaryRowH - stackReserved - gap * 2;
-      videoMaxH = Math.min(
-        pairBudget - chatMin,
-        aspectCap,
-        Math.floor(pairBudget * 0.55)
-      );
+      root.style.setProperty("--btfw-video-max-h", "none");
+      return;
     }
+
+    const chatMin = 220;
+    const pairBudget = primaryRowH - stackReserved - gap * 2;
+    videoMaxH = Math.min(
+      pairBudget - chatMin,
+      aspectCap,
+      Math.floor(pairBudget * 0.55)
+    );
 
     videoMaxH = Math.max(VIDEO_MIN_HEIGHT_PX, Math.floor(videoMaxH));
     root.style.setProperty("--btfw-video-max-h", `${videoMaxH}px`);
@@ -154,14 +155,23 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:bulma"], async ({}) 
     const wrap = document.getElementById("videowrap");
     if (!wrap) return;
 
-    wrap.querySelectorAll("iframe, video").forEach(el => {
+    wrap.querySelectorAll("iframe, video, .vjs-tech").forEach((el) => {
       el.style.removeProperty("height");
       el.style.removeProperty("width");
       el.style.removeProperty("maxHeight");
+      el.style.removeProperty("maxWidth");
+      el.style.removeProperty("top");
+      el.style.removeProperty("left");
+      el.style.removeProperty("right");
+      el.style.removeProperty("bottom");
+      el.style.removeProperty("transform");
     });
 
     const vjs = wrap.querySelector(".video-js");
     if (vjs) {
+      vjs.style.removeProperty("padding-top");
+      vjs.style.removeProperty("height");
+      vjs.style.removeProperty("width");
       const player = vjs.player || vjs.player_ || (window.videojs && (window.videojs.players?.[vjs.id] || window.videojs(vjs.id)));
       if (player) {
         try {

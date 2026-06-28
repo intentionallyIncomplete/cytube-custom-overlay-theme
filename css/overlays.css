@@ -134,7 +134,8 @@
   width: 100%;
   pointer-events: auto;
   z-index: auto;
-  margin: 8px 0 4px;
+  margin: 0;
+  padding: 4px 0 0;
 }
 
 #btfw-video-overlay .btfw-vo-bar {

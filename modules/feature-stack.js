@@ -19,8 +19,23 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     "poll-group": { short: "Poll", title: "Polls & Voting" }
   };
 
-  let drawerWired = false;
-  let activeDrawerGroup = null;
+  const PANEL_BAR_LABELS = {
+    "motd-group": "MD",
+    "playlist-group": "PL",
+    "poll-group": "PV"
+  };
+
+  const PANEL_GROUP_ORDER = {
+    "motd-group": 1,
+    "poll-group": 2,
+    "playlist-group": 3
+  };
+
+  let panelBarWired = false;
+  let activeFlyoutGroup = null;
+  let flyoutCloseTimer = null;
+  let queuePreviewObserver = null;
+  let queuePreviewHost = null;
 
   const STACK_VISIBILITY = {
     "motd-group": {
@@ -737,6 +752,55 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     return Array.from(items).every((el) => el.dataset.docked === "true");
   }
 
+  function isPanelInDrawer(item){
+    return !!item?.closest(".btfw-panel-container__host");
+  }
+
+  function preparePanelForDrawer(item){
+    if (!item) return;
+    item.classList.add("btfw-stack-item--in-drawer");
+    item.dataset.btfwInDrawer = "true";
+
+    const bind = item.dataset.bind;
+    if (bind === "poll-group") {
+      const pollWrap = item.querySelector("#pollwrap");
+      if (pollWrap && hasPollContent()) {
+        pollWrap.classList.remove("btfw-poll-idle");
+        pollWrap.removeAttribute("hidden");
+        pollWrap.setAttribute("aria-hidden", "false");
+      }
+    }
+  }
+
+  function clearPanelDrawerMode(item){
+    if (!item) return;
+    item.classList.remove("btfw-stack-item--in-drawer");
+    delete item.dataset.btfwInDrawer;
+    item.classList.toggle("is-open", item.dataset.open !== "false");
+    syncPollWrapVisibility();
+  }
+
+  function restorePanelToStack(item){
+    clearPanelDrawerMode(item);
+    const list = document.querySelector("#btfw-stack .btfw-stack-list");
+    if (!list || !item) return;
+    if (item.parentElement !== list) list.appendChild(item);
+  }
+
+  function applyStoredPanelOpenState(wrapper, storageKey, getDefaultOpen){
+    if (!wrapper || isPanelInDrawer(wrapper)) return;
+    const stored = getStoredVisibility(storageKey);
+    const shouldOpen = typeof getDefaultOpen === "function"
+      ? getDefaultOpen(stored)
+      : (stored !== null ? !!stored : true);
+    if (wrapper._btfwSetOpenState) {
+      wrapper._btfwSetOpenState(shouldOpen, { persist: false });
+    } else {
+      wrapper.dataset.open = shouldOpen ? "true" : "false";
+      wrapper.classList.toggle("is-open", shouldOpen);
+    }
+  }
+
   function dispatchStackVisibility(){
     const items = Array.from(document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']"));
     const inlineItems = items.filter((el) => el.dataset.docked !== "true");
@@ -760,154 +824,589 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     }));
   }
 
-  function ensureStackDrawer(){
-    let root = document.getElementById("btfw-stack-drawer");
-    if (!root) {
-      root = document.createElement("aside");
-      root.id = "btfw-stack-drawer";
-      root.className = "btfw-stack-drawer";
-      root.setAttribute("aria-label", "Docked channel panels");
-      root.innerHTML = `
-        <button type="button" class="btfw-stack-drawer__handle" aria-label="Open panel drawer" title="Panels">
-          <span class="btfw-stack-drawer__handle-grip" aria-hidden="true"></span>
-        </button>
-        <div class="btfw-stack-drawer__rail" role="tablist" aria-label="Docked panels"></div>
-        <div class="btfw-stack-drawer__sheet" hidden>
-          <header class="btfw-stack-drawer__sheet-header">
-            <h2 class="btfw-stack-drawer__sheet-title"></h2>
-            <div class="btfw-stack-drawer__sheet-actions">
-              <button type="button" class="btfw-stack-drawer__undock">Pin below video</button>
-              <button type="button" class="btfw-stack-drawer__close" aria-label="Close drawer">&times;</button>
-            </div>
-          </header>
-          <div class="btfw-stack-drawer__sheet-host"></div>
-        </div>
-      `;
-      document.body.appendChild(root);
+  function ensurePanelsMenuShell(){
+    const actions = document.getElementById("btfw-chat-actions");
+    if (!actions) return null;
+
+    let shell = document.getElementById("btfw-panels-menu-shell");
+    if (!shell) {
+      shell = document.createElement("div");
+      shell.id = "btfw-panels-menu-shell";
+      shell.className = "btfw-panels-menu-shell";
+      shell.setAttribute("aria-label", "Docked channel panels");
+
+      const bar = document.createElement("div");
+      bar.id = "btfw-panel-bar";
+      bar.className = "btfw-panel-bar";
+      bar.setAttribute("role", "toolbar");
+      bar.setAttribute("aria-label", "Docked panel shortcuts");
+      shell.appendChild(bar);
     }
-    if (!drawerWired) {
-      wireStackDrawer(root);
-      drawerWired = true;
+    const bar = shell.querySelector("#btfw-panel-bar");
+    wirePanelBarActions(bar);
+    if (shell.parentElement !== actions) {
+      actions.insertBefore(shell, actions.firstChild);
     }
-    return root;
+    if (!panelBarWired) {
+      wirePanelLauncher(shell);
+      wirePanelDismiss();
+      panelBarWired = true;
+    }
+    document.getElementById("btfw-stack-drawer")?.remove();
+    return shell;
   }
 
-  function wireStackDrawer(root){
-    const handle = root.querySelector(".btfw-stack-drawer__handle");
-    const closeBtn = root.querySelector(".btfw-stack-drawer__close");
-    const undockBtn = root.querySelector(".btfw-stack-drawer__undock");
+  function updatePanelsMenuBtnLabel(btn, barOpen, hovered = false){
+    const label = btn?.querySelector(".btfw-panels-menu-btn__label");
+    if (!label) return;
+    const expanded = barOpen || hovered;
+    label.textContent = expanded ? "Docked panels" : "Panels";
+    btn.classList.toggle("is-wide", expanded);
+  }
 
-    handle?.addEventListener("click", () => {
-      const tabs = root.querySelectorAll(".btfw-stack-drawer__tab");
-      if (!tabs.length) return;
-      if (root.classList.contains("is-open")) {
-        closeDrawer();
-      } else {
-        const target = activeDrawerGroup
-          ? root.querySelector(`.btfw-stack-drawer__tab[data-group="${activeDrawerGroup}"]`)
-          : tabs[0];
-        if (target) openDrawerPanel(target.dataset.group);
+  function onPanelsMenuButtonClick(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    togglePanelBar();
+  }
+
+  function ensurePanelsMenuButton(){
+    const shell = ensurePanelsMenuShell();
+    if (!shell) return null;
+
+    let btn = document.getElementById("btfw-panels-menu-btn");
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "btfw-panels-menu-btn";
+      btn.className = "button btfw-chatbtn btfw-panels-menu-btn";
+      btn.innerHTML = '<span class="btfw-panels-menu-btn__label">Panels</span>';
+      btn.title = "Docked channel panels";
+      btn.setAttribute("aria-expanded", "false");
+      btn.hidden = true;
+      shell.appendChild(btn);
+    } else if (btn.parentElement !== shell) {
+      shell.appendChild(btn);
+    }
+
+    if (!btn.dataset.btfwPanelsWired) {
+      btn.addEventListener("click", onPanelsMenuButtonClick);
+      btn.dataset.btfwPanelsWired = "1";
+    }
+    return btn;
+  }
+
+  function wirePanelLauncher(shell){
+    const btn = () => document.getElementById("btfw-panels-menu-btn");
+    const bar = () => document.getElementById("btfw-panel-bar");
+
+    shell.addEventListener("mouseenter", () => {
+      const b = btn();
+      if (b) updatePanelsMenuBtnLabel(b, bar()?.classList.contains("open"), true);
+    });
+    shell.addEventListener("mouseleave", () => {
+      const b = btn();
+      if (b) updatePanelsMenuBtnLabel(b, bar()?.classList.contains("open"), false);
+    });
+  }
+
+  function getQueueEntryUid(entry){
+    if (!entry) return null;
+    const pluid = Array.from(entry.classList).find((cls) => cls.startsWith("pluid-"));
+    if (pluid) return pluid.slice("pluid-".length);
+    const jq = window.jQuery || window.$;
+    if (jq) {
+      const uid = jq(entry).data("uid");
+      if (uid != null && uid !== "") return uid;
+    }
+    return entry.dataset.uid || null;
+  }
+
+  function playQueueEntry(uid){
+    if (uid == null || uid === "") return false;
+    const sock = window.socket;
+    if (sock && typeof sock.emit === "function") {
+      sock.emit("jumpTo", uid);
+      return true;
+    }
+    const entry = document.querySelector(`#queue > .queue_entry.pluid-${uid}`);
+    const nativePlay = entry?.querySelector(".qbtn-play");
+    if (nativePlay) {
+      nativePlay.click();
+      return true;
+    }
+    return false;
+  }
+
+  function queueMediaLink(url){
+    const trimmed = (url || "").trim();
+    if (!trimmed) return false;
+
+    const mediaurl = document.getElementById("mediaurl");
+    const queueNext = document.getElementById("queue_next");
+    if (mediaurl && queueNext) {
+      mediaurl.value = trimmed;
+      if (!queueNext.disabled) {
+        queueNext.click();
+        return true;
+      }
+    }
+
+    if (typeof window.queue === "function" && mediaurl) {
+      mediaurl.value = trimmed;
+      window.queue("next", "url");
+      return true;
+    }
+
+    const sock = window.socket;
+    if (sock && typeof parseMediaLink === "function") {
+      try {
+        const data = parseMediaLink(trimmed);
+        if (data?.id != null && data?.type) {
+          sock.emit("queue", { id: data.id, type: data.type, pos: "next", temp: false });
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  function undockPanelFromMenu(groupId){
+    ensureStack();
+    const wrapper = document.querySelector(`#btfw-stack .btfw-stack-item[data-bind="${groupId}"]`);
+    if (!wrapper) return;
+
+    if (flyoutCloseTimer) {
+      clearTimeout(flyoutCloseTimer);
+      flyoutCloseTimer = null;
+    }
+    activeFlyoutGroup = null;
+    document.querySelectorAll(".btfw-panel-btn.is-active").forEach((el) => {
+      el.classList.remove("is-active");
+      delete el.dataset.btfwFlyoutLocked;
+    });
+    document.documentElement.classList.remove("btfw-panels-flyout-open");
+    disconnectQueuePreviewObserver();
+
+    setPanelDocked(wrapper, false);
+    requestAnimationFrame(() => {
+      try { wrapper.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (_) {}
+    });
+  }
+
+  function wirePanelBarActions(bar){
+    if (!bar || bar.dataset.btfwActionsWired) return;
+    bar.dataset.btfwActionsWired = "1";
+
+    bar.addEventListener("click", (ev) => {
+      const undock = ev.target.closest(".btfw-panel-undock");
+      if (undock) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const groupId = undock.dataset.panelGroup || undock.closest(".btfw-panel-btn")?.dataset.group;
+        if (groupId) undockPanelFromMenu(groupId);
+        return;
+      }
+
+      const playBtn = ev.target.closest(".btfw-panel-playlist__play");
+      if (playBtn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        playQueueEntry(playBtn.dataset.queueUid);
+        return;
+      }
+
+      const addBtn = ev.target.closest(".btfw-panel-playlist__add");
+      if (addBtn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const form = addBtn.closest(".btfw-panel-container")?.querySelector(".btfw-panel-playlist__add-form");
+        if (!form) return;
+        const open = form.hidden;
+        form.hidden = !open;
+        addBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) form.querySelector(".btfw-panel-playlist__link-input")?.focus();
       }
     });
 
-    closeBtn?.addEventListener("click", () => closeDrawer());
-    undockBtn?.addEventListener("click", () => {
-      if (!activeDrawerGroup) return;
-      const item = document.querySelector(`.btfw-stack-item[data-bind="${activeDrawerGroup}"]`);
-      if (item) setPanelDocked(item, false);
-      closeDrawer();
+    bar.addEventListener("submit", (ev) => {
+      const form = ev.target.closest(".btfw-panel-playlist__add-form");
+      if (!form) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const input = form.querySelector(".btfw-panel-playlist__link-input");
+      const url = input?.value?.trim();
+      if (!url || !queueMediaLink(url)) return;
+      input.value = "";
+      form.hidden = true;
+      form.closest(".btfw-panel-container")?.querySelector(".btfw-panel-playlist__add")
+        ?.setAttribute("aria-expanded", "false");
+      const host = form.closest(".btfw-panel-container")?.querySelector(".btfw-panel-playlist__queue");
+      if (host) renderPlaylistQueuePreview(host);
     });
-
-    let dragStartX = 0;
-    let dragging = false;
-    handle?.addEventListener("pointerdown", (ev) => {
-      if (!root.querySelector(".btfw-stack-drawer__tab")) return;
-      dragging = true;
-      dragStartX = ev.clientX;
-      handle.setPointerCapture(ev.pointerId);
-    });
-    handle?.addEventListener("pointermove", (ev) => {
-      if (!dragging) return;
-      if (ev.clientX - dragStartX > 28) {
-        dragging = false;
-        const tabs = root.querySelectorAll(".btfw-stack-drawer__tab");
-        if (tabs.length) openDrawerPanel(activeDrawerGroup || tabs[0].dataset.group);
-      }
-    });
-    const endDrag = () => { dragging = false; };
-    handle?.addEventListener("pointerup", endDrag);
-    handle?.addEventListener("pointercancel", endDrag);
   }
 
-  function closeDrawer(){
-    const root = document.getElementById("btfw-stack-drawer");
-    if (!root) return;
-    root.classList.remove("is-open");
-    const sheet = root.querySelector(".btfw-stack-drawer__sheet");
-    if (sheet) sheet.hidden = true;
-    const host = root.querySelector(".btfw-stack-drawer__sheet-host");
-    const item = host?.firstElementChild;
-    if (item && item.classList?.contains("btfw-stack-item")) {
+  function disconnectQueuePreviewObserver(){
+    if (queuePreviewObserver) {
+      try { queuePreviewObserver.disconnect(); } catch (_) {}
+      queuePreviewObserver = null;
+    }
+    queuePreviewHost = null;
+  }
+
+  function ensureQueuePreviewObserver(hostEl){
+    if (!hostEl || queuePreviewHost === hostEl) return;
+    disconnectQueuePreviewObserver();
+    const queue = document.getElementById("queue");
+    if (!queue) return;
+    queuePreviewHost = hostEl;
+    queuePreviewObserver = new MutationObserver(() => {
+      if (hostEl.isConnected && activeFlyoutGroup === "playlist-group") {
+        renderPlaylistQueuePreview(hostEl);
+      }
+    });
+    queuePreviewObserver.observe(queue, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  }
+
+  function getUpcomingQueueEntries(limit = 5){
+    const queue = document.getElementById("queue");
+    if (!queue) return [];
+    const entries = Array.from(queue.querySelectorAll(":scope > .queue_entry"));
+    const activeIdx = entries.findIndex((el) =>
+      el.classList.contains("queue_active") || el.classList.contains("playing")
+    );
+    const start = activeIdx >= 0 ? activeIdx + 1 : 0;
+    return entries.slice(start, start + limit);
+  }
+
+  function renderPlaylistQueuePreview(hostEl){
+    if (!hostEl) return;
+    const entries = getUpcomingQueueEntries(5);
+    hostEl.replaceChildren();
+    if (!entries.length) {
+      const empty = document.createElement("p");
+      empty.className = "btfw-panel-playlist__empty";
+      empty.textContent = "No upcoming videos";
+      hostEl.appendChild(empty);
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "btfw-panel-playlist__item";
+
+      const title = document.createElement("span");
+      title.className = "btfw-panel-playlist__title";
+      title.textContent = (entry.querySelector(".qe_title")?.textContent || "Untitled").trim();
+
+      const meta = document.createElement("span");
+      meta.className = "btfw-panel-playlist__meta";
+      meta.textContent = (entry.querySelector(".qe_time")?.textContent || "").trim();
+
+      const actions = document.createElement("div");
+      actions.className = "btfw-panel-playlist__actions";
+
+      const uid = getQueueEntryUid(entry);
+      if (uid != null && uid !== "") {
+        const play = document.createElement("button");
+        play.type = "button";
+        play.className = "btfw-panel-playlist__play";
+        play.textContent = "Play";
+        play.dataset.queueUid = String(uid);
+        if (!nativePlay && !(window.socket && typeof window.socket.emit === "function")) {
+          play.disabled = true;
+        }
+        actions.appendChild(play);
+      }
+
+      item.append(title, meta, actions);
+      hostEl.appendChild(item);
+    });
+  }
+
+  function createPanelUndockButton(groupId, meta){
+    const undock = document.createElement("button");
+    undock.type = "button";
+    undock.className = "btfw-panel-undock";
+    undock.dataset.panelGroup = groupId;
+    undock.setAttribute("aria-label", `Pin ${meta.title} below video`);
+    undock.title = "Pin below video";
+    undock.innerHTML = '<i class="fa fa-thumb-tack" aria-hidden="true"></i>';
+    return undock;
+  }
+
+  function buildPlaylistPanelAddForm(){
+    const addForm = document.createElement("form");
+    addForm.className = "btfw-panel-playlist__add-form";
+    addForm.hidden = true;
+    addForm.innerHTML = `
+      <label class="btfw-panel-playlist__link-label">
+        <span class="btfw-panel-playlist__link-caption">Link</span>
+        <input type="url" class="btfw-panel-playlist__link-input input is-small" placeholder="https://..." autocomplete="off" required>
+      </label>
+    `;
+    return addForm;
+  }
+
+  function buildPanelContainer(groupId, meta, index){
+    const container = document.createElement("div");
+    container.className = "btfw-panel-container";
+    if (index > 0) container.style.bottom = `${-index * 50}px`;
+
+    if (groupId === "playlist-group") {
+      container.classList.add("btfw-panel-container--playlist");
+      const toolbar = document.createElement("div");
+      toolbar.className = "btfw-panel-playlist__toolbar";
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "btfw-panel-playlist__add";
+      addBtn.textContent = "+Add";
+      addBtn.setAttribute("aria-expanded", "false");
+
+      const undock = createPanelUndockButton(groupId, meta);
+      toolbar.append(addBtn, undock);
+
+      const addForm = buildPlaylistPanelAddForm();
+
+      const host = document.createElement("div");
+      host.className = "btfw-panel-container__host btfw-panel-playlist__queue";
+
+      container.append(toolbar, addForm, host);
+      return container;
+    }
+
+    container.classList.add("btfw-panel-container--dock-only");
+    const dockOnly = document.createElement("div");
+    dockOnly.className = "btfw-panel-container__dock-only";
+    dockOnly.appendChild(createPanelUndockButton(groupId, meta));
+    container.appendChild(dockOnly);
+    return container;
+  }
+
+  function closeAllFlyouts(){
+    if (flyoutCloseTimer) {
+      clearTimeout(flyoutCloseTimer);
+      flyoutCloseTimer = null;
+    }
+    document.querySelectorAll(".btfw-panel-btn.is-active").forEach((el) => {
+      el.classList.remove("is-active");
+      delete el.dataset.btfwFlyoutLocked;
+    });
+    document.querySelectorAll(".btfw-panel-container__host .btfw-stack-item").forEach((item) => {
       restorePanelToStack(item);
+    });
+    disconnectQueuePreviewObserver();
+    activeFlyoutGroup = null;
+    document.documentElement.classList.remove("btfw-panels-flyout-open");
+  }
+
+  function setPanelBarOpen(open){
+    const bar = document.getElementById("btfw-panel-bar");
+    const btn = document.getElementById("btfw-panels-menu-btn");
+    if (bar) bar.classList.toggle("open", open);
+    document.documentElement.classList.toggle("btfw-panels-bar-open", open);
+    if (btn) {
+      btn.classList.toggle("is-expanded", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      updatePanelsMenuBtnLabel(btn, open, false);
     }
-    root.querySelectorAll(".btfw-stack-drawer__tab").forEach((tab) => {
-      tab.setAttribute("aria-selected", "false");
+    if (!open) closeAllFlyouts();
+  }
+
+  function closePanelBar(){
+    setPanelBarOpen(false);
+  }
+
+  function togglePanelBar(){
+    ensurePanelsMenuShell();
+    const bar = document.getElementById("btfw-panel-bar");
+    const btn = document.getElementById("btfw-panels-menu-btn");
+    if (!bar || !btn || btn.hidden) return;
+    setPanelBarOpen(!bar.classList.contains("open"));
+  }
+
+  function scheduleCloseFlyout(groupId){
+    if (flyoutCloseTimer) clearTimeout(flyoutCloseTimer);
+    flyoutCloseTimer = setTimeout(() => {
+      flyoutCloseTimer = null;
+      const btn = document.querySelector(`.btfw-panel-btn[data-group="${groupId}"]`);
+      if (!btn) return;
+      if (btn.matches(":hover") || btn.querySelector(".btfw-panel-container:hover")) return;
+      btn.classList.remove("is-active");
+      if (activeFlyoutGroup === groupId) {
+        activeFlyoutGroup = null;
+        disconnectQueuePreviewObserver();
+      }
+      if (!document.querySelector(".btfw-panel-btn.is-active")) {
+        document.documentElement.classList.remove("btfw-panels-flyout-open");
+      }
+    }, 140);
+  }
+
+  function openPanelPreview(groupId, btnEl){
+    if (!btnEl) return;
+
+    if (flyoutCloseTimer) {
+      clearTimeout(flyoutCloseTimer);
+      flyoutCloseTimer = null;
+    }
+
+    document.querySelectorAll(".btfw-panel-btn.is-active").forEach((btn) => {
+      if (btn !== btnEl) btn.classList.remove("is-active");
+    });
+
+    activeFlyoutGroup = groupId;
+    btnEl.classList.add("is-active");
+    document.documentElement.classList.add("btfw-panels-flyout-open");
+
+    if (groupId === "playlist-group") {
+      const host = btnEl.querySelector(".btfw-panel-playlist__queue");
+      if (host) {
+        renderPlaylistQueuePreview(host);
+        ensureQueuePreviewObserver(host);
+      }
+    }
+  }
+
+  function wirePanelDismiss(){
+    if (document.documentElement.dataset.btfwPanelDismissWired) return;
+    document.documentElement.dataset.btfwPanelDismissWired = "1";
+    document.addEventListener("click", (ev) => {
+      if (!activeFlyoutGroup) return;
+      if (ev.target.closest(".btfw-panel-btn, .btfw-panel-container, #btfw-panels-menu-btn, #btfw-panels-menu-shell")) return;
+      document.querySelectorAll(".btfw-panel-btn[data-btfw-flyout-locked]").forEach((el) => {
+        delete el.dataset.btfwFlyoutLocked;
+      });
+      closeAllFlyouts();
     });
   }
 
-  function restorePanelToStack(item){
-    const list = document.querySelector("#btfw-stack .btfw-stack-list");
-    if (!list || !item) return;
-    if (item.parentElement !== list) list.appendChild(item);
+  function togglePanelFlyout(groupId, btn){
+    if (!document.getElementById("btfw-panel-bar")?.classList.contains("open")) return;
+    if (flyoutCloseTimer) {
+      clearTimeout(flyoutCloseTimer);
+      flyoutCloseTimer = null;
+    }
+
+    const locked = btn.dataset.btfwFlyoutLocked === "true";
+    if (locked && btn.classList.contains("is-active")) {
+      delete btn.dataset.btfwFlyoutLocked;
+      btn.classList.remove("is-active");
+      if (activeFlyoutGroup === groupId) {
+        activeFlyoutGroup = null;
+        disconnectQueuePreviewObserver();
+      }
+      if (!document.querySelector(".btfw-panel-btn.is-active")) {
+        document.documentElement.classList.remove("btfw-panels-flyout-open");
+      }
+      return;
+    }
+
+    document.querySelectorAll(".btfw-panel-btn[data-btfw-flyout-locked]").forEach((el) => {
+      if (el !== btn) delete el.dataset.btfwFlyoutLocked;
+    });
+    btn.dataset.btfwFlyoutLocked = "true";
+    openPanelPreview(groupId, btn);
   }
 
-  function syncDrawerRail(){
-    const root = ensureStackDrawer();
-    const rail = root.querySelector(".btfw-stack-drawer__rail");
-    if (!rail) return;
+  function wirePanelBtn(btn, groupId){
+    const container = btn.querySelector(".btfw-panel-container");
 
-    rail.innerHTML = "";
-    const docked = Array.from(document.querySelectorAll('#btfw-stack .btfw-stack-item[data-docked="true"]'));
-    docked.forEach((item) => {
+    const showFlyout = () => {
+      if (!document.getElementById("btfw-panel-bar")?.classList.contains("open")) return;
+      if (flyoutCloseTimer) {
+        clearTimeout(flyoutCloseTimer);
+        flyoutCloseTimer = null;
+      }
+      openPanelPreview(groupId, btn);
+    };
+
+    btn.addEventListener("mouseenter", showFlyout);
+    btn.addEventListener("focusin", showFlyout);
+
+    btn.addEventListener("click", (ev) => {
+      if (ev.target.closest(".btfw-panel-container")) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      togglePanelFlyout(groupId, btn);
+    });
+
+    btn.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      ev.preventDefault();
+      togglePanelFlyout(groupId, btn);
+    });
+
+    btn.addEventListener("mouseleave", (ev) => {
+      if (btn.dataset.btfwFlyoutLocked === "true") return;
+      if (!container?.contains(ev.relatedTarget)) scheduleCloseFlyout(groupId);
+    });
+    container?.addEventListener("mouseenter", () => {
+      if (flyoutCloseTimer) {
+        clearTimeout(flyoutCloseTimer);
+        flyoutCloseTimer = null;
+      }
+    });
+    container?.addEventListener("mouseleave", (ev) => {
+      if (btn.dataset.btfwFlyoutLocked === "true") return;
+      if (!btn.contains(ev.relatedTarget)) scheduleCloseFlyout(groupId);
+    });
+  }
+
+  function syncPanelBar(){
+    const shell = ensurePanelsMenuShell();
+    ensurePanelsMenuButton();
+    const bar = shell?.querySelector("#btfw-panel-bar");
+    if (!bar) return;
+
+    const wasOpen = bar.classList.contains("open");
+    const reopenGroup = activeFlyoutGroup;
+    closeAllFlyouts();
+
+    const docked = Array.from(document.querySelectorAll('#btfw-stack .btfw-stack-item[data-docked="true"]'))
+      .sort((a, b) => (PANEL_GROUP_ORDER[a.dataset.bind] || 99) - (PANEL_GROUP_ORDER[b.dataset.bind] || 99));
+
+    bar.replaceChildren();
+    bar.style.setProperty("--btfw-panel-bar-count", String(Math.max(docked.length, 1)));
+
+    docked.forEach((item, index) => {
       const groupId = item.dataset.bind;
       const meta = GROUP_LABELS[groupId] || { short: "?", title: groupId };
-      const tab = document.createElement("button");
-      tab.type = "button";
-      tab.className = "btfw-stack-drawer__tab";
-      tab.dataset.group = groupId;
-      tab.setAttribute("role", "tab");
-      tab.setAttribute("aria-selected", activeDrawerGroup === groupId ? "true" : "false");
-      tab.title = meta.title;
-      tab.textContent = meta.short;
-      tab.addEventListener("click", () => openDrawerPanel(groupId));
-      rail.appendChild(tab);
+      const btn = document.createElement("div");
+      btn.className = "btfw-panel-btn";
+      btn.dataset.group = groupId;
+      btn.title = meta.title;
+      btn.setAttribute("role", "button");
+      btn.setAttribute("aria-label", meta.title);
+      btn.tabIndex = 0;
+
+      const label = document.createElement("span");
+      label.className = "btfw-panel-btn__label";
+      label.textContent = PANEL_BAR_LABELS[groupId] || meta.short;
+      btn.appendChild(label);
+      btn.appendChild(buildPanelContainer(groupId, meta, index));
+      bar.appendChild(btn);
+      wirePanelBtn(btn, groupId);
     });
 
-    root.classList.toggle("has-tabs", docked.length > 0);
-    if (!docked.length) closeDrawer();
-  }
+    const menuBtn = document.getElementById("btfw-panels-menu-btn");
+    if (menuBtn) {
+      menuBtn.hidden = docked.length === 0;
+      if (docked.length === 0) {
+        closePanelBar();
+        return;
+      }
+    }
 
-  function openDrawerPanel(groupId){
-    const root = ensureStackDrawer();
-    const item = document.querySelector(`.btfw-stack-item[data-bind="${groupId}"]`);
-    const host = root.querySelector(".btfw-stack-drawer__sheet-host");
-    const sheet = root.querySelector(".btfw-stack-drawer__sheet");
-    const title = root.querySelector(".btfw-stack-drawer__sheet-title");
-    if (!item || !host || !sheet) return;
-
-    const openItem = host.querySelector(".btfw-stack-item");
-    if (openItem && openItem !== item) restorePanelToStack(openItem);
-
-    host.appendChild(item);
-    activeDrawerGroup = groupId;
-    if (title) title.textContent = GROUP_LABELS[groupId]?.title || groupId;
-    sheet.hidden = false;
-    root.classList.add("is-open");
-    root.querySelectorAll(".btfw-stack-drawer__tab").forEach((tab) => {
-      tab.setAttribute("aria-selected", tab.dataset.group === groupId ? "true" : "false");
-    });
-    item.dataset.open = "true";
-    item.classList.add("is-open");
+    if (wasOpen) {
+      setPanelBarOpen(true);
+      const stillDocked = reopenGroup && docked.some((item) => item.dataset.bind === reopenGroup);
+      if (stillDocked) {
+        const btn = bar.querySelector(`.btfw-panel-btn[data-group="${reopenGroup}"]`);
+        if (btn) openPanelPreview(reopenGroup, btn);
+      }
+    }
   }
 
   function setPanelDocked(wrapper, docked, opts = {}){
@@ -923,17 +1422,24 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     const dockBtn = wrapper.querySelector(".btfw-stack-dock-btn");
     if (dockBtn) {
       dockBtn.setAttribute("aria-pressed", isDocked ? "true" : "false");
-      dockBtn.title = isDocked ? "Pinned to side drawer" : "Dock to side drawer";
+      dockBtn.title = isDocked ? "Pinned to panels menu" : "Dock to panels menu";
     }
 
     if (isDocked) {
-      if (activeDrawerGroup === groupId) closeDrawer();
+      if (isPanelInDrawer(wrapper)) restorePanelToStack(wrapper);
+      else if (activeFlyoutGroup === groupId) activeFlyoutGroup = null;
     } else {
       restorePanelToStack(wrapper);
+      if (wrapper._btfwSetOpenState) {
+        wrapper._btfwSetOpenState(true);
+      } else {
+        wrapper.dataset.open = "true";
+        wrapper.classList.add("is-open");
+      }
     }
 
     if (!suppressPersist && dockKey) storeDocked(dockKey, isDocked);
-    syncDrawerRail();
+    syncPanelBar();
     dispatchStackVisibility();
   }
 
@@ -954,9 +1460,9 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     dockBtn.type = "button";
     dockBtn.className = "btfw-arrow btfw-stack-dock-btn";
     dockBtn.textContent = "⫷";
-    dockBtn.setAttribute("aria-label", `Dock ${GROUP_LABELS[groupId]?.title || groupId} to side drawer`);
+    dockBtn.setAttribute("aria-label", `Dock ${GROUP_LABELS[groupId]?.title || groupId} to panels menu`);
     dockBtn.setAttribute("aria-pressed", storedDocked ? "true" : "false");
-    dockBtn.title = storedDocked ? "Pinned to side drawer" : "Dock to side drawer";
+    dockBtn.title = storedDocked ? "Pinned to panels menu" : "Dock to panels menu";
 
     dockBtn.addEventListener("click", (ev) => {
       ev.preventDefault();
@@ -1322,7 +1828,14 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   function syncPollWrapVisibility() {
     const pollWrap = document.getElementById("pollwrap");
     if (!pollWrap) return;
+    const inDrawer = !!pollWrap.closest(".btfw-panel-container__host");
     const idle = !hasPollContent();
+    if (inDrawer && !idle) {
+      pollWrap.classList.remove("btfw-poll-idle");
+      pollWrap.removeAttribute("hidden");
+      pollWrap.setAttribute("aria-hidden", "false");
+      return;
+    }
     pollWrap.classList.toggle("btfw-poll-idle", idle);
     pollWrap.toggleAttribute("hidden", idle);
     pollWrap.setAttribute("aria-hidden", idle ? "true" : "false");
@@ -1497,26 +2010,17 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
   setTimeout(() => {
     const motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
     if (motdGroup) {
-      const storedMotd = getStoredVisibility(MOTD_VISIBILITY_KEY);
-      const shouldMotdOpen = getDefaultPollOpen(storedMotd, hasMotdContent());
-      motdGroup.dataset.open = shouldMotdOpen ? "true" : "false";
-      motdGroup.classList.toggle("is-open", shouldMotdOpen);
+      applyStoredPanelOpenState(motdGroup, MOTD_VISIBILITY_KEY, (stored) => getDefaultPollOpen(stored, hasMotdContent()));
     }
 
     const playlistGroup = document.querySelector('.btfw-stack-item[data-bind="playlist-group"]');
     if (playlistGroup) {
-      const storedVisibility = getStoredPlaylistVisibility();
-      const shouldBeOpen = storedVisibility !== null ? storedVisibility : true;
-      playlistGroup.dataset.open = shouldBeOpen ? 'true' : 'false';
-      playlistGroup.classList.toggle('is-open', shouldBeOpen);
+      applyStoredPanelOpenState(playlistGroup, PLAYLIST_VISIBILITY_KEY, (stored) => stored !== null ? !!stored : true);
     }
 
     const pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
     if (pollGroup) {
-      const storedPoll = getStoredPollVisibility();
-      const shouldPollOpen = getDefaultPollOpen(storedPoll, hasPollContent());
-      pollGroup.dataset.open = shouldPollOpen ? 'true' : 'false';
-      pollGroup.classList.toggle('is-open', shouldPollOpen);
+      applyStoredPanelOpenState(pollGroup, POLL_VISIBILITY_KEY, (stored) => getDefaultPollOpen(stored, hasPollContent()));
     }
 
     document.querySelectorAll('#btfw-stack .btfw-stack-item[data-group="true"]').forEach((item) => {
@@ -1525,8 +2029,9 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
       setPanelDocked(item, getStoredDocked(dockKey), { persist: false });
     });
 
-    ensureStackDrawer();
-    syncDrawerRail();
+    ensurePanelsMenuShell();
+    ensurePanelsMenuButton();
+    syncPanelBar();
     syncPollPanelVisibility(refs);
     dispatchStackVisibility();
   }, 1000);
@@ -1538,6 +2043,11 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
 }
 
   document.addEventListener("btfw:layoutReady", boot);
+  document.addEventListener("btfw:chat:barsReady", () => {
+    ensurePanelsMenuShell();
+    ensurePanelsMenuButton();
+    syncPanelBar();
+  });
   setTimeout(boot, 1200);
   
   document.addEventListener("btfw:channelThemeTint", () => {
