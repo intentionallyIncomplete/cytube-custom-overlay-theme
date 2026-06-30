@@ -12,6 +12,7 @@
   window.BTFW_AUDIO = {
     audioContext: null,
     sourceNode: null,
+    _sourceMediaElement: null,
     compressorNode: null,
     gainNode: null,
     player: null,
@@ -132,15 +133,41 @@
       }
     },
 
+    resetMediaBinding() {
+      this.disconnectChain();
+      this.sourceNode = null;
+      this._sourceMediaElement = null;
+      if (this.audioContext && this.audioContext.state !== 'closed') {
+        this.audioContext.close().catch(() => {});
+      }
+      this.audioContext = null;
+    },
+
+    _getOrCreateSourceNode(videoEl) {
+      if (this.sourceNode && this._sourceMediaElement === videoEl) {
+        return this.sourceNode;
+      }
+
+      if (this.sourceNode && this._sourceMediaElement !== videoEl) {
+        this.sourceNode = null;
+        this._sourceMediaElement = null;
+      }
+
+      if (!this.audioContext || this.audioContext.state === 'closed') {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      this.sourceNode = this.audioContext.createMediaElementSource(videoEl);
+      this._sourceMediaElement = videoEl;
+      return this.sourceNode;
+    },
+
     cleanup() {
       this.disconnectChain();
 
-      if (this.audioContext && this.audioContext.state !== 'closed') {
-        this.audioContext.close().catch(() => {});
-        this.audioContext = null;
+      if (this.audioContext && this.audioContext.state === 'running') {
+        this.audioContext.suspend().catch(() => {});
       }
-
-      this.sourceNode = null;
 
       const mediaEl = this._getMediaElement();
       if (mediaEl) {
@@ -361,17 +388,14 @@
       }
 
       try {
-        if (!this.audioContext || this.audioContext.state === 'closed') {
-          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.audioContext?.state === 'suspended') {
+          await this.audioContext.resume().catch(() => {});
         }
 
         videoEl.disableRemotePlayback = true;
 
-        if (!this.sourceNode) {
-          this.sourceNode = this.audioContext.createMediaElementSource(videoEl);
-        }
-
-        let currentNode = this.sourceNode;
+        const sourceNode = this._getOrCreateSourceNode(videoEl);
+        let currentNode = sourceNode;
 
         if (this.normalizationEnabled) {
           this.compressorNode = this.audioContext.createDynamicsCompressor();
@@ -408,7 +432,7 @@
         return true;
       } catch (e) {
         console.error('[BTFW_AUDIO] Error building audio chain:', e);
-        this.cleanup();
+        this.disconnectChain();
         return false;
       }
     },
@@ -1001,7 +1025,9 @@
 
       function handleMediaChange() {
         setTimeout(() => {
-          sharedAudio.cleanup();
+          sharedAudio.resetMediaBinding();
+          sharedAudio.boostEnabled = false;
+          sharedAudio.normalizationEnabled = false;
           sharedAudio.isProxied = false;
           updateBoostButtonState(false);
           updateNormButtonState(false);
