@@ -244,24 +244,6 @@
 }
 
 /* ======================================================================
-   (Optional) PiP Dock styling — harmless if PiP is disabled.
-   ====================================================================== */
-
-#btfw-pip-dock {
-  /* When PiP is enabled in future, the dock can sit above chat column. */
-  width: 100%;
-  padding: 6px 0;
-  display: flex;
-  justify-content: center;
-}
-#videowrap.btfw-pip {
-  border-radius: var(--btfw-radius);
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--btfw-border) 70%, transparent 30%);
-  box-shadow: 0 22px 48px color-mix(in srgb, var(--btfw-color-bg) 46%, transparent 54%);
-}
-
-/* ======================================================================
    CHAT BARS — only small overlay-ish cosmetics kept here.
    (Primary layout/spacing for chat lives in chat.css / base.css)
    ====================================================================== */

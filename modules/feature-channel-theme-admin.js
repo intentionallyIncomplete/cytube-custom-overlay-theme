@@ -48,9 +48,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       tmdb: {
         apiKey: ""
       },
-      ratings: {
-        endpoint: ""
-      },
       movieInfo: {
         enabled: false
       }
@@ -280,11 +277,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     }
     const key = typeof integrations.tmdb.apiKey === "string" ? integrations.tmdb.apiKey.trim() : "";
     integrations.tmdb.apiKey = key;
-    if (!integrations.ratings || typeof integrations.ratings !== "object") {
-      integrations.ratings = { endpoint: "" };
-    }
-    const ratingsEndpoint = typeof integrations.ratings.endpoint === "string" ? integrations.ratings.endpoint.trim() : "";
-    integrations.ratings.endpoint = ratingsEndpoint;
 
     if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
       integrations.movieInfo = { enabled: false };
@@ -299,12 +291,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       }
       try { delete window.BTFW_CONFIG.tmdbKey; } catch (_) { window.BTFW_CONFIG.tmdbKey = ""; }
       window.BTFW_CONFIG.integrationsEnabled = integrations.enabled;
-      if (typeof window.BTFW_CONFIG.ratings !== "object") {
-        window.BTFW_CONFIG.ratings = {};
-      }
-      window.BTFW_CONFIG.ratings.endpoint = ratingsEndpoint;
-      window.BTFW_CONFIG.ratingsEndpoint = ratingsEndpoint;
-      window.BTFW_CONFIG.shouldLoadRatings = Boolean(ratingsEndpoint);
       if (typeof window.BTFW_CONFIG.integrations !== "object") {
         window.BTFW_CONFIG.integrations = {};
       }
@@ -320,19 +306,19 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       if (window.BTFW_CONFIG.integrations?.autoSubs) {
         try { delete window.BTFW_CONFIG.integrations.autoSubs; } catch (_) {}
       }
-      if (ratingsEndpoint) {
-        window.BTFW_RATINGS_ENDPOINT = ratingsEndpoint;
-      } else {
-        try { delete window.BTFW_RATINGS_ENDPOINT; } catch (_) { window.BTFW_RATINGS_ENDPOINT = ""; }
+      try { delete window.BTFW_CONFIG.shouldLoadRatings; } catch (_) { window.BTFW_CONFIG.shouldLoadRatings = false; }
+      try { delete window.BTFW_CONFIG.ratingsEndpoint; } catch (_) {}
+      try { delete window.BTFW_CONFIG.ratings; } catch (_) {}
+      if (window.BTFW_CONFIG.integrations?.ratings) {
+        try { delete window.BTFW_CONFIG.integrations.ratings; } catch (_) {}
       }
+      try { delete window.BTFW_RATINGS_ENDPOINT; } catch (_) {}
       try {
         if (document?.body?.dataset?.tmdbKey) {
           delete document.body.dataset.tmdbKey;
         }
         if (document?.body) {
-          if (ratingsEndpoint) {
-            document.body.dataset.btfwRatingsEndpoint = ratingsEndpoint;
-          } else if (document.body.dataset?.btfwRatingsEndpoint) {
+          if (document.body.dataset?.btfwRatingsEndpoint) {
             delete document.body.dataset.btfwRatingsEndpoint;
           }
           if (movieInfoEnabled) {
@@ -347,7 +333,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       document?.dispatchEvent?.(new CustomEvent("btfw:channelIntegrationsChanged", {
         detail: {
           enabled: integrations.enabled,
-          ratingsEndpoint,
           movieInfoEnabled
         }
       }));
@@ -912,12 +897,8 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     } else {
       normalized.integrations.tmdb.apiKey = normalized.integrations.tmdb.apiKey.trim();
     }
-    if (!normalized.integrations.ratings || typeof normalized.integrations.ratings !== "object") {
-      normalized.integrations.ratings = { endpoint: "" };
-    } else if (typeof normalized.integrations.ratings.endpoint !== "string") {
-      normalized.integrations.ratings.endpoint = "";
-    } else {
-      normalized.integrations.ratings.endpoint = normalized.integrations.ratings.endpoint.trim();
+    if (normalized.integrations.ratings) {
+      delete normalized.integrations.ratings;
     }
     if (!normalized.integrations.movieInfo || typeof normalized.integrations.movieInfo !== "object") {
       normalized.integrations.movieInfo = { enabled: false };
@@ -1301,15 +1282,6 @@ function replaceBlock(original, startMarker, endMarker, block){
               </div>
               <p class="help is-warning" data-role="movie-info-requirements" hidden>Requires a TMDB API key. Add the key above before enabling to avoid empty results.</p>
             </div>
-            <div class="integrations-callout">
-              <strong>Ratings API endpoint</strong>
-              <span>Point to your BillTube Worker that stores community ratings for now playing media.</span>
-            </div>
-            <div class="field">
-              <label for="btfw-theme-integrations-ratings">Ratings API endpoint</label>
-              <input type="url" id="btfw-theme-integrations-ratings" data-btfw-bind="integrations.ratings.endpoint" placeholder="https://billtubemovierating.billtube.workers.dev/">
-              <p class="help">Leave blank to disable the rating widget entirely.</p>
-            </div>
           </div>
         </details>
 
@@ -1617,18 +1589,13 @@ function replaceBlock(original, startMarker, endMarker, block){
       updated.integrations.tmdb = { apiKey: "" };
     }
     updated.integrations.tmdb.apiKey = (updated.integrations.tmdb.apiKey || "").trim();
-    if (!updated.integrations.ratings || typeof updated.integrations.ratings !== "object") {
-      updated.integrations.ratings = { endpoint: "" };
-    }
-    if (typeof updated.integrations.ratings.endpoint !== "string") {
-      updated.integrations.ratings.endpoint = "";
-    } else {
-      updated.integrations.ratings.endpoint = updated.integrations.ratings.endpoint.trim();
-    }
     if (!updated.integrations.movieInfo || typeof updated.integrations.movieInfo !== "object") {
       updated.integrations.movieInfo = { enabled: false };
     }
     updated.integrations.movieInfo.enabled = Boolean(updated.integrations.movieInfo.enabled);
+    if (updated.integrations.ratings) {
+      delete updated.integrations.ratings;
+    }
     if (updated.integrations.autoSubs) {
       delete updated.integrations.autoSubs;
     }
@@ -1881,13 +1848,13 @@ function replaceBlock(original, startMarker, endMarker, block){
     if (!cfg.integrations.tmdb || typeof cfg.integrations.tmdb !== "object") {
       cfg.integrations.tmdb = { apiKey: "" };
     }
-    if (!cfg.integrations.ratings || typeof cfg.integrations.ratings !== "object") {
-      cfg.integrations.ratings = { endpoint: "" };
-    }
     if (!cfg.integrations.movieInfo || typeof cfg.integrations.movieInfo !== "object") {
       cfg.integrations.movieInfo = { enabled: false };
     }
     cfg.integrations.movieInfo.enabled = Boolean(cfg.integrations.movieInfo.enabled);
+    if (cfg.integrations.ratings) {
+      delete cfg.integrations.ratings;
+    }
     if (cfg.integrations.autoSubs) {
       delete cfg.integrations.autoSubs;
     }

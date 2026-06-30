@@ -1,4 +1,4 @@
-/* BTFW — feature:themeSettings (clean, no LS collisions, with openers wired + Billcast apply dispatch) */
+/* BTFW — feature:themeSettings */
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const themePresets = await init("util:themePresets");
@@ -16,7 +16,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     imageHoverMagnify: "btfw:chat:imageHoverMagnify",
     chatJoinNotices: "btfw:chat:joinNotices",
     localSubs   : "btfw:video:localsubs",
-    billcastEnabled: "btfw:billcast:enabled",
     layoutSide  : "btfw:layout:chatSide"
   };
 
@@ -578,12 +577,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
                 <section class="btfw-ts-card">
                   <header class="btfw-ts-card__header">
                     <h3>Playback tools</h3>
-                    <p>Toggle experimental features for the HTML5 player.</p>
+                    <p>Subtitle options for the HTML5 player.</p>
                   </header>
                   <div class="btfw-ts-card__body">
-                    <label class="checkbox btfw-checkbox">
-                      <input type="checkbox" id="btfw-billcast-toggle" checked> <span>Enable Billcast (Chromecast sender)</span>
-                    </label>
                     <label class="checkbox btfw-checkbox">
                       <input type="checkbox" id="btfw-localsubs-toggle"> <span>Show the “Local Subtitles” button</span>
                     </label>
@@ -745,7 +741,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     const hoverMagnifyOn = $("#btfw-image-hover-magnify", m)?.checked;
     const joinNoticesOn = $("#btfw-chat-join-notices", m)?.checked;
     const localSubsOn = $("#btfw-localsubs-toggle", m)?.checked;
-    const billcastOn  = $("#btfw-billcast-toggle", m)?.checked;
     const chatSide    = $("#btfw-chat-side", m)?.value || "right";
 
     set(TS_KEYS.avatarsMode, avatarsMode);
@@ -756,7 +751,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
     set(TS_KEYS.imageHoverMagnify, hoverMagnifyOn ? "1" : "0");
     set(TS_KEYS.chatJoinNotices, joinNoticesOn ? "1":"0");
     set(TS_KEYS.localSubs,   localSubsOn ? "1":"0");
-    set(TS_KEYS.billcastEnabled, billcastOn ? "1":"0");
     set(TS_KEYS.layoutSide, chatSide);
 
     if (avatarsModule?.setMode) avatarsModule.setMode(avatarsMode);
@@ -778,7 +772,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
       values: {
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
         emoteSize, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
-        localSubs: !!localSubsOn, billcastEnabled: !!billcastOn,
+        localSubs: !!localSubsOn,
         joinNotices: !!joinNoticesOn,
         chatSide,
         userAppearance
@@ -815,8 +809,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"],
       $("#btfw-image-hover-magnify", m).checked = get(TS_KEYS.imageHoverMagnify, "0") === "1";
       $("#btfw-chat-join-notices", m).checked = get(TS_KEYS.chatJoinNotices, "1") === "1";
       $("#btfw-localsubs-toggle", m).checked = get(TS_KEYS.localSubs, "1") === "1";
-      const bc = $("#btfw-billcast-toggle", m);
-      if (bc) bc.checked = get(TS_KEYS.billcastEnabled, "1") === "1";
       const layoutSelect = $("#btfw-chat-side", m);
       const sideNow = get(TS_KEYS.layoutSide, "right");
       if (layoutSelect) layoutSelect.value = ["left","right"].includes(sideNow) ? sideNow : "right";

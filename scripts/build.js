@@ -70,8 +70,6 @@ const bundles = [
       'modules/feature-player.js',
       'modules/feature-stack.js',
       'modules/feature-video-overlay.js',
-      'modules/feature-video-enhancements.js',
-      'modules/feature-pip.js',
       'modules/feature-resize.js',
       'modules/feature-audio.js',
       'modules/feature-movie-info.js',
@@ -118,11 +116,8 @@ const bundles = [
       'modules/feature-notification-sounds.js',
       'modules/feature-sync-guard.js',
       'modules/feature-local-subs.js',
-      'modules/feature-billcast.js',
-      'modules/feature-billcaster.js',
       'modules/feature-overlays.js',
-      'modules/feature-userlist-overlay.js',
-      'modules/feature-ratings.js'
+      'modules/feature-userlist-overlay.js'
     ]
   }
 ];
