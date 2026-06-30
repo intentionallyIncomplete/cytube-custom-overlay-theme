@@ -56,9 +56,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       },
       autoSubs: {
         enabled: false
-      },
-      audioEnhancer: {
-        enabled: false
       }
     },
     resources: {
@@ -304,11 +301,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     const autoSubsEnabled = Boolean(integrations.autoSubs.enabled);
     integrations.autoSubs.enabled = autoSubsEnabled;
 
-    if (!integrations.audioEnhancer || typeof integrations.audioEnhancer !== "object") {
-      integrations.audioEnhancer = { enabled: false };
-    }
-    const audioEnhancerEnabled = Boolean(integrations.audioEnhancer.enabled);
-    integrations.audioEnhancer.enabled = audioEnhancerEnabled;
     if (typeof window !== "undefined") {
       window.BTFW_CONFIG = window.BTFW_CONFIG || {};
       if (typeof window.BTFW_CONFIG.tmdb === "object") {
@@ -329,8 +321,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       window.BTFW_CONFIG.integrations.movieInfo.enabled = movieInfoEnabled;
       window.BTFW_CONFIG.integrations.autoSubs = window.BTFW_CONFIG.integrations.autoSubs || {};
       window.BTFW_CONFIG.integrations.autoSubs.enabled = autoSubsEnabled;
-      window.BTFW_CONFIG.integrations.audioEnhancer = window.BTFW_CONFIG.integrations.audioEnhancer || {};
-      window.BTFW_CONFIG.integrations.audioEnhancer.enabled = audioEnhancerEnabled;
       window.BTFW_CONFIG.movieInfo = window.BTFW_CONFIG.movieInfo || {};
       window.BTFW_CONFIG.movieInfo.enabled = movieInfoEnabled;
       window.BTFW_CONFIG.movieInfoEnabled = movieInfoEnabled;
@@ -339,10 +329,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       window.BTFW_CONFIG.autoSubs.enabled = autoSubsEnabled;
       window.BTFW_CONFIG.autoSubsEnabled = autoSubsEnabled;
       window.BTFW_CONFIG.shouldLoadAutoSubs = autoSubsEnabled;
-      window.BTFW_CONFIG.audioEnhancer = window.BTFW_CONFIG.audioEnhancer || {};
-      window.BTFW_CONFIG.audioEnhancer.enabled = audioEnhancerEnabled;
-      window.BTFW_CONFIG.audioEnhancerEnabled = audioEnhancerEnabled;
-      window.BTFW_CONFIG.shouldLoadAudioEnhancer = audioEnhancerEnabled;
       if (ratingsEndpoint) {
         window.BTFW_RATINGS_ENDPOINT = ratingsEndpoint;
       } else {
@@ -368,11 +354,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
           } else if (document.body.dataset?.btfwAutoSubsEnabled) {
             delete document.body.dataset.btfwAutoSubsEnabled;
           }
-          if (audioEnhancerEnabled) {
-            document.body.dataset.btfwAudioEnhancerEnabled = "1";
-          } else if (document.body.dataset?.btfwAudioEnhancerEnabled) {
-            delete document.body.dataset.btfwAudioEnhancerEnabled;
-          }
         }
       } catch (_) {}
     }
@@ -382,8 +363,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
           enabled: integrations.enabled,
           ratingsEndpoint,
           movieInfoEnabled,
-          autoSubsEnabled,
-          audioEnhancerEnabled
+          autoSubsEnabled
         }
       }));
     } catch (_) {}
@@ -474,8 +454,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       .btfw-theme-admin .btfw-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--btfw-theme-accent, #6d4df6); }
       .btfw-theme-admin .movie-info-toggle { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
       .btfw-theme-admin .movie-info-toggle button { min-width: 0; }
-      .btfw-theme-admin .audio-enhancer-toggle { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-      .btfw-theme-admin .audio-enhancer-toggle button { min-width: 0; }
       .btfw-theme-admin [data-role="movie-info-requirements"] { margin-top: 4px; }
       .btfw-theme-admin .field.is-disabled label,
       .btfw-theme-admin .field.is-disabled .help { opacity: 0.55; }
@@ -967,12 +945,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       normalized.integrations.autoSubs.enabled = Boolean(normalized.integrations.autoSubs.enabled);
     }
 
-    if (!normalized.integrations.audioEnhancer || typeof normalized.integrations.audioEnhancer !== "object") {
-      normalized.integrations.audioEnhancer = { enabled: false };
-    } else {
-      normalized.integrations.audioEnhancer.enabled = Boolean(normalized.integrations.audioEnhancer.enabled);
-    }
-
     if (normalized.features && typeof normalized.features === "object") {
       delete normalized.features.videoOverlayPoll;
       if (Object.keys(normalized.features).length === 0) {
@@ -1315,26 +1287,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     }
   }
 
-  function syncAudioEnhancerToggle(panel, cfg){
-    if (!panel || !cfg || typeof cfg !== "object") return;
-    const integrations = cfg.integrations = cfg.integrations && typeof cfg.integrations === "object"
-      ? cfg.integrations
-      : (cfg.integrations = JSON.parse(JSON.stringify(DEFAULT_CONFIG.integrations)));
-    if (!integrations.audioEnhancer || typeof integrations.audioEnhancer !== "object") {
-      integrations.audioEnhancer = { enabled: false };
-    }
-    const button = panel.querySelector('#btfw-theme-audio-enhancer-toggle');
-    const input = panel.querySelector('#btfw-theme-audio-enhancer-enabled');
-    if (!button || !input) return;
-    const enabled = Boolean(integrations.audioEnhancer.enabled);
-    input.checked = enabled;
-    button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    button.classList.toggle('is-link', enabled);
-    button.classList.toggle('is-dark', !enabled);
-    button.classList.toggle('is-active', enabled);
-    button.textContent = enabled ? 'Audio enhancer enabled' : 'Enable audio enhancer';
-  }
-
   function renderPanel(panel){
     injectLocalStyles();
     panel.innerHTML = `
@@ -1412,14 +1364,6 @@ function replaceBlock(original, startMarker, endMarker, block){
               </div>
               <p class="help is-warning" data-role="auto-subs-requirements" hidden>Requires a TMDB API key to match the playing title. Enter your key above before enabling.</p>
               <p class="help">Fetches English subtitles from the Wyzie catalog automatically when direct file uploads are playing.</p>
-            </div>
-            <div class="field">
-              <label for="btfw-theme-audio-enhancer-toggle">Audio enhancer (boost & normalization)</label>
-              <div class="audio-enhancer-toggle">
-                <button type="button" class="button is-dark is-small" id="btfw-theme-audio-enhancer-toggle" aria-pressed="false">Enable audio enhancer</button>
-                <input type="checkbox" id="btfw-theme-audio-enhancer-enabled" data-btfw-bind="integrations.audioEnhancer.enabled" hidden>
-              </div>
-              <p class="help">Makes the boost and normalization controls available in the viewer toolkit. Leave disabled to hide them.</p>
             </div>
             <div class="integrations-callout">
               <strong>Ratings API endpoint</strong>
@@ -1662,30 +1606,11 @@ function replaceBlock(original, startMarker, endMarker, block){
       });
     }
 
-    const audioEnhancerButton = panel.querySelector('#btfw-theme-audio-enhancer-toggle');
-    const audioEnhancerInput = panel.querySelector('#btfw-theme-audio-enhancer-enabled');
-    if (audioEnhancerButton && audioEnhancerInput) {
-      audioEnhancerButton.addEventListener('click', () => {
-        const next = !audioEnhancerInput.checked;
-        audioEnhancerInput.checked = next;
-        if (!cfg.integrations || typeof cfg.integrations !== 'object') {
-          cfg.integrations = {};
-        }
-        if (!cfg.integrations.audioEnhancer || typeof cfg.integrations.audioEnhancer !== 'object') {
-          cfg.integrations.audioEnhancer = { enabled: false };
-        }
-        cfg.integrations.audioEnhancer.enabled = next;
-        syncAudioEnhancerToggle(panel, cfg);
-        onChange();
-      });
-    }
-
     const tmdbField = panel.querySelector('#btfw-theme-integrations-tmdb');
     if (tmdbField) {
       const syncNotice = () => {
         syncMovieInfoToggle(panel, cfg);
         syncAutoSubsToggle(panel, cfg);
-        syncAudioEnhancerToggle(panel, cfg);
       };
       tmdbField.addEventListener('input', syncNotice);
       tmdbField.addEventListener('change', syncNotice);
@@ -1722,7 +1647,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     updateTypographyFieldState(panel);
     syncMovieInfoToggle(panel, cfg);
     syncAutoSubsToggle(panel, cfg);
-    syncAudioEnhancerToggle(panel, cfg);
     renderPreview(panel, cfg);
   }
 

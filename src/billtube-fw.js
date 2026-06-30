@@ -264,10 +264,9 @@ const DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
       BTFW.init("feature:motd-editor"),
       BTFW.init("feature:videoEnhancements"),
       BTFW.init("feature:channelThemeAdmin"),
-      BTFW.init("feature:audioEnhancer"),
       BTFW.init("feature:themeSettings"),
       BTFW.init("feature:ratings"),
-      BTFW.init("feature:audioboost"),
+      BTFW.init("feature:audio"),
       BTFW.init("feature:auto-subs"),
       BTFW.init("feature:movie-info"),
       BTFW.init("ext:movie-suggestion")
