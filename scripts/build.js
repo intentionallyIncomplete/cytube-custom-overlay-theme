@@ -71,7 +71,6 @@ const bundles = [
       'modules/feature-stack.js',
       'modules/feature-video-overlay.js',
       'modules/feature-video-enhancements.js',
-      'modules/feature-ambient.js',
       'modules/feature-pip.js',
       'modules/feature-resize.js',
       'modules/feature-audio-boost.js',
