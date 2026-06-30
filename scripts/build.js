@@ -74,7 +74,6 @@ const bundles = [
       'modules/feature-pip.js',
       'modules/feature-resize.js',
       'modules/feature-audio.js',
-      'modules/feature-auto-subs.js',
       'modules/feature-movie-info.js',
       'modules/feature-monkey-paw.js',
       'modules/feature-movie-suggestions.js'

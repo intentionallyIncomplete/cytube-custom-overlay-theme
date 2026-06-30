@@ -338,7 +338,6 @@
         BTFW.init("feature:themeSettings"),
         BTFW.init("feature:ratings"),
         BTFW.init("feature:audio"),
-        BTFW.init("feature:auto-subs"),
         BTFW.init("feature:movie-info"),
         BTFW.init("ext:movie-suggestion")
       ];
