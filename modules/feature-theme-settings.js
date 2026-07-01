@@ -1,8 +1,7 @@
 /* BTFW — feature:themeSettings */
-BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "feature:themeMode"], async ({ init }) => {
+BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const themePresets = await init("util:themePresets");
-  const themeMode = await init("feature:themeMode");
   const motion = await BTFW.init("util:motion");
 
   const $  = (s, r=document) => r.querySelector(s);
@@ -17,8 +16,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     imageHoverMagnify: "btfw:chat:imageHoverMagnify",
     chatJoinNotices: "btfw:chat:joinNotices",
     localSubs   : "btfw:video:localsubs",
-    layoutSide  : "btfw:layout:chatSide",
-    themeMode   : "btfw:theme:mode"
+    layoutSide  : "btfw:layout:chatSide"
   };
 
   const get = (k, d) => { try { const v = localStorage.getItem(k); return v==null? d : v; } catch(_) { return d; } };
@@ -49,13 +47,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         <label class="btfw-input__label" for="btfw-user-color-${key}">${label}</label>
         <input type="color" id="btfw-user-color-${key}" data-btfw-user-color="${key}">
       </div>`;
-  }
-
-  function syncThemeModeUI(modal) {
-    const select = $("#btfw-theme-mode", modal);
-    if (!select || !themeMode?.getTheme) return;
-    const current = themeMode.getTheme();
-    select.value = ["dark", "light", "auto"].includes(current) ? current : "dark";
   }
 
   function syncGeneralTabUI(modal) {
@@ -93,7 +84,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       if (fontSample) {
         fontSample.style.fontFamily = resolved.family || themeRuntime.FONT_FALLBACK_FAMILY;
       }
-      syncThemeModeUI(modal);
     } finally {
       generalTabSyncing = false;
     }
@@ -408,24 +398,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
             <!-- General -->
             <div class="btfw-ts-panel" data-tab="general" style="display:block;">
               <div class="btfw-ts-grid">
-                <section class="btfw-ts-card">
-                  <header class="btfw-ts-card__header">
-                    <h3>Interface theme</h3>
-                    <p>Dark or light chrome for CyTube dialogs and legacy UI. Separate from your color palette below.</p>
-                  </header>
-                  <div class="btfw-ts-card__body">
-                    <div class="btfw-ts-control">
-                      <label class="btfw-input__label" for="btfw-theme-mode">Theme mode</label>
-                      <select class="btfw-ts-select is-small" id="btfw-theme-mode">
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                        <option value="auto">Auto (system)</option>
-                      </select>
-                      <p class="btfw-help">Auto follows your OS <code>prefers-color-scheme</code> preference.</p>
-                    </div>
-                  </div>
-                </section>
-
                 <section class="btfw-ts-card">
                   <header class="btfw-ts-card__header">
                     <h3>Your appearance</h3>
@@ -771,7 +743,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     const joinNoticesOn = $("#btfw-chat-join-notices", m)?.checked;
     const localSubsOn = $("#btfw-localsubs-toggle", m)?.checked;
     const chatSide    = $("#btfw-chat-side", m)?.value || "right";
-    const themeModePref = $("#btfw-theme-mode", m)?.value || "dark";
 
     set(TS_KEYS.avatarsMode, avatarsMode);
     set(TS_KEYS.chatTextPx, chatTextPx);
@@ -782,7 +753,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     set(TS_KEYS.chatJoinNotices, joinNoticesOn ? "1":"0");
     set(TS_KEYS.localSubs,   localSubsOn ? "1":"0");
     set(TS_KEYS.layoutSide, chatSide);
-    if (themeMode?.setTheme) themeMode.setTheme(themeModePref);
 
     if (avatarsModule?.setMode) avatarsModule.setMode(avatarsMode);
     else resolveAvatars().then(mod => { if (mod?.setMode) mod.setMode(avatarsMode); });
@@ -804,7 +774,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
         emoteSize, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
         localSubs: !!localSubsOn,
-        themeMode: themeModePref,
         joinNotices: !!joinNoticesOn,
         chatSide,
         userAppearance

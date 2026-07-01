@@ -1,5 +1,30 @@
 [
   {
+    "version": "1.16.1",
+    "date": "2026-07-01",
+    "summary": "Channel staff get a clearer Theme tab, audio adds mono mix, and personal theme settings stay focused on your look.",
+    "categories": {
+      "features": [
+        "Mono audio: mix stereo playback to mono from audio options — handy for uneven tracks or listening on one side.",
+        "Channel Theme tab: admins can manage channel branding, optional extra scripts and styles, and the movie info overlay from Channel Settings again."
+      ],
+      "improvements": [
+        "Channel settings: colors and fonts stay in your personal Theme settings; the channel panel focuses on channel-wide branding and resources.",
+        "Audio controls: volume boost and enhancement live together in one audio panel."
+      ],
+      "deprecations": [
+        "Retired unused player extras (billcast, picture-in-picture dock, ratings overlay, auto-captions, and video enhancement toggles) to keep the experience lean."
+      ]
+    },
+    "highlights": [
+      "Channel admins: Theme tab is back in Channel Settings for branding, resources, and movie info.",
+      "Personal colors and fonts stay in Theme settings — not duplicated in channel admin.",
+      "Mono audio option in audio controls.",
+      "Audio boost and enhancement grouped in one panel.",
+      "Unused overlay features removed to simplify the player."
+    ]
+  },
+  {
     "version": "1.15.0",
     "date": "2026-06-27",
     "summary": "Narrow screens give video and chat more room, with a floating Menu and dockable panels.",
@@ -88,25 +113,6 @@
       "Labeled panel shortcuts in chat.",
       "Player resizes more predictably.",
       "Docked panels no longer block chat input."
-    ]
-  },
-  {
-    "version": "1.8.0",
-    "date": "2026-06-20",
-    "summary": "Theme settings and user preferences are easier to find and customize.",
-    "categories": {
-      "features": [
-        "Theme Settings: customize colors, fonts, and icons from Options without editing channel code.",
-        "User Preferences: recent updates and general settings in one place under Options."
-      ],
-      "improvements": [
-        "Options menu: clearer grouping of theme, layout, and playback preferences."
-      ]
-    },
-    "highlights": [
-      "Customize theme colors, fonts, and icons from Options.",
-      "Recent updates listed under User Preferences.",
-      "Options menu groups settings more clearly."
     ]
   }
 ]
