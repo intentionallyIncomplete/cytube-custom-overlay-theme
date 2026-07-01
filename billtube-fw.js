@@ -295,7 +295,7 @@
     }).then(function() {
       return Promise.all([
         BTFW.init("feature:styleCore"),
-        BTFW.init("feature:bulma-layer")
+        BTFW.init("feature:themeMode")
       ]);
     }).then(function() {
       return BTFW.init("feature:layout");

@@ -1,4 +1,5 @@
-BTFW.define("feature:bulma-layer", [], async () => {
+// UI chrome theme mode (dark / light / auto) for legacy CyTube surfaces
+BTFW.define("feature:themeMode", [], async () => {
   const KEY = "btfw:theme:mode";
   const KEY_OLD = "btfw:bulma:theme";
   const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
@@ -6,8 +7,10 @@ BTFW.define("feature:bulma-layer", [], async () => {
   let styleEl;
   function ensureStyle() {
     if (styleEl) return styleEl;
+    const stale = document.getElementById("btfw-bulma-dark-bridge");
+    if (stale) stale.remove();
     styleEl = document.createElement("style");
-    styleEl.id = "btfw-bulma-dark-bridge";
+    styleEl.id = "btfw-theme-mode-bridge";
     document.head.appendChild(styleEl);
     return styleEl;
   }
@@ -203,7 +206,8 @@ body.modal-open { overflow: hidden; }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 
-  return { name: "feature:bulma-layer", setTheme, getTheme };
+  return { name: "feature:themeMode", setTheme, getTheme };
 });
 
-BTFW.define("feature:bulma", ["feature:bulma-layer"], async ({}) => ({ name: "feature:bulma" }));
+BTFW.define("feature:bulma-layer", ["feature:themeMode"], async (ctx) => ctx.init("feature:themeMode"));
+BTFW.define("feature:bulma", ["feature:themeMode"], async (ctx) => ctx.init("feature:themeMode"));

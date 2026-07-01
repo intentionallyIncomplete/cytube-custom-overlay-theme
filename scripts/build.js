@@ -44,7 +44,7 @@ const bundles = [
       'modules/util-motion.js',
       'modules/util-tmdb-proxy.js',
       'modules/feature-style-core.js',
-      'modules/feature-bulma-layer.js',
+      'modules/feature-theme-mode.js',
       'modules/feature-layout.js'
     ]
   },
