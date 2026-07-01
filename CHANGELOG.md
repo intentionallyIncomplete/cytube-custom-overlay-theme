@@ -1,3 +1,5 @@
+## [1.16.1](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.16.0...v1.16.1) (2026-07-01)
+
 # [1.16.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.15.0...v1.16.0) (2026-06-30)
 
 
