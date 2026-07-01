@@ -1,15 +1,11 @@
 BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const {
-    TINT_PRESETS,
-    FONT_PRESETS,
     FONT_DEFAULT_ID,
     FONT_FALLBACK_FAMILY,
     DEFAULT_APPEARANCE,
     normalizeFontId,
-    getFontPreset,
     resolveTypographyConfig,
-    applyLiveTypographyAssets,
     applyRuntimeColors,
     applyRuntimeTypography
   } = themeRuntime;
@@ -45,9 +41,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     typography: { ...DEFAULT_APPEARANCE.typography },
     integrations: {
       enabled: true,
-      tmdb: {
-        apiKey: ""
-      },
       movieInfo: {
         enabled: false
       }
@@ -272,11 +265,10 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     if (typeof integrations.enabled !== "boolean") {
       integrations.enabled = true;
     }
-    if (!integrations.tmdb || typeof integrations.tmdb !== "object") {
-      integrations.tmdb = { apiKey: "" };
-    }
-    const key = typeof integrations.tmdb.apiKey === "string" ? integrations.tmdb.apiKey.trim() : "";
-    integrations.tmdb.apiKey = key;
+    delete integrations.tmdb;
+    delete integrations.autoSubs;
+    delete integrations.ratings;
+    delete integrations.audioEnhancer;
 
     if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
       integrations.movieInfo = { enabled: false };
@@ -286,10 +278,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
 
     if (typeof window !== "undefined") {
       window.BTFW_CONFIG = window.BTFW_CONFIG || {};
-      if (typeof window.BTFW_CONFIG.tmdb === "object") {
-        try { delete window.BTFW_CONFIG.tmdb.apiKey; } catch (_) { window.BTFW_CONFIG.tmdb.apiKey = ""; }
-      }
-      try { delete window.BTFW_CONFIG.tmdbKey; } catch (_) { window.BTFW_CONFIG.tmdbKey = ""; }
       window.BTFW_CONFIG.integrationsEnabled = integrations.enabled;
       if (typeof window.BTFW_CONFIG.integrations !== "object") {
         window.BTFW_CONFIG.integrations = {};
@@ -300,27 +288,8 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       window.BTFW_CONFIG.movieInfo.enabled = movieInfoEnabled;
       window.BTFW_CONFIG.movieInfoEnabled = movieInfoEnabled;
       window.BTFW_CONFIG.shouldLoadMovieInfo = movieInfoEnabled;
-      try { delete window.BTFW_CONFIG.shouldLoadAutoSubs; } catch (_) { window.BTFW_CONFIG.shouldLoadAutoSubs = false; }
-      try { delete window.BTFW_CONFIG.autoSubsEnabled; } catch (_) { window.BTFW_CONFIG.autoSubsEnabled = false; }
-      try { delete window.BTFW_CONFIG.autoSubs; } catch (_) {}
-      if (window.BTFW_CONFIG.integrations?.autoSubs) {
-        try { delete window.BTFW_CONFIG.integrations.autoSubs; } catch (_) {}
-      }
-      try { delete window.BTFW_CONFIG.shouldLoadRatings; } catch (_) { window.BTFW_CONFIG.shouldLoadRatings = false; }
-      try { delete window.BTFW_CONFIG.ratingsEndpoint; } catch (_) {}
-      try { delete window.BTFW_CONFIG.ratings; } catch (_) {}
-      if (window.BTFW_CONFIG.integrations?.ratings) {
-        try { delete window.BTFW_CONFIG.integrations.ratings; } catch (_) {}
-      }
-      try { delete window.BTFW_RATINGS_ENDPOINT; } catch (_) {}
       try {
-        if (document?.body?.dataset?.tmdbKey) {
-          delete document.body.dataset.tmdbKey;
-        }
         if (document?.body) {
-          if (document.body.dataset?.btfwRatingsEndpoint) {
-            delete document.body.dataset.btfwRatingsEndpoint;
-          }
           if (movieInfoEnabled) {
             document.body.dataset.btfwMovieInfoEnabled = "1";
           } else if (document.body.dataset?.btfwMovieInfoEnabled) {
@@ -890,23 +859,14 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     if (typeof normalized.integrations.enabled !== "boolean") {
       normalized.integrations.enabled = true;
     }
-    if (!normalized.integrations.tmdb || typeof normalized.integrations.tmdb !== "object") {
-      normalized.integrations.tmdb = { apiKey: "" };
-    } else if (typeof normalized.integrations.tmdb.apiKey !== "string") {
-      normalized.integrations.tmdb.apiKey = "";
-    } else {
-      normalized.integrations.tmdb.apiKey = normalized.integrations.tmdb.apiKey.trim();
-    }
-    if (normalized.integrations.ratings) {
-      delete normalized.integrations.ratings;
-    }
+    delete normalized.integrations.tmdb;
+    delete normalized.integrations.ratings;
+    delete normalized.integrations.autoSubs;
+    delete normalized.integrations.audioEnhancer;
     if (!normalized.integrations.movieInfo || typeof normalized.integrations.movieInfo !== "object") {
       normalized.integrations.movieInfo = { enabled: false };
     } else {
       normalized.integrations.movieInfo.enabled = Boolean(normalized.integrations.movieInfo.enabled);
-    }
-    if (normalized.integrations.autoSubs) {
-      delete normalized.integrations.autoSubs;
     }
 
     if (normalized.features && typeof normalized.features === "object") {
@@ -972,6 +932,12 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     delete cleaned.posterUrl;
     if (cleaned.branding && typeof cleaned.branding === "object") {
       delete cleaned.branding.favicon;
+    }
+    if (cleaned.integrations && typeof cleaned.integrations === "object") {
+      delete cleaned.integrations.tmdb;
+      delete cleaned.integrations.autoSubs;
+      delete cleaned.integrations.ratings;
+      delete cleaned.integrations.audioEnhancer;
     }
     return cleaned;
   }
@@ -1124,57 +1090,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     return { tabContainer, contentContainer };
   }
 
-  function renderPreview(panel, cfg){
-    const preview = panel.querySelector(".preview");
-    if (!preview) return;
-    const colors = cfg.colors || {};
-    const typography = applyLiveTypographyAssets(cfg.typography || {}, { scope: "preview" });
-    preview.style.setProperty("--bg", colors.background || "#05060d");
-    preview.style.setProperty("--surface", colors.surface || colors.panel || "#0b111d");
-    preview.style.setProperty("--panel", colors.panel || "#141f36");
-    preview.style.setProperty("--accent", colors.accent || "#6d4df6");
-    preview.style.background = `linear-gradient(160deg, ${colors.background || "#05060d"}, ${colors.surface || colors.panel || "#0b111d"})`;
-    const accent = panel.querySelector(".preview__accent");
-    if (accent) {
-      accent.style.background = colors.accent || "#6d4df6";
-    }
-    const chips = panel.querySelectorAll(".preview__chip");
-    chips.forEach(chip => {
-      const key = chip.dataset.key;
-      const value = colors[key] || "#6d4df6";
-      chip.style.background = value;
-      chip.textContent = `${key.replace(/([A-Z])/g, ' $1')}: ${value}`;
-    });
-
-    const fontPreview = panel.querySelector('.preview--font');
-    if (fontPreview) {
-      if (typography.family) {
-        fontPreview.style.fontFamily = typography.family;
-      }
-      const nameNode = fontPreview.querySelector('[data-role="font-name"]');
-      if (nameNode) {
-        nameNode.textContent = typography.label || 'Inter';
-      }
-      const sampleNode = fontPreview.querySelector('[data-role="font-sample"]');
-      if (sampleNode) {
-        sampleNode.style.fontFamily = typography.family || FONT_FALLBACK_FAMILY;
-      }
-    }
-  }
-
-  function updateTypographyFieldState(panel){
-    const select = panel.querySelector('#btfw-theme-font');
-    const field = panel.querySelector('#btfw-theme-font-custom-field');
-    const input = panel.querySelector('#btfw-theme-font-custom');
-    const isCustom = (select?.value || '').toLowerCase() === 'custom';
-    if (input) {
-      input.disabled = !isCustom;
-    }
-    if (field) {
-      field.classList.toggle('is-disabled', !isCustom);
-    }
-  }
-
   function syncMovieInfoToggle(panel, cfg){
     if (!panel || !cfg || typeof cfg !== "object") return;
     const integrations = cfg.integrations = cfg.integrations && typeof cfg.integrations === "object"
@@ -1186,7 +1101,6 @@ function replaceBlock(original, startMarker, endMarker, block){
     const button = panel.querySelector('#btfw-theme-movie-info-toggle');
     const input = panel.querySelector('#btfw-theme-movie-info-enabled');
     if (!button || !input) return;
-    const tmdbField = panel.querySelector('#btfw-theme-integrations-tmdb');
     const enabled = Boolean(integrations.movieInfo.enabled);
     input.checked = enabled;
     button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
@@ -1194,31 +1108,14 @@ function replaceBlock(original, startMarker, endMarker, block){
     button.classList.toggle('is-dark', !enabled);
     button.classList.toggle('is-active', enabled);
     button.textContent = enabled ? 'Movie info overlay enabled' : 'Enable movie info overlay';
-    const notice = panel.querySelector('[data-role="movie-info-requirements"]');
-    if (notice) {
-      const keyFromCfg = typeof integrations.tmdb?.apiKey === 'string' ? integrations.tmdb.apiKey.trim() : '';
-      const keyFromField = typeof tmdbField?.value === 'string' ? tmdbField.value.trim() : '';
-      const hasKey = Boolean(keyFromCfg || keyFromField);
-      if (!enabled) {
-        notice.hidden = true;
-        notice.classList.remove('is-warning', 'is-success');
-      } else {
-        notice.hidden = false;
-        notice.classList.toggle('is-warning', !hasKey);
-        notice.classList.toggle('is-success', hasKey);
-        notice.textContent = hasKey
-          ? 'Movie info will use your TMDB API key to show posters, backdrops, and ratings when viewers hover over the now playing title.'
-          : 'Requires a TMDB API key. Add the key above before enabling to avoid empty results.';
-      }
-    }
   }
 
   function renderPanel(panel){
     injectLocalStyles();
     panel.innerHTML = `
       <div class="btfw-theme-admin">
-        <h3>Channel Theme Toolkit</h3>
-        <p class="lead">Configure your BillTube channel's featured media, theme palette, typography, and resources without editing raw Channel JS or CSS.</p>
+        <h3>Channel operations</h3>
+        <p class="lead">Manage channel branding, optional resources, and BillTube integrations. Per-user colors and fonts live in each viewer's Theme settings.</p>
 
         <details class="section" data-section="resources">
           <summary class="section__summary">
@@ -1261,125 +1158,18 @@ function replaceBlock(original, startMarker, endMarker, block){
           <summary class="section__summary">
             <div class="section__title">
               <h4>Integrations</h4>
-              <span>Connect API keys used by chat tools and commands.</span>
+              <span>Channel-wide BillTube feature toggles.</span>
             </div>
             <span class="section__chevron" aria-hidden="true">></span>
           </summary>
           <div class="section__body">
-            <div class="integrations-callout">
-              <strong>TMDB API key</strong>
-              <span>Required for the <code>!summary</code> command to fetch movie metadata. Request a key at <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org</a>.</span>
-            </div>
-            <div class="field">
-              <label for="btfw-theme-integrations-tmdb">TMDB API key</label>
-              <input type="text" id="btfw-theme-integrations-tmdb" data-btfw-bind="integrations.tmdb.apiKey" placeholder="YOUR_TMDB_KEY">
-            </div>
             <div class="field">
               <label for="btfw-theme-movie-info-toggle">Movie info overlay</label>
               <div class="movie-info-toggle">
                 <button type="button" class="button is-dark is-small" id="btfw-theme-movie-info-toggle" aria-pressed="false">Enable movie info overlay</button>
                 <input type="checkbox" id="btfw-theme-movie-info-enabled" data-btfw-bind="integrations.movieInfo.enabled" hidden>
               </div>
-              <p class="help is-warning" data-role="movie-info-requirements" hidden>Requires a TMDB API key. Add the key above before enabling to avoid empty results.</p>
-            </div>
-          </div>
-        </details>
-
-        <details class="section" data-section="palette">
-          <summary class="section__summary">
-            <div class="section__title">
-              <h4>Palette & Tint</h4>
-              <span>Adjust surface colors and accent tint.</span>
-            </div>
-            <span class="section__chevron" aria-hidden="true">></span>
-          </summary>
-          <div class="section__body">
-            <div class="field">
-              <label for="btfw-theme-tint">Preset tint</label>
-              <select id="btfw-theme-tint" data-btfw-bind="tint">
-                <option value="midnight">Midnight Pulse</option>
-                <option value="aurora">Aurora Bloom</option>
-                <option value="sunset">Sunset Neon</option>
-                <option value="ember">Ember Forge</option>
-                <option value="custom">Custom mix</option>
-              </select>
-              <p class="help">Choose a curated palette to start from, then fine-tune any swatch.</p>
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label>Background</label>
-                <input type="color" data-btfw-bind="colors.background">
-              </div>
-              <div class="field">
-                <label>Surface</label>
-                <input type="color" data-btfw-bind="colors.surface">
-              </div>
-              <div class="field">
-                <label>Panel</label>
-                <input type="color" data-btfw-bind="colors.panel">
-              </div>
-              <div class="field">
-                <label>Primary text</label>
-                <input type="color" data-btfw-bind="colors.text">
-              </div>
-              <div class="field">
-                <label>Chat text</label>
-                <input type="color" data-btfw-bind="colors.chatText">
-              </div>
-              <div class="field">
-                <label>Accent</label>
-                <input type="color" data-btfw-bind="colors.accent">
-              </div>
-            </div>
-            <div class="preview" aria-hidden="true">
-              <div class="preview__main">
-                <div class="preview__chips">
-                  <div class="preview__chip" data-key="background"></div>
-                  <div class="preview__chip" data-key="surface"></div>
-                  <div class="preview__chip" data-key="panel"></div>
-                  <div class="preview__chip" data-key="text"></div>
-                  <div class="preview__chip" data-key="chatText"></div>
-                </div>
-              </div>
-              <div class="preview__accent">Accent</div>
-            </div>
-          </div>
-        </details>
-
-        <details class="section" data-section="typography">
-          <summary class="section__summary">
-            <div class="section__title">
-              <h4>Typography</h4>
-              <span>Select the base font used across the theme.</span>
-            </div>
-            <span class="section__chevron" aria-hidden="true">></span>
-          </summary>
-          <div class="section__body">
-            <div class="field">
-              <label for="btfw-theme-font">Font preset</label>
-              <select id="btfw-theme-font" data-btfw-bind="typography.preset">
-                <option value="inter">Inter</option>
-                <option value="roboto">Roboto</option>
-                <option value="poppins">Poppins</option>
-                <option value="montserrat">Montserrat</option>
-                <option value="opensans">Open Sans</option>
-                <option value="lato">Lato</option>
-                <option value="nunito">Nunito</option>
-                <option value="manrope">Manrope</option>
-                <option value="outfit">Outfit</option>
-                <option value="urbanist">Urbanist</option>
-                <option value="custom">Custom Google Font</option>
-              </select>
-              <p class="help">Curated Google Fonts optimized for readability. Choose <em>Custom</em> to specify your own.</p>
-            </div>
-            <div class="field" id="btfw-theme-font-custom-field">
-              <label for="btfw-theme-font-custom">Custom Google font name</label>
-              <input type="text" id="btfw-theme-font-custom" data-btfw-bind="typography.customFamily" placeholder="Space Grotesk">
-              <p class="help">Enter the exact family name from Google Fonts. We load weights 300, 400, 600, and 700 automatically.</p>
-            </div>
-            <div class="preview preview--font" aria-hidden="true">
-              <div class="preview__font-label" data-role="font-name">Inter</div>
-              <p class="preview__font-text" data-role="font-sample">The quick brown fox jumps over the lazy dog.</p>
+              <p class="help">Shows posters and metadata when viewers hover the now playing title. TMDB access is configured in the worker.</p>
             </div>
           </div>
         </details>
@@ -1423,56 +1213,20 @@ function replaceBlock(original, startMarker, endMarker, block){
 
   function watchInputs(panel, cfg, onChange){
     $$('[data-btfw-bind]', panel).forEach(input => {
-      const handler = () => {
-        if (input.dataset.btfwBind.startsWith("colors")) {
-          const tintSelect = panel.querySelector('#btfw-theme-tint');
-          if (tintSelect && tintSelect.value !== "custom") {
-            tintSelect.value = "custom";
-          }
-        }
-        if (input.dataset.btfwBind.startsWith("typography")) {
-          if (input.id === 'btfw-theme-font-custom') {
-            const fontSelect = panel.querySelector('#btfw-theme-font');
-            if (fontSelect && fontSelect.value !== 'custom') {
-              fontSelect.value = 'custom';
-            }
-          }
-          updateTypographyFieldState(panel);
-        }
-
-        onChange();
-      };
+      const handler = () => onChange();
       input.addEventListener("input", handler);
       input.addEventListener("change", handler);
     });
-
-    const tintSelect = panel.querySelector('#btfw-theme-tint');
-    if (tintSelect) {
-      tintSelect.addEventListener('change', () => {
-        const value = tintSelect.value;
-        if (value && value !== 'custom' && TINT_PRESETS[value]) {
-          const preset = TINT_PRESETS[value];
-          Object.assign(cfg.colors, preset.colors);
-          updateInputs(panel, cfg);
-        }
-        updateTypographyFieldState(panel);
-        onChange();
-      });
-    }
 
     bindModuleFieldWatcher(panel, onChange);
 
     const resetBtn = panel.querySelector('#btfw-theme-reset');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        const tint = panel.querySelector('#btfw-theme-tint')?.value || 'midnight';
-        if (tint !== 'custom' && TINT_PRESETS[tint]) {
-          const preset = TINT_PRESETS[tint];
-          Object.assign(cfg.colors, preset.colors);
-        } else {
-          const defaults = cloneDefaults();
-          Object.assign(cfg.colors, defaults.colors);
-        }
+        const defaults = cloneDefaults();
+        cfg.integrations = JSON.parse(JSON.stringify(defaults.integrations));
+        cfg.branding = JSON.parse(JSON.stringify(defaults.branding));
+        cfg.resources = JSON.parse(JSON.stringify(defaults.resources));
         updateInputs(panel, cfg);
         onChange();
       });
@@ -1494,15 +1248,6 @@ function replaceBlock(original, startMarker, endMarker, block){
         syncMovieInfoToggle(panel, cfg);
         onChange();
       });
-    }
-
-    const tmdbField = panel.querySelector('#btfw-theme-integrations-tmdb');
-    if (tmdbField) {
-      const syncNotice = () => {
-        syncMovieInfoToggle(panel, cfg);
-      };
-      tmdbField.addEventListener('input', syncNotice);
-      tmdbField.addEventListener('change', syncNotice);
     }
   }
 
@@ -1533,9 +1278,7 @@ function replaceBlock(original, startMarker, endMarker, block){
     const modules = normalizeModuleUrls(collectModuleCandidates(cfg));
     renderModuleInputs(panel, modules);
     ensureModuleFieldAvailability(panel);
-    updateTypographyFieldState(panel);
     syncMovieInfoToggle(panel, cfg);
-    renderPreview(panel, cfg);
   }
 
   function setValueAtPath(obj, path, value){
@@ -1585,20 +1328,14 @@ function replaceBlock(original, startMarker, endMarker, block){
     if (typeof updated.integrations.enabled !== "boolean") {
       updated.integrations.enabled = true;
     }
-    if (!updated.integrations.tmdb || typeof updated.integrations.tmdb !== "object") {
-      updated.integrations.tmdb = { apiKey: "" };
-    }
-    updated.integrations.tmdb.apiKey = (updated.integrations.tmdb.apiKey || "").trim();
+    delete updated.integrations.tmdb;
+    delete updated.integrations.ratings;
+    delete updated.integrations.autoSubs;
+    delete updated.integrations.audioEnhancer;
     if (!updated.integrations.movieInfo || typeof updated.integrations.movieInfo !== "object") {
       updated.integrations.movieInfo = { enabled: false };
     }
     updated.integrations.movieInfo.enabled = Boolean(updated.integrations.movieInfo.enabled);
-    if (updated.integrations.ratings) {
-      delete updated.integrations.ratings;
-    }
-    if (updated.integrations.autoSubs) {
-      delete updated.integrations.autoSubs;
-    }
     if (updated.features && typeof updated.features === "object") {
       delete updated.features.videoOverlayPoll;
       if (Object.keys(updated.features).length === 0) {
@@ -1817,7 +1554,6 @@ function replaceBlock(original, startMarker, endMarker, block){
         status.dataset.variant = "idle";
       }
     }
-    renderPreview(panel, runtimeConfig);
     return { config: runtimeConfig, jsField, cssField };
   }
 
@@ -1845,19 +1581,14 @@ function replaceBlock(original, startMarker, endMarker, block){
     if (typeof cfg.integrations.enabled !== "boolean") {
       cfg.integrations.enabled = true;
     }
-    if (!cfg.integrations.tmdb || typeof cfg.integrations.tmdb !== "object") {
-      cfg.integrations.tmdb = { apiKey: "" };
-    }
+    delete cfg.integrations.tmdb;
+    delete cfg.integrations.ratings;
+    delete cfg.integrations.autoSubs;
+    delete cfg.integrations.audioEnhancer;
     if (!cfg.integrations.movieInfo || typeof cfg.integrations.movieInfo !== "object") {
       cfg.integrations.movieInfo = { enabled: false };
     }
     cfg.integrations.movieInfo.enabled = Boolean(cfg.integrations.movieInfo.enabled);
-    if (cfg.integrations.ratings) {
-      delete cfg.integrations.ratings;
-    }
-    if (cfg.integrations.autoSubs) {
-      delete cfg.integrations.autoSubs;
-    }
 
     if (!cfg.branding || typeof cfg.branding !== "object") {
       cfg.branding = cloneDefaults().branding;
@@ -1915,7 +1646,6 @@ setTimeout(() => {
       if (initializing) return;
       const latest = collectConfig(panel, cfg);
       overwriteConfig(cfg, latest);
-      renderPreview(panel, cfg);
       dirty = true;
       if (status) {
         status.textContent = "Changes pending. Click apply to sync with Channel JS/CSS.";
@@ -2008,12 +1738,16 @@ setTimeout(() => {
   }
 
   function ensureModalPanel(modal) {
-    removeChannelThemeTab(modal);
+    if (!modal) return;
+    if (canManageChannel()) {
+      initPanel(modal);
+    } else {
+      removeChannelThemeTab(modal);
+    }
   }
 
   function boot() {
-    const modal = document.querySelector(CHANNEL_MODAL_SELECTOR);
-    removeChannelThemeTab(modal);
+    ensureModalPanel(document.querySelector(CHANNEL_MODAL_SELECTOR));
   }
 
   if (document.readyState === "loading") {
