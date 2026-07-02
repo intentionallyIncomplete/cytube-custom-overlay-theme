@@ -967,6 +967,21 @@
   opacity: 1;
 }
 
+/* CyTube Bootstrap 2: backdrop is a sibling inside .modal, after .modal-dialog */
+.modal > .modal-dialog {
+  position: relative;
+  z-index: 2;
+}
+
+.modal > .modal-backdrop {
+  z-index: 1;
+}
+
+/* Bootstrap 3+: backdrop on body sits below the modal shell */
+body > .modal-backdrop {
+  z-index: 5999;
+}
+
 .modal.btfw-bulma-skin {
   z-index: 1050; /* above backdrop */
   /* Bootstrap handles display/positioning; we only theme */

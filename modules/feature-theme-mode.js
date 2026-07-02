@@ -112,7 +112,7 @@ html[data-btfw-theme="dark"] .modal.fade,
 html[data-btfw-theme="dark"] .modal.in,
 html[data-btfw-theme="dark"] .modal { z-index: 6000 !important; }
 html[data-btfw-theme="dark"] .modal-backdrop {
-  background-color: color-mix(in srgb, var(--btfw-color-bg) 88%, transparent 12%) !important; z-index: 0 !important;
+  background-color: color-mix(in srgb, var(--btfw-color-bg) 88%, transparent 12%) !important;
 }
 html[data-btfw-theme="dark"] .modal-dialog { max-width: 880px; }
 html[data-btfw-theme="dark"] .modal-content {
