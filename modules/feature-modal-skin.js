@@ -8,6 +8,86 @@ BTFW.define("feature:modal-skin", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
 
+  const CHANNEL_MODAL_SIZE_KEY = "btfw:channeloptions:size";
+  const CHANNEL_MODAL_DEFAULT_WIDTH = 736;
+  const CHANNEL_MODAL_MIN_WIDTH = 520;
+  const CHANNEL_MODAL_MIN_HEIGHT = 360;
+
+  function readChannelModalSize(){
+    try {
+      const raw = localStorage.getItem(CHANNEL_MODAL_SIZE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const width = Number(parsed?.width);
+      const height = Number(parsed?.height);
+      if (!Number.isFinite(width) || width < CHANNEL_MODAL_MIN_WIDTH) return null;
+      const size = { width: Math.round(width) };
+      if (Number.isFinite(height) && height >= CHANNEL_MODAL_MIN_HEIGHT) {
+        size.height = Math.round(height);
+      }
+      return size;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeChannelModalSize(width, height){
+    try {
+      const payload = { width: Math.round(width) };
+      if (Number.isFinite(height) && height >= CHANNEL_MODAL_MIN_HEIGHT) {
+        payload.height = Math.round(height);
+      }
+      localStorage.setItem(CHANNEL_MODAL_SIZE_KEY, JSON.stringify(payload));
+    } catch (_) {}
+  }
+
+  function applyChannelModalSize(modal){
+    const dialog = modal?.querySelector(".modal-dialog");
+    if (!dialog) return;
+    const stored = readChannelModalSize();
+    const width = stored?.width || CHANNEL_MODAL_DEFAULT_WIDTH;
+    dialog.style.width = `${width}px`;
+    dialog.style.maxWidth = "96vw";
+    if (stored?.height) {
+      dialog.style.height = `${stored.height}px`;
+      dialog.style.maxHeight = "90vh";
+    } else {
+      dialog.style.removeProperty("height");
+      dialog.style.removeProperty("max-height");
+    }
+  }
+
+  function watchChannelModalResize(modal){
+    const dialog = modal?.querySelector(".modal-dialog");
+    if (!dialog || dialog.dataset.btfwResizeWired === "1") return;
+    dialog.dataset.btfwResizeWired = "1";
+
+    let saveTimer = null;
+    const persist = () => {
+      const rect = dialog.getBoundingClientRect();
+      writeChannelModalSize(rect.width, rect.height);
+    };
+    const scheduleSave = () => {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(persist, 180);
+    };
+
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(scheduleSave);
+      observer.observe(dialog);
+      dialog._btfwResizeObserver = observer;
+    } else {
+      dialog.addEventListener("mouseup", scheduleSave);
+    }
+  }
+
+  function enableChannelModalResize(modal){
+    if (!modal || modal.id !== "channeloptions") return;
+    modal.classList.add("btfw-modal-resizable");
+    applyChannelModalSize(modal);
+    watchChannelModalResize(modal);
+  }
+
   function restyleButtons(root){
     const map = [
       ["btn-primary", "is-link"],
@@ -45,7 +125,12 @@ BTFW.define("feature:modal-skin", [], async () => {
   }
 
   function decorate(modal){
-    if (!modal || modal.classList.contains("btfw-modal") || modal.classList.contains("btfw-bulma-skin")) return;
+    if (!modal || modal.classList.contains("btfw-modal")) return;
+    const isNew = !modal.classList.contains("btfw-bulma-skin");
+    if (!isNew) {
+      enableChannelModalResize(modal);
+      return;
+    }
     modal.classList.add("btfw-bulma-skin");
 
     modal.querySelectorAll(".modal-content").forEach(c=>c.classList.add("btfw-card"));
@@ -57,9 +142,14 @@ BTFW.define("feature:modal-skin", [], async () => {
 
     restyleButtons(modal);
 
+    enableChannelModalResize(modal);
+
     try {
       if (window.jQuery) {
-        window.jQuery(modal).on("shown.bs.modal", function(){ restyleButtons(modal); });
+        window.jQuery(modal).on("shown.bs.modal", function(){
+          restyleButtons(modal);
+          enableChannelModalResize(modal);
+        });
       }
     } catch(_) {}
   }
