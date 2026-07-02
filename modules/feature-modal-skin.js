@@ -50,9 +50,19 @@ BTFW.define("feature:modal-skin", [], async () => {
       CHANNEL_MODAL_MIN_WIDTH,
       Math.min(maxW, Math.round(width))
     );
+    // Match max-width to target width so CyTube's width:auto/max-width !important
+    // rules cannot block expansion above the current rendered size.
     dialog.style.setProperty("width", `${w}px`, "important");
-    dialog.style.setProperty("max-width", `${maxW}px`, "important");
+    dialog.style.setProperty("max-width", `${w}px`, "important");
     dialog.style.setProperty("min-width", `${CHANNEL_MODAL_MIN_WIDTH}px`, "important");
+
+    const content = dialog.querySelector(".modal-content");
+    if (content) {
+      content.style.setProperty("width", "100%", "important");
+      content.style.setProperty("max-width", "none", "important");
+      content.style.setProperty("box-sizing", "border-box", "important");
+    }
+
     if (Number.isFinite(height) && height >= CHANNEL_MODAL_MIN_HEIGHT) {
       const h = Math.max(
         CHANNEL_MODAL_MIN_HEIGHT,
@@ -60,10 +70,25 @@ BTFW.define("feature:modal-skin", [], async () => {
       );
       dialog.style.setProperty("height", `${h}px`, "important");
       dialog.style.setProperty("max-height", `${maxH}px`, "important");
+      if (content) {
+        content.style.setProperty("height", "100%", "important");
+        content.style.setProperty("max-height", "100%", "important");
+      }
     } else {
       dialog.style.removeProperty("height");
       dialog.style.removeProperty("max-height");
+      if (content) {
+        content.style.removeProperty("height");
+        content.style.removeProperty("max-height");
+      }
     }
+  }
+
+  function measureChannelDialogSize(dialog){
+    return {
+      width: dialog.offsetWidth,
+      height: dialog.offsetHeight,
+    };
   }
 
   function applyChannelModalSize(modal){
@@ -79,16 +104,24 @@ BTFW.define("feature:modal-skin", [], async () => {
 
   function installChannelModalResizeHandle(modal){
     const dialog = modal?.querySelector(".modal-dialog");
-    if (!dialog || dialog.dataset.btfwResizeHandleWired === "1") return;
-    dialog.dataset.btfwResizeHandleWired = "1";
+    const content = dialog?.querySelector(".modal-content");
+    if (!dialog || !content) return;
 
-    let handle = dialog.querySelector(".btfw-modal-resize-handle");
+    // Drop legacy handles mounted on .modal-dialog from earlier builds.
+    dialog.querySelectorAll(":scope > .btfw-modal-resize-handle").forEach((el) => el.remove());
+
+    if (content.dataset.btfwResizeHandleWired === "1") return;
+    content.dataset.btfwResizeHandleWired = "1";
+
+    let handle = content.querySelector(".btfw-modal-resize-handle");
     if (!handle) {
       handle = document.createElement("div");
       handle.className = "btfw-modal-resize-handle";
       handle.setAttribute("aria-hidden", "true");
       handle.title = "Drag to resize";
-      dialog.appendChild(handle);
+      content.appendChild(handle);
+    } else if (handle.parentElement !== content) {
+      content.appendChild(handle);
     }
 
     let dragging = false;
@@ -100,11 +133,11 @@ BTFW.define("feature:modal-skin", [], async () => {
     const onPointerDown = (event) => {
       if (event.button !== 0) return;
       dragging = true;
-      const rect = dialog.getBoundingClientRect();
+      const size = measureChannelDialogSize(dialog);
       startX = event.clientX;
       startY = event.clientY;
-      startW = rect.width;
-      startH = rect.height;
+      startW = size.width;
+      startH = size.height;
       handle.setPointerCapture(event.pointerId);
       event.preventDefault();
       event.stopPropagation();
@@ -123,8 +156,8 @@ BTFW.define("feature:modal-skin", [], async () => {
       if (!dragging) return;
       dragging = false;
       try { handle.releasePointerCapture(event.pointerId); } catch (_) {}
-      const rect = dialog.getBoundingClientRect();
-      writeChannelModalSize(rect.width, rect.height);
+      const size = measureChannelDialogSize(dialog);
+      writeChannelModalSize(size.width, size.height);
     };
 
     handle.addEventListener("pointerdown", onPointerDown);
