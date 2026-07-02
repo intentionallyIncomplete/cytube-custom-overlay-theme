@@ -995,17 +995,45 @@ body > .modal-backdrop {
 #channeloptions.btfw-modal-resizable > .modal-dialog {
   position: relative;
   z-index: 2;
-  resize: both;
-  overflow: auto;
-  width: 736px;
-  max-width: 96vw;
-  min-width: 520px;
+  overflow: hidden;
+  width: 736px !important;
+  max-width: 96vw !important;
+  min-width: 520px !important;
   min-height: 360px;
   max-height: 90vh;
+  transform: none !important;
+  transition: none !important;
 }
 
 #channeloptions.btfw-modal-resizable > .modal-dialog > .modal-content {
   min-height: 100%;
+  max-height: 100%;
+  overflow: auto;
+}
+
+#channeloptions.btfw-modal-resizable .btfw-modal-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+  z-index: 6;
+  cursor: nwse-resize;
+  touch-action: none;
+  border-bottom-right-radius: var(--btfw-radius, 8px);
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0 45%,
+      color-mix(in srgb, var(--btfw-color-accent) 70%, transparent 30%) 45% 55%,
+      transparent 55% 65%,
+      color-mix(in srgb, var(--btfw-color-accent) 70%, transparent 30%) 65% 75%,
+      transparent 75% 100%
+    );
+}
+
+#channeloptions.btfw-modal-resizable .btfw-modal-resize-handle:hover {
+  background-color: color-mix(in srgb, var(--btfw-color-accent) 22%, transparent 78%);
 }
 
 .modal.btfw-bulma-skin .btfw-card {

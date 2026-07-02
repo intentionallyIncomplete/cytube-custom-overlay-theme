@@ -21,9 +21,11 @@ BTFW.define("feature:modal-skin", [], async () => {
       const width = Number(parsed?.width);
       const height = Number(parsed?.height);
       if (!Number.isFinite(width) || width < CHANNEL_MODAL_MIN_WIDTH) return null;
-      const size = { width: Math.round(width) };
+      const maxW = Math.floor(window.innerWidth * 0.96);
+      const size = { width: Math.min(Math.round(width), maxW) };
       if (Number.isFinite(height) && height >= CHANNEL_MODAL_MIN_HEIGHT) {
-        size.height = Math.round(height);
+        const maxH = Math.floor(window.innerHeight * 0.9);
+        size.height = Math.min(Math.round(height), maxH);
       }
       return size;
     } catch (_) {
@@ -41,51 +43,101 @@ BTFW.define("feature:modal-skin", [], async () => {
     } catch (_) {}
   }
 
-  function applyChannelModalSize(modal){
-    const dialog = modal?.querySelector(".modal-dialog");
-    if (!dialog) return;
-    const stored = readChannelModalSize();
-    const width = stored?.width || CHANNEL_MODAL_DEFAULT_WIDTH;
-    dialog.style.width = `${width}px`;
-    dialog.style.maxWidth = "96vw";
-    if (stored?.height) {
-      dialog.style.height = `${stored.height}px`;
-      dialog.style.maxHeight = "90vh";
+  function setChannelDialogSize(dialog, width, height){
+    const maxW = Math.floor(window.innerWidth * 0.96);
+    const maxH = Math.floor(window.innerHeight * 0.9);
+    const w = Math.max(
+      CHANNEL_MODAL_MIN_WIDTH,
+      Math.min(maxW, Math.round(width))
+    );
+    dialog.style.setProperty("width", `${w}px`, "important");
+    dialog.style.setProperty("max-width", `${maxW}px`, "important");
+    dialog.style.setProperty("min-width", `${CHANNEL_MODAL_MIN_WIDTH}px`, "important");
+    if (Number.isFinite(height) && height >= CHANNEL_MODAL_MIN_HEIGHT) {
+      const h = Math.max(
+        CHANNEL_MODAL_MIN_HEIGHT,
+        Math.min(maxH, Math.round(height))
+      );
+      dialog.style.setProperty("height", `${h}px`, "important");
+      dialog.style.setProperty("max-height", `${maxH}px`, "important");
     } else {
       dialog.style.removeProperty("height");
       dialog.style.removeProperty("max-height");
     }
   }
 
-  function watchChannelModalResize(modal){
+  function applyChannelModalSize(modal){
     const dialog = modal?.querySelector(".modal-dialog");
-    if (!dialog || dialog.dataset.btfwResizeWired === "1") return;
-    dialog.dataset.btfwResizeWired = "1";
+    if (!dialog) return;
+    const stored = readChannelModalSize();
+    setChannelDialogSize(
+      dialog,
+      stored?.width || CHANNEL_MODAL_DEFAULT_WIDTH,
+      stored?.height
+    );
+  }
 
-    let saveTimer = null;
-    const persist = () => {
+  function installChannelModalResizeHandle(modal){
+    const dialog = modal?.querySelector(".modal-dialog");
+    if (!dialog || dialog.dataset.btfwResizeHandleWired === "1") return;
+    dialog.dataset.btfwResizeHandleWired = "1";
+
+    let handle = dialog.querySelector(".btfw-modal-resize-handle");
+    if (!handle) {
+      handle = document.createElement("div");
+      handle.className = "btfw-modal-resize-handle";
+      handle.setAttribute("aria-hidden", "true");
+      handle.title = "Drag to resize";
+      dialog.appendChild(handle);
+    }
+
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startW = 0;
+    let startH = 0;
+
+    const onPointerDown = (event) => {
+      if (event.button !== 0) return;
+      dragging = true;
+      const rect = dialog.getBoundingClientRect();
+      startX = event.clientX;
+      startY = event.clientY;
+      startW = rect.width;
+      startH = rect.height;
+      handle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    const onPointerMove = (event) => {
+      if (!dragging) return;
+      setChannelDialogSize(
+        dialog,
+        startW + (event.clientX - startX),
+        startH + (event.clientY - startY)
+      );
+    };
+
+    const finishDrag = (event) => {
+      if (!dragging) return;
+      dragging = false;
+      try { handle.releasePointerCapture(event.pointerId); } catch (_) {}
       const rect = dialog.getBoundingClientRect();
       writeChannelModalSize(rect.width, rect.height);
     };
-    const scheduleSave = () => {
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(persist, 180);
-    };
 
-    if (typeof ResizeObserver === "function") {
-      const observer = new ResizeObserver(scheduleSave);
-      observer.observe(dialog);
-      dialog._btfwResizeObserver = observer;
-    } else {
-      dialog.addEventListener("mouseup", scheduleSave);
-    }
+    handle.addEventListener("pointerdown", onPointerDown);
+    handle.addEventListener("pointermove", onPointerMove);
+    handle.addEventListener("pointerup", finishDrag);
+    handle.addEventListener("pointercancel", finishDrag);
   }
 
   function enableChannelModalResize(modal){
     if (!modal || modal.id !== "channeloptions") return;
     modal.classList.add("btfw-modal-resizable");
     applyChannelModalSize(modal);
-    watchChannelModalResize(modal);
+    installChannelModalResizeHandle(modal);
   }
 
   function restyleButtons(root){
