@@ -55,11 +55,11 @@ body.btfw-mobile-nav-open{
   }
   .btfw-chat-actions{ gap: 6px; flex-wrap: nowrap; }
   .button.btfw-chatbtn{
-    font-size: 15px;
+    font-size: 12px;
     line-height: 1;
-    padding: 10px 12px;
-    min-width: 40px;
-    min-height: 40px;
+    padding: 8px 10px;
+    min-width: 32px;
+    min-height: 32px;
     border-radius: 10px;
   }
 
@@ -142,7 +142,7 @@ body.btfw-mobile-nav-open{
 /* --------- Small phones (<= 480px): extra tightening ---------------------- */
 @media (max-width: 480px){
   #btfw-grid{ padding: 0 6px; }
-  .button.btfw-chatbtn{ padding: 8px 10px; min-width: 38px; min-height: 38px; }
+  .button.btfw-chatbtn{ padding: 6px 8px; min-width: 30px; min-height: 30px; }
   #messagebuffer .chat-msg{ padding: 2px 0; }
   #btfw-nowplaying-slot{ font-size: 14px; }
 }

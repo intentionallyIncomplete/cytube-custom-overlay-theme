@@ -276,6 +276,7 @@
 .btfw-chat-actions .button.btfw-chatbtn {
   border-radius: 999px!important;
   border: 0;
+  color: var(--btfw-color-text);
   background: radial-gradient(130% 160% at 24% 28%,
     color-mix(in srgb, var(--btfw-color-accent) 24%, transparent 76%),
     color-mix(in srgb, var(--btfw-overlay-elevated) 80%, transparent 20%));
@@ -368,8 +369,8 @@
 
 #btfw-emotes-pop .btfw-emotes-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas: "tabs search close";
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas: "tabs sort search close";
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
@@ -380,6 +381,22 @@
   background: color-mix(in srgb, var(--btfw-overlay-bg) 94%, transparent 6%);
   backdrop-filter: blur(12px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.18);
+}
+
+#btfw-emotes-pop .btfw-emotes-sort {
+  grid-area: sort;
+  display: inline-flex;
+  align-items: center;
+}
+
+#btfw-emotes-pop #btfw-emotes-sort {
+  background: color-mix(in srgb, var(--btfw-color-panel) 86%, transparent 14%);
+  border: 1px solid var(--btfw-border);
+  color: var(--btfw-color-text);
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 6px 8px;
+  max-width: 132px;
 }
 
 #btfw-emotes-pop .btfw-emotes-tabs {
@@ -518,10 +535,10 @@
 
 @media (max-width: 640px){
   #btfw-emotes-pop .btfw-emotes-head {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
     grid-template-areas:
-      "tabs close"
-      "search search";
+      "tabs close close"
+      "sort search search";
     align-items: start;
   }
 

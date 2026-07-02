@@ -32,6 +32,8 @@ BTFW.define("feature:emotes", [], async () => {
 
   const CHANNEL_NAME = (window.CHANNEL && window.CHANNEL.name) || "default";
   const RECENT_KEY   = `btfw:recent:emotes:${CHANNEL_NAME}`;
+  const SORT_KEY     = "btfw:emotes:sort";
+  const SORT_MODES   = ["alpha", "added-asc", "added-desc"];
 
   let state = {
     tab: "emotes",
@@ -40,6 +42,7 @@ BTFW.define("feature:emotes", [], async () => {
     highlight: 0,
     emojiReady: false,
     search: "",
+    sort: "alpha",
     renderEpoch: 0
   };
 
@@ -54,14 +57,66 @@ BTFW.define("feature:emotes", [], async () => {
     const src = Array.isArray(window.CHANNEL?.emotes) ? window.CHANNEL.emotes : [];
     state.list.emotes = src
       .filter(x => x && x.name)
-      .map(x => ({ name: x.name, image: x.image || "" }));
+      .map((x, index) => ({ name: x.name, image: x.image || "", orderIndex: index }));
+  }
+
+  function readSortMode(){
+    try {
+      const stored = localStorage.getItem(SORT_KEY);
+      if (SORT_MODES.includes(stored)) return stored;
+    } catch (_) {}
+    return "alpha";
+  }
+
+  function writeSortMode(mode){
+    state.sort = SORT_MODES.includes(mode) ? mode : "alpha";
+    try { localStorage.setItem(SORT_KEY, state.sort); } catch (_) {}
+  }
+
+  function itemSortKey(item){
+    if (item.kind === "emoji" || state.tab === "emoji") {
+      return (item.name || item.char || "").toLowerCase();
+    }
+    return (item.name || "").toLowerCase();
+  }
+
+  function sortItems(items){
+    const list = items.slice();
+    const mode = state.sort;
+    if (state.tab === "recent") {
+      if (mode === "alpha") {
+        return list.sort((a, b) => itemSortKey(a).localeCompare(itemSortKey(b)));
+      }
+      if (mode === "added-asc") return list.slice().reverse();
+      return list;
+    }
+    if (mode === "alpha") {
+      return list.sort((a, b) => itemSortKey(a).localeCompare(itemSortKey(b)));
+    }
+    if (mode === "added-asc") {
+      return list.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+    }
+    if (mode === "added-desc") {
+      return list.sort((a, b) => (b.orderIndex ?? 0) - (a.orderIndex ?? 0));
+    }
+    return list;
+  }
+
+  function syncSortControl(pop){
+    const select = $("#btfw-emotes-sort", pop);
+    if (!select) return;
+    select.value = state.sort;
   }
 
   async function loadEmoji(){
     try {
       const raw = localStorage.getItem("btfw:emoji:cache");
       if (raw) {
-        state.list.emoji = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        state.list.emoji = parsed.map((e, index) => ({
+          ...e,
+          orderIndex: typeof e.orderIndex === "number" ? e.orderIndex : index
+        }));
         state.emojiReady = true;
         render(true);
         return;
@@ -72,20 +127,21 @@ BTFW.define("feature:emotes", [], async () => {
     try {
       const res = await fetch(url, { cache: "force-cache" });
       const arr = await res.json();
-      state.list.emoji = arr.map(e => ({
+      state.list.emoji = arr.map((e, index) => ({
         char: e.char,
         name: (e.name || "").toLowerCase(),
-        keywords: (e.keywords || "").toLowerCase()
+        keywords: (e.keywords || "").toLowerCase(),
+        orderIndex: index
       }));
       localStorage.setItem("btfw:emoji:cache", JSON.stringify(state.list.emoji));
     } catch(_) {
       state.list.emoji = [
-        {char:"😀", name:"grinning face",                keywords:"smile happy"},
-        {char:"😂", name:"face with tears of joy",       keywords:"laugh cry"},
-        {char:"😍", name:"smiling face with heart-eyes", keywords:"love"},
-        {char:"👍", name:"thumbs up",                    keywords:"like ok yes"},
-        {char:"🔥", name:"fire",                         keywords:"lit hot"},
-        {char:"🎉", name:"party popper",                 keywords:"celebrate confetti"},
+        {char:"😀", name:"grinning face",                keywords:"smile happy", orderIndex:0},
+        {char:"😂", name:"face with tears of joy",       keywords:"laugh cry", orderIndex:1},
+        {char:"😍", name:"smiling face with heart-eyes", keywords:"love", orderIndex:2},
+        {char:"👍", name:"thumbs up",                    keywords:"like ok yes", orderIndex:3},
+        {char:"🔥", name:"fire",                         keywords:"lit hot", orderIndex:4},
+        {char:"🎉", name:"party popper",                 keywords:"celebrate confetti", orderIndex:5},
       ];
     }
     state.emojiReady = true;
@@ -124,6 +180,13 @@ BTFW.define("feature:emotes", [], async () => {
           <button class="btfw-tab" data-tab="emoji">Emoji</button>
           <button class="btfw-tab" data-tab="recent">Recent</button>
         </div>
+        <div class="btfw-emotes-sort">
+          <select id="btfw-emotes-sort" aria-label="Sort emotes">
+            <option value="alpha">A–Z</option>
+            <option value="added-asc">Oldest first</option>
+            <option value="added-desc">Newest first</option>
+          </select>
+        </div>
         <div class="btfw-emotes-search">
           <input id="btfw-emotes-search" type="search" placeholder="Search…" autocomplete="off" aria-label="Search emotes and emoji" />
           <button id="btfw-emotes-clear" class="btfw-emotes-clear" type="button" title="Clear search" aria-label="Clear search" aria-hidden="true" tabindex="-1">×</button>
@@ -160,6 +223,7 @@ BTFW.define("feature:emotes", [], async () => {
       state.search = ""; $("#btfw-emotes-search").value = "";
       syncSearchClear();
       if (state.tab === "emoji" && !state.emojiReady) loadEmoji();
+      syncSortControl(pop);
       render(true);
       focusGrid();
     });
@@ -180,6 +244,12 @@ BTFW.define("feature:emotes", [], async () => {
         }
       });
     })();
+    $("#btfw-emotes-sort", pop).addEventListener("change", (e)=>{
+      writeSortMode(e.target.value);
+      syncSortControl(pop);
+      render(true);
+      focusGrid();
+    });
     $("#btfw-emotes-clear", pop).addEventListener("click", ()=>{
       state.search = ""; $("#btfw-emotes-search").value = "";
       syncSearchClear();
@@ -301,17 +371,19 @@ function positionPopover(){
     const grid = $("#btfw-emotes-grid"); if (!grid) return;
 
     const q = (state.search || "").toLowerCase();
+    let base = [];
     if (state.tab === "emotes") {
-      state.filtered = q ? state.list.emotes.filter(x => x.name.toLowerCase().includes(q)) : state.list.emotes;
+      base = q ? state.list.emotes.filter(x => x.name.toLowerCase().includes(q)) : state.list.emotes;
     } else if (state.tab === "emoji") {
-      state.filtered = q ? state.list.emoji.filter(x => x.name.includes(q) || x.keywords.includes(q)) : state.list.emoji;
+      base = q ? state.list.emoji.filter(x => x.name.includes(q) || x.keywords.includes(q)) : state.list.emoji;
     } else {
-      state.filtered = q
+      base = q
         ? state.list.recent.filter(x => x.kind==="emoji"
             ? (x.char+(x.name||"")+(x.keywords||"")).toLowerCase().includes(q)
             : (x.name||"").toLowerCase().includes(q))
         : state.list.recent;
     }
+    state.filtered = sortItems(base);
 
     if (fromSearch) {
       grid.scrollTop = 0;
@@ -475,9 +547,11 @@ c.addEventListener("click", ev=>{
     const pop = ensurePopover();
     loadChannelEmotes();
     loadRecent();
+    state.sort = readSortMode();
     state.tab="emotes"; state.search=""; state.highlight=0;
     $("#btfw-emotes-search").value = "";
     pop?._btfwSyncSearchClear?.();
+    syncSortControl(pop);
     // activate correct tab styling
     pop.querySelectorAll(".btfw-tab").forEach(b=>b.classList.toggle("is-active", b.getAttribute("data-tab")==="emotes"));
     motion.openPopover(pop);
