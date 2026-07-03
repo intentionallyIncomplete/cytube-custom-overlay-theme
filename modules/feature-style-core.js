@@ -46,7 +46,8 @@ BTFW.define("feature:styleCore", [], async () => {
         /* Bulma modal layered correctly above content */
         .modal { z-index: 6000 !important; }
         .modal .modal-background { z-index: 6001 !important; }
-        .modal .modal-card, .modal .modal-content { z-index: 6002 !important; }
+        .modal:not(.btfw-modal-resizable) .modal-card,
+        .modal:not(.btfw-modal-resizable) .modal-content { z-index: 6002 !important; }
 
         /* Userlist overlay default CLOSED (chat module toggles classes) */
         #userlist.btfw-userlist-overlay:not(.btfw-userlist-overlay--open) {
