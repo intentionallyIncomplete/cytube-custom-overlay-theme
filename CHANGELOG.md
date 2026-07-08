@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.18.0...v1.19.0) (2026-07-08)
+
+
+### Features
+
+* **chat:** add Letterboxd, Tenor, and TMDB media cards ([#138](https://github.com/intentionallyIncomplete/BillTube3-slim/issues/138)) ([8830be9](https://github.com/intentionallyIncomplete/BillTube3-slim/commit/8830be9912bf49d1a1486895c9cd81c0ddde216b))
+
 # [1.18.0](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.17.1...v1.18.0) (2026-07-02)
 
 
