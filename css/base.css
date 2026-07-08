@@ -24,12 +24,14 @@
   border: 0;
   box-shadow: var(--btfw-glass-shadow);
   margin: 8px 0;
-  max-width: 600px;
+  max-width: min(600px, 90%);
 }
 
 .tmdb-card__poster {
   width: 92px;
   min-width: 92px;
+  max-width: 92px;
+  max-height: 138px;
   height: auto;
   border-radius: 6px;
   object-fit: cover;

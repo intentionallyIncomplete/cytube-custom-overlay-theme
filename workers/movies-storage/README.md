@@ -35,6 +35,7 @@ npm run deploy
 | GET | `/api/klipy/search` | KLIPY search (`q`, `page`, `per_page`, `customer_id`, `locale`, `content_filter`) |
 | GET | `/api/klipy/trending` | KLIPY trending (`page`, `per_page`, `customer_id`, `locale`, `content_filter`) |
 | POST | `/api/klipy/share/{slug}` | KLIPY share attribution (`customer_id`, optional `q` in JSON body) |
+| GET | `/api/letterboxd/film/{slug}` | Letterboxd film metadata (OG scrape) |
 | POST | `/api/suggestions` | Save a suggestion |
 
 ## Verify
@@ -44,4 +45,5 @@ curl https://empty-bar-d620.movies-storage-a.workers.dev/
 curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/tmdb/search/movie?query=Fight%20Club"
 curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/giphy/trending?limit=5"
 curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/klipy/trending?per_page=5&customer_id=dev"
+curl "https://empty-bar-d620.movies-storage-a.workers.dev/api/letterboxd/film/hunter-2015"
 ```

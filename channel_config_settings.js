@@ -1,5 +1,37 @@
 const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.18.0";
 
+// CyTube defers video.js plugins; wait until resolution switcher registers before player init.
+(function () {
+  var PLUGIN = "videoJsResolutionSwitcher";
+  function wrap(fn) {
+    if (!fn || fn._btfwVjsPluginWait) return fn;
+    function patched(obj, key, cb) {
+      if (obj === window && key === "videojs") {
+        return fn(obj, key, function () {
+          var deadline = Date.now() + 5000;
+          (function tick() {
+            var vjs = window.videojs;
+            var ok = vjs && typeof vjs.getPlugin === "function" && vjs.getPlugin(PLUGIN);
+            if (ok || Date.now() > deadline) return cb();
+            setTimeout(tick, 25);
+          })();
+        });
+      }
+      return fn(obj, key, cb);
+    }
+    patched._btfwVjsPluginWait = true;
+    return patched;
+  }
+  function install() {
+    if (typeof window.waitUntilDefined === "function") {
+      window.waitUntilDefined = wrap(window.waitUntilDefined);
+    }
+  }
+  install();
+  var n = 0;
+  var t = setInterval(function () { install(); if (++n > 40) clearInterval(t); }, 50);
+})();
+
 // BTFW_THEME_ADMIN_START
 window.BTFW_THEME_ADMIN = {
   "version": 6,

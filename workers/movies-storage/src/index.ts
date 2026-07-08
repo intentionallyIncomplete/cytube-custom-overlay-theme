@@ -10,6 +10,7 @@
  *   GET  /api/tmdb/{tmdb-path}  → TMDB proxy (server-side API key)
  *   GET  /api/giphy/search, /api/giphy/trending  → Giphy proxy (server-side API key)
  *   GET  /api/klipy/search, /api/klipy/trending, POST /api/klipy/share/{slug}  → KLIPY proxy
+ *   GET  /api/letterboxd/film/{slug}  → Letterboxd film OG metadata scrape
  *   POST /api/suggestions
  */
 
@@ -417,6 +418,182 @@ async function handleKlipyShare(
   return json(data, {}, corsOrigin);
 }
 
+function parseHtmlMetaContent(html: string, key: string): string | null {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [
+    new RegExp(`<meta[^>]+property=["']${escaped}["'][^>]+content=["']([^"']+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${escaped}["']`, "i"),
+    new RegExp(`<meta[^>]+name=["']${escaped}["'][^>]+content=["']([^"']+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${escaped}["']`, "i"),
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return match[1].trim();
+  }
+  return null;
+}
+
+function stripJsonLdScriptContent(scriptBlock: string): string {
+  return scriptBlock
+    .replace(/<\/?script[^>]*>/gi, "")
+    .trim()
+    .replace(/^\/\*\s*<!\[CDATA\[\s*\*\/\s*/i, "")
+    .replace(/\s*\/\*\s*\]\]>\s*\*\/\s*$/i, "");
+}
+
+function parseLetterboxdJsonLdBlocks(html: string): Record<string, unknown>[] {
+  const scriptBlocks = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi) || [];
+  const parsed: Record<string, unknown>[] = [];
+
+  for (const block of scriptBlocks) {
+    const raw = stripJsonLdScriptContent(block);
+    try {
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      const graph = data["@graph"];
+      if (Array.isArray(graph)) {
+        for (const item of graph) {
+          if (item && typeof item === "object") parsed.push(item as Record<string, unknown>);
+        }
+      } else {
+        parsed.push(data);
+      }
+    } catch {
+      // ignore malformed JSON-LD blocks
+    }
+  }
+
+  return parsed;
+}
+
+function parseLetterboxdRating(html: string): string | null {
+  for (const data of parseLetterboxdJsonLdBlocks(html)) {
+    const rating = data.aggregateRating as Record<string, unknown> | undefined;
+    const value = rating?.ratingValue;
+    if (typeof value === "number" && Number.isFinite(value)) return value.toFixed(1);
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function parseLetterboxdJsonLdFilm(html: string): { title: string; year: string } | null {
+  for (const data of parseLetterboxdJsonLdBlocks(html)) {
+    const type = data["@type"];
+    if (type !== "Movie" && type !== "TVSeries") continue;
+
+    const name = typeof data.name === "string" ? data.name.trim() : "";
+    if (!name) continue;
+
+    let year = "";
+    if (typeof data.dateCreated === "string") {
+      const match = data.dateCreated.match(/^(\d{4})/);
+      if (match) year = match[1];
+    }
+
+    return { title: name, year };
+  }
+  return null;
+}
+
+function parseLetterboxdFilm(html: string, slug: string) {
+  const jsonLdFilm = parseLetterboxdJsonLdFilm(html);
+  const ogTitle = parseHtmlMetaContent(html, "og:title") || "";
+  const overviewRaw = parseHtmlMetaContent(html, "og:description") || "";
+  const posterUrl = parseHtmlMetaContent(html, "og:image") || "";
+
+  let title = ogTitle
+    .replace(/\s*[•·|]\s*Letterboxd.*$/i, "")
+    .replace(/\s+on\s+Letterboxd.*$/i, "")
+    .replace(/\s+directed by.*$/i, "")
+    .trim();
+
+  const yearFromTitle = title.match(/\((\d{4})\)/);
+  const yearFromSlug = slug.match(/-((?:19|20)\d{2})$/);
+  let year = yearFromTitle?.[1] || yearFromSlug?.[1] || jsonLdFilm?.year || "";
+
+  title = title.replace(/\s*\(\d{4}\)\s*$/, "").trim() || jsonLdFilm?.title || slug;
+  if (!year && jsonLdFilm?.year) year = jsonLdFilm.year;
+
+  let overview = overviewRaw.trim();
+  if (!overview) overview = "No description available.";
+  if (overview.length > 150) overview = `${overview.slice(0, 147)}...`;
+
+  const rating = parseLetterboxdRating(html) || "n/a";
+
+  return {
+    slug,
+    url: `https://letterboxd.com/film/${slug}/`,
+    title,
+    year,
+    rating,
+    overview,
+    posterUrl,
+  };
+}
+
+async function handleTenorResolve(requestUrl: URL, corsOrigin: string | null): Promise<Response> {
+  const target = requestUrl.searchParams.get("url")?.trim() || "";
+  let parsed: URL;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return errorResponse(400, "Invalid Tenor URL", corsOrigin);
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  if (host !== "tenor.com" && host !== "www.tenor.com") {
+    return errorResponse(400, "Invalid Tenor URL host", corsOrigin);
+  }
+  if (!parsed.pathname.startsWith("/view/")) {
+    return errorResponse(400, "Tenor URL must be a /view/ page", corsOrigin);
+  }
+
+  const response = await fetch(parsed.toString(), {
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "User-Agent": "BillTube3-slim/1.0 (+https://github.com/intentionallyIncomplete/BillTube3-slim)",
+    },
+  });
+
+  if (!response.ok) {
+    return errorResponse(502, `Tenor fetch failed (${response.status})`, corsOrigin);
+  }
+
+  const html = await response.text();
+  const mediaUrl =
+    parseHtmlMetaContent(html, "og:image") ||
+    parseHtmlMetaContent(html, "og:url") ||
+    "";
+
+  if (!/^https?:\/\/media\d*\.tenor\.com\//i.test(mediaUrl)) {
+    return errorResponse(404, "Tenor media URL not found", corsOrigin);
+  }
+
+  return json({ url: mediaUrl, source: target }, {}, corsOrigin);
+}
+
+async function handleLetterboxdFilm(slug: string, corsOrigin: string | null): Promise<Response> {
+  const normalized = slug.trim().replace(/\/+$/, "");
+  if (!normalized || !/^[a-z0-9-]+$/i.test(normalized)) {
+    return errorResponse(400, "Invalid Letterboxd film slug", corsOrigin);
+  }
+
+  const pageUrl = `https://letterboxd.com/film/${normalized}/`;
+  const response = await fetch(pageUrl, {
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "User-Agent": "BillTube3-slim/1.0 (+https://github.com/intentionallyIncomplete/BillTube3-slim)",
+    },
+  });
+
+  if (!response.ok) {
+    const status = response.status === 404 ? 404 : 502;
+    return errorResponse(status, `Letterboxd fetch failed (${response.status})`, corsOrigin);
+  }
+
+  const html = await response.text();
+  return json(parseLetterboxdFilm(html, normalized), {}, corsOrigin);
+}
+
 async function handleTmdbProxy(env: Env, requestUrl: URL, tmdbPath: string, corsOrigin: string | null): Promise<Response> {
   if (!isAllowedTmdbPath(tmdbPath)) {
     return errorResponse(403, "TMDB path not allowed", corsOrigin);
@@ -639,6 +816,15 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     if (request.method === "POST" && path.startsWith("/api/klipy/share/")) {
       const slug = path.slice("/api/klipy/share/".length);
       return handleKlipyShare(env, request, slug, corsOrigin);
+    }
+
+    if (request.method === "GET" && path === "/api/tenor/resolve") {
+      return handleTenorResolve(url, corsOrigin);
+    }
+
+    if (request.method === "GET" && path.startsWith("/api/letterboxd/film/")) {
+      const slug = path.slice("/api/letterboxd/film/".length);
+      return handleLetterboxdFilm(slug, corsOrigin);
     }
 
     if (request.method === "POST" && path === "/api/suggestions") {

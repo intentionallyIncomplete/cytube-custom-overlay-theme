@@ -1064,6 +1064,9 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
 
 #messagebuffer {
   --btfw-chat-gif-max-width: 90%;
+  --btfw-chat-gif-max-height: 220px;
+  --btfw-chat-card-max-width: min(600px, 90%);
+  --btfw-chat-card-poster-max-height: 138px;
   --btfw-chat-gif-hover-scale: 1.2;
 }
 
@@ -1082,7 +1085,7 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
 /* Animated GIF emotes: wider cap; pre-shrink when hover magnify is on */
 #messagebuffer img.channel-emote[src$=".gif" i] {
   max-width: var(--btfw-chat-gif-max-width) !important;
-  max-height: none !important;
+  max-height: var(--btfw-chat-gif-max-height) !important;
 }
 
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote[src$=".gif" i] {
@@ -1095,11 +1098,13 @@ html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:not([src
 }
 
 #messagebuffer img.giphy.chat-picture,
-#messagebuffer img.klipy.chat-picture {
+#messagebuffer img.klipy.chat-picture,
+#messagebuffer img.tenor.chat-picture,
+#messagebuffer img.chat-media.chat-picture {
   width: auto !important;
   height: auto !important;
   max-width: var(--btfw-chat-gif-max-width) !important;
-  max-height: none !important;
+  max-height: var(--btfw-chat-gif-max-height) !important;
   object-fit: contain;
   display: inline-block;
   vertical-align: middle;
@@ -1108,8 +1113,11 @@ html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:not([src
 }
 
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.giphy.chat-picture,
-html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.klipy.chat-picture {
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.klipy.chat-picture,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.tenor.chat-picture,
+html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-media.chat-picture {
   max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-height: calc(var(--btfw-chat-gif-max-height) / var(--btfw-chat-gif-hover-scale)) !important;
 }
 
 #messagebuffer .btfw-klipy-wrap {
@@ -1326,12 +1334,14 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
   border-radius: var(--btfw-radius);
   border: 1px solid color-mix(in srgb, var(--btfw-color-accent, #4a90e2) 30%, transparent 70%);
   margin: 8px 0;
-  max-width: 600px;
+  max-width: var(--btfw-chat-card-max-width, 600px);
 }
 
 .tmdb-card__poster {
   width: 92px;
   min-width: 92px;
+  max-width: 92px;
+  max-height: var(--btfw-chat-card-poster-max-height, 138px);
   height: auto;
   border-radius: 6px;
   object-fit: cover;
@@ -1366,6 +1376,66 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
 }
 
 .tmdb-card__overview {
+  font-size: 0.9em;
+  line-height: 1.5;
+  color: var(--btfw-color-text-soft, #b8c5e0);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.letterboxd-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--btfw-color-surface, #1a1a1a) 80%, transparent 20%);
+  border-radius: var(--btfw-radius);
+  border: 1px solid color-mix(in srgb, #40c057 35%, transparent 65%);
+  margin: 8px 0;
+  max-width: var(--btfw-chat-card-max-width, 600px);
+}
+
+.letterboxd-card__poster {
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+  max-height: var(--btfw-chat-card-poster-max-height, 138px);
+  height: auto;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.letterboxd-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.letterboxd-card__title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--btfw-color-text, #e8ecfb);
+  line-height: 1.3;
+}
+
+.letterboxd-card__year {
+  font-weight: 400;
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.letterboxd-card__rating {
+  color: #40c057;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+
+.letterboxd-card__overview {
   font-size: 0.9em;
   line-height: 1.5;
   color: var(--btfw-color-text-soft, #b8c5e0);

@@ -67,7 +67,74 @@
     return fallback;
   }
 
+  // lib/patch-vjs-plugin-wait.js
+  var PLUGIN_NAME = "videoJsResolutionSwitcher";
+  var POLL_MS = 25;
+  var TIMEOUT_MS = 5e3;
+  var INSTALL_RETRIES = 40;
+  function getRoot() {
+    return typeof globalThis !== "undefined" ? globalThis : void 0;
+  }
+  function getVideoJs() {
+    var _a, _b, _c;
+    const root = getRoot();
+    if (!root)
+      return null;
+    return (_c = (_b = root.videojs) != null ? _b : (_a = root.window) == null ? void 0 : _a.videojs) != null ? _c : null;
+  }
+  function hasResolutionSwitcherPlugin() {
+    const vjs = getVideoJs();
+    return Boolean(vjs && typeof vjs.getPlugin === "function" && vjs.getPlugin(PLUGIN_NAME));
+  }
+  function wrapWaitUntilDefined(original) {
+    var _a;
+    if (!original || original._btfwVjsPluginWait)
+      return original;
+    const root = getRoot();
+    const win = (_a = root == null ? void 0 : root.window) != null ? _a : root;
+    function patched(obj, key, cb) {
+      if (obj === win && key === "videojs") {
+        return original(obj, key, () => {
+          const deadline = Date.now() + TIMEOUT_MS;
+          const tick = () => {
+            if (hasResolutionSwitcherPlugin() || Date.now() > deadline) {
+              if (!hasResolutionSwitcherPlugin()) {
+                console.warn(
+                  `[BTFW] ${PLUGIN_NAME} plugin not registered; direct-file player may fail`
+                );
+              }
+              cb();
+              return;
+            }
+            setTimeout(tick, POLL_MS);
+          };
+          tick();
+        });
+      }
+      return original(obj, key, cb);
+    }
+    patched._btfwVjsPluginWait = true;
+    return patched;
+  }
+  function installPatch() {
+    const root = getRoot();
+    if (!root || typeof root.waitUntilDefined !== "function")
+      return false;
+    root.waitUntilDefined = wrapWaitUntilDefined(root.waitUntilDefined);
+    return true;
+  }
+  function patchWaitUntilDefinedForVjsPlugins() {
+    if (installPatch())
+      return;
+    let tries = 0;
+    const timer = setInterval(() => {
+      if (installPatch() || ++tries >= INSTALL_RETRIES)
+        clearInterval(timer);
+    }, 50);
+  }
+
   // src/billtube-fw.js
+  patchWaitUntilDefinedForVjsPlugins();
   var FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@latest";
   var DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
   (function() {

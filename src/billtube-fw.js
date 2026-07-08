@@ -1,5 +1,8 @@
 import { createBtfwRegistry } from "../lib/btfw-registry.js";
 import { resolveBtfwBase } from "../lib/resolve-btfw-base.js";
+import { patchWaitUntilDefinedForVjsPlugins } from "../lib/patch-vjs-plugin-wait.js";
+
+patchWaitUntilDefinedForVjsPlugins();
 
 const FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@latest";
 const DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
