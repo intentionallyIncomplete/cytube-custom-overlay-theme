@@ -1,0 +1,100 @@
+:root {
+  --btfw-top: 64px;
+  --btfw-nav-real-height: var(--btfw-top);
+  --btfw-top-effective: var(--btfw-top);
+  --btfw-viewport-h: 100dvh;
+  --btfw-primary-budget: calc(var(--btfw-viewport-h) - var(--btfw-top-effective) - var(--btfw-gap) * 2);
+  --btfw-video-share: 0.55;
+  --btfw-stack-max-h: 45%;
+  --btfw-stack-header-min-h: 48px;
+  --btfw-video-max-h: min(
+    calc(var(--btfw-primary-budget) * var(--btfw-video-share)),
+    calc((100vw - var(--btfw-chat-min, 320px) - var(--btfw-split-width, 8px) - var(--btfw-gap) * 3) * 9 / 16)
+  );
+  --btfw-gap: 10px;
+  --btfw-color-bg: var(--btfw-theme-bg, #0b0f12);
+  --btfw-color-surface: var(--btfw-theme-surface, #11161d);
+  --btfw-color-panel: var(--btfw-theme-panel, #171d27);
+  --btfw-color-text: var(--btfw-theme-text, #e8eff4);
+  --btfw-color-chat-text: var(--btfw-theme-chat-text, #d7e4ff);
+  --btfw-color-accent: var(--btfw-theme-accent, #4ade80);
+  --btfw-color-on-accent: color-mix(in srgb, var(--btfw-color-text) 94%, white 6%);
+  --btfw-color-text-soft: color-mix(in srgb, var(--btfw-color-text) 82%, transparent 18%);
+  --btfw-color-text-muted: color-mix(in srgb, var(--btfw-color-text) 62%, transparent 38%);
+  --btfw-border: color-mix(in srgb, var(--btfw-color-accent) 12%, transparent 88%);
+  --btfw-card-bg: color-mix(in srgb, var(--btfw-color-panel) 88%, transparent 12%);
+  --btfw-radius: 4px;
+  --btfw-surface-highlight: color-mix(in srgb, var(--btfw-color-text) 8%, transparent 92%);
+  --btfw-surface-divider: color-mix(in srgb, var(--btfw-color-text) 10%, transparent 90%);
+  --btfw-chat-min: 320px;
+  --btfw-chat-max: 30vw;
+  --btfw-split-width: 8px;
+  --btfw-overlay-bg: color-mix(in srgb, var(--btfw-color-panel) 92%, transparent 8%);
+  --btfw-overlay-elevated: color-mix(in srgb, var(--btfw-color-surface) 92%, transparent 8%);
+  --btfw-overlay-border: color-mix(in srgb, var(--btfw-color-accent) 10%, transparent 90%);
+  --btfw-overlay-shadow: 0 8px 20px color-mix(in srgb, var(--btfw-color-bg) 40%, transparent 60%),
+    0 2px 6px color-mix(in srgb, var(--btfw-color-bg) 30%, transparent 70%);
+  --btfw-glass-bg: color-mix(in srgb, var(--btfw-color-panel) 88%, transparent 12%);
+  --btfw-glass-border: color-mix(in srgb, var(--btfw-color-accent) 18%, transparent 82%);
+  --btfw-glass-shadow: 0 6px 16px color-mix(in srgb, var(--btfw-color-bg) 38%, transparent 62%);
+  --btfw-stack-gap: calc(var(--btfw-gap) + 6px);
+  --btfw-stack-glass-bg: color-mix(in srgb, var(--btfw-color-panel) 26%, transparent 74%);
+  --btfw-stack-glass-bg-nested: color-mix(in srgb, var(--btfw-color-panel) 16%, transparent 84%);
+  --btfw-stack-glass-shadow: 0 4px 12px color-mix(in srgb, var(--btfw-color-bg) 14%, transparent 86%);
+  --btfw-stack-header-bg: color-mix(in srgb, var(--btfw-color-accent) 6%, transparent 94%);
+  --btfw-stack-surface-highlight: color-mix(in srgb, var(--btfw-color-text) 5%, transparent 95%);
+  --btfw-scrollbar-thumb: color-mix(in srgb, var(--btfw-color-text) 22%, transparent 78%);
+  --btfw-scrollbar-thumb-hover: color-mix(in srgb, var(--btfw-color-accent) 32%, transparent 68%);
+  --btfw-chip-bg: color-mix(in srgb, var(--btfw-color-accent) 20%, transparent 80%);
+  --btfw-chip-bg-hover: color-mix(in srgb, var(--btfw-color-accent) 32%, transparent 68%);
+  --btfw-chip-text: color-mix(in srgb, var(--btfw-color-text) 94%, white 6%);
+  --btfw-video-bg: color-mix(in srgb, var(--btfw-color-bg) 45%, black 55%);
+  --btfw-font-default: 'Inter', 'Segoe UI', sans-serif;
+  --btfw-font-body: var(--btfw-theme-font-family, var(--btfw-font-default));
+  --btfw-navbar-height: 60px;
+  --btfw-navbar-bg: color-mix(in srgb, var(--btfw-color-panel) 88%, transparent 12%);
+  --btfw-navbar-gradient: linear-gradient(135deg,
+      color-mix(in srgb, var(--btfw-color-panel) 92%, transparent 8%),
+      color-mix(in srgb, var(--btfw-color-accent) 22%, transparent 78%));
+  --btfw-navbar-border: color-mix(in srgb, var(--btfw-color-accent) 26%, transparent 74%);
+  --btfw-navbar-divider: color-mix(in srgb, var(--btfw-color-panel) 60%, transparent 40%);
+  --btfw-navbar-shadow: 0 6px 16px color-mix(in srgb, var(--btfw-color-bg) 36%, transparent 64%),
+    0 2px 6px color-mix(in srgb, var(--btfw-color-bg) 28%, transparent 72%);
+  --btfw-navbar-link: color-mix(in srgb, var(--btfw-color-text) 94%, transparent 6%);
+  --btfw-navbar-link-soft: color-mix(in srgb, var(--btfw-color-text) 70%, transparent 30%);
+  --btfw-navbar-link-hover: var(--btfw-color-text);
+  --btfw-navbar-pill-bg: linear-gradient(120deg,
+      color-mix(in srgb, var(--btfw-color-accent) 90%, white 10%),
+      color-mix(in srgb, var(--btfw-color-accent) 72%, transparent 28%));
+  --btfw-navbar-pill-hover: brightness(1.08);
+  --btfw-navbar-pill-text: color-mix(in srgb, var(--btfw-color-text) 96%, white 4%);
+}
+
+/* Unified glass surfaces — prefer shadow + inset highlight over box borders */
+.btfw-surface {
+  background: var(--btfw-glass-bg);
+  border: 0;
+  border-radius: var(--btfw-radius);
+  box-shadow:
+    var(--btfw-glass-shadow),
+    inset 0 1px 0 var(--btfw-surface-highlight);
+}
+
+.btfw-surface--elevated {
+  background: var(--btfw-overlay-elevated);
+  border: 0;
+  border-radius: calc(var(--btfw-radius) + 4px);
+  box-shadow:
+    var(--btfw-overlay-shadow),
+    inset 0 1px 0 var(--btfw-surface-highlight);
+}
+
+/* Translucent glass for stack panels and nested feature blocks */
+.btfw-stack-surface {
+  background: var(--btfw-stack-glass-bg-nested);
+  border: 0;
+  border-radius: var(--btfw-radius);
+  box-shadow:
+    var(--btfw-stack-glass-shadow),
+    inset 0 1px 0 var(--btfw-stack-surface-highlight);
+}

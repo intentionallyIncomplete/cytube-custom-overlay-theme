@@ -13,7 +13,7 @@ const WATCH_PATHS = [
   "modules",
   "src",
   "lib",
-  "css",
+  "scss",
   "user-release-notes.json"
 ];
 
@@ -99,7 +99,7 @@ watchAndRebuild();
 console.log("");
 console.log(`Dev assets:  http://127.0.0.1:${PORT}/`);
 console.log(`Channel JS:  http://127.0.0.1:${PORT}/dev/channel-settings.js`);
-console.log("Edit modules/, src/, css/ — rebuild is automatic.");
+console.log("Edit modules/, src/, scss/ — rebuild is automatic.");
 console.log("Press Ctrl+C to stop.");
 
 function shutdown() {
