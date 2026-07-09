@@ -1,4 +1,4 @@
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.19.2";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.19.3";
 
 // CyTube defers video.js plugins; wait until resolution switcher registers before player init.
 (function () {
