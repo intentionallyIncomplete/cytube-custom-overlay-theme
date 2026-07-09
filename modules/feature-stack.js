@@ -1,4 +1,4 @@
-BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
+BTFW.define("feature:stack", ["feature:layout"], async () => {
   const SKEY="btfw-stack-order";
   const MOTD_VISIBILITY_KEY = "btfw-stack-motd-open";
   const PLAYLIST_VISIBILITY_KEY = "btfw-stack-playlist-open";
@@ -90,9 +90,9 @@ BTFW.define("feature:stack", ["feature:layout"], async ({}) => {
     if (typeof document !== "undefined") {
       const probe = document.createElement("div");
       probe.innerHTML = raw;
-      return !Boolean((probe.textContent || "").replace(/\u00a0/g, " ").trim());
+      return !((probe.textContent || "").replace(/\u00a0/g, " ").trim());
     }
-    return !Boolean(raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    return !(raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
   }
 
   function hasMotdContent(doc = document) {

@@ -7,7 +7,7 @@ BTFW.define("util:tmdb-card", ["util:tmdb-proxy"], async ({ init }) => {
     /https?:\/\/(?:www\.)?themoviedb\.org\/(movie|tv)\/(\d+)(?:-[a-zA-Z0-9-]+)?\/?/gi;
 
   const TMDB_CARD_TAG_RE =
-    /\[tmdbcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\[]+)\[\/tmdbcard\]/g;
+    /\[tmdbcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^[]+)\[\/tmdbcard\]/g;
 
   const MISSING_PROXY_MSG =
     "TMDB proxy is unavailable. Ensure the movies-storage worker is deployed with TMDB_API_KEY set.";

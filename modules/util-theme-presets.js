@@ -30,6 +30,7 @@ BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
 
   function sanitizeName(name) {
     return String(name || "")
+      // eslint-disable-next-line no-control-regex -- strip control chars from user input
       .replace(/[\x00-\x1f\x7f]/g, "")
       .trim()
       .slice(0, MAX_NAME_LEN);

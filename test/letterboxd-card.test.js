@@ -131,7 +131,7 @@ test("slugFromUrl extracts film slug", () => {
 test("stripBrokenCardTails removes orphaned linkified poster suffix", () => {
   const stripBrokenCardTails = (html) =>
     String(html || "").replace(
-      /"\s*target="_blank"\s*rel="noopener noreferrer">https?:\/\/[^<\[]*\[\/letterboxdcard\]/gi,
+      /"\s*target="_blank"\s*rel="noopener noreferrer">https?:\/\/[^<[]*\[\/letterboxdcard\]/gi,
       ""
     );
   const broken =

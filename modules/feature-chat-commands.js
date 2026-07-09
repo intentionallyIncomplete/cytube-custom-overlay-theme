@@ -24,7 +24,7 @@ BTFW.define("feature:chat-commands", ["util:tmdb-proxy", "util:chatAutoscroll"],
   function getRank(){ try { return (window.CLIENT && (CLIENT.rank|0)) || 0; } catch(_) { return 0; } }
   function hasRank(min){ return getRank() >= min; }
   function clamp(n,a,b){ return Math.min(b, Math.max(a, n)); }
-  function norm(s){ return String(s||"").toLowerCase().replace(/['".,;:!?()\[\]{}]/g,"").replace(/\s+/g," ").trim(); }
+  function norm(s){ return String(s||"").toLowerCase().replace(/['".,;:!?()[\]{}]/g,"").replace(/\s+/g," ").trim(); }
   function formatPlaybackTime(totalSeconds) {
     const s = Math.max(0, Math.floor(totalSeconds));
     const h = Math.floor(s / 3600);
@@ -39,7 +39,7 @@ BTFW.define("feature:chat-commands", ["util:tmdb-proxy", "util:chatAutoscroll"],
 function getCurrentTitle(){
   const ct = document.getElementById('currenttitle') || document.querySelector('.currenttitle');
   let t = (ct?.textContent || "").trim();
-  t = t.replace(/^\s*(?:currently|now)\s*playing\s*[:\-]\s*/i, "").trim();
+  t = t.replace(/^\s*(?:currently|now)\s*playing\s*[:-]\s*/i, "").trim();
   return t;
 }
 

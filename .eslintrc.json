@@ -20,7 +20,23 @@
   },
   "overrides": [
     {
-      "files": ["test/**/*.js", "scripts/**/*.js"],
+      "files": ["modules/**/*.js"],
+      "globals": {
+        "CLIENT": "readonly",
+        "CHANNEL": "readonly",
+        "USEROPTS": "readonly",
+        "jQuery": "readonly",
+        "Callbacks": "readonly",
+        "parseMediaLink": "readonly",
+        "makeAlert": "readonly",
+        "openGifModal": "readonly"
+      },
+      "rules": {
+        "no-redeclare": ["error", { "builtinGlobals": false }]
+      }
+    },
+    {
+      "files": ["test/**/*.js", "scripts/**/*.js", "lib/**/*.js"],
       "env": {
         "node": true,
         "browser": true
@@ -28,6 +44,12 @@
       "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module"
+      }
+    },
+    {
+      "files": ["modules/user-release-notes.generated.js"],
+      "rules": {
+        "no-unused-vars": "off"
       }
     },
     {

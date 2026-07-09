@@ -340,7 +340,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     if (!raw) return true;
     const probe = document.createElement("div");
     probe.innerHTML = raw;
-    return !Boolean((probe.textContent || "").replace(/\u00a0/g, " ").trim());
+    return !((probe.textContent || "").replace(/\u00a0/g, " ").trim());
   }
 
   function injectButton(){

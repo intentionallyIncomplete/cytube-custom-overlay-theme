@@ -36,10 +36,10 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
   }
 
   const LETTERBOXD_CARD_TAG_RE =
-    /\[letterboxdcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\[]+)\[\/letterboxdcard\]/g;
+    /\[letterboxdcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^[]+)\[\/letterboxdcard\]/g;
 
   const LETTERBOXD_BROKEN_CARD_TAIL_RE =
-    /"\s*target="_blank"\s*rel="noopener noreferrer">https?:\/\/[^<\[]*\[\/letterboxdcard\]/gi;
+    /"\s*target="_blank"\s*rel="noopener noreferrer">https?:\/\/[^<[]*\[\/letterboxdcard\]/gi;
 
   function decodeCardField(value) {
     return String(value ?? "")
