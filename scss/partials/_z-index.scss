@@ -1,0 +1,13 @@
+$btfw-z-navbar: 5000;
+$btfw-z-modal: 6000;
+$btfw-z-modal-backdrop: 6001;
+$btfw-z-modal-content: 6002;
+$btfw-z-resize-layer: 3;
+$btfw-z-boot-overlay: 10000;
+
+@mixin modal-z-index-vars {
+  --btfw-z-modal: #{$btfw-z-modal};
+  --btfw-z-modal-backdrop: #{$btfw-z-modal-backdrop};
+  --btfw-z-modal-content: #{$btfw-z-modal-content};
+  --btfw-z-resize-layer: #{$btfw-z-resize-layer};
+}

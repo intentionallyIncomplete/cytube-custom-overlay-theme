@@ -1,3 +1,5 @@
+@use "partials/z-index" as z;
+
 #btfw-boot-overlay {
     position:fixed;
     inset:0;
@@ -6,7 +8,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    z-index:10000;
+    z-index: z.$btfw-z-boot-overlay;
     opacity:1;
     transition:opacity 220ms ease, visibility 220ms ease;
     visibility:visible;

@@ -1,16 +1,14 @@
+@use "partials/z-index" as z;
 
 #nav-collapsible,
 .navbar,
 #navbar,
 .navbar-fixed-top {
-  z-index: 5000 !important;
+  z-index: z.$btfw-z-navbar !important;
 }
 
 .modal {
-  --btfw-z-modal: 6000;
-  --btfw-z-modal-backdrop: 6001;
-  --btfw-z-modal-content: 6002;
-  --btfw-z-resize-layer: 3;
+  @include z.modal-z-index-vars;
   z-index: var(--btfw-z-modal) !important;
 }
 .modal .modal-background { z-index: var(--btfw-z-modal-backdrop) !important; }

@@ -8,7 +8,7 @@
     "lint-staged": "eslint . --ext .js,.ts,.css,.md,.json",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint . --ext .js,.ts,.md,.json",
-    "lint:css": "stylelint \"css/**/*.css\" \"scss/**/*.scss\"",
+    "lint:css": "stylelint \"scss/**/*.scss\"",
     "lint:fix": "npm run lint:js -- --fix && npm run lint:css -- --fix",
     "typecheck": "tsc --noEmit",
     "build": "node scripts/build.js",
@@ -139,7 +139,15 @@
             "dist/player.bundle.js",
             "dist/playlist.bundle.js",
             "dist/admin.bundle.js",
-            "dist/features.bundle.js"
+            "dist/features.bundle.js",
+            "css/tokens.css",
+            "css/base.css",
+            "css/navbar.css",
+            "css/chat.css",
+            "css/overlays.css",
+            "css/player.css",
+            "css/mobile.css",
+            "css/boot-overlay.css"
           ],
           "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }

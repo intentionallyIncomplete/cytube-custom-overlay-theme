@@ -1,0 +1,28 @@
+/* Unified glass surfaces — prefer shadow + inset highlight over box borders */
+.btfw-surface {
+  background: var(--btfw-glass-bg);
+  border: 0;
+  border-radius: var(--btfw-radius);
+  box-shadow:
+    var(--btfw-glass-shadow),
+    inset 0 1px 0 var(--btfw-surface-highlight);
+}
+
+.btfw-surface--elevated {
+  background: var(--btfw-overlay-elevated);
+  border: 0;
+  border-radius: calc(var(--btfw-radius) + 4px);
+  box-shadow:
+    var(--btfw-overlay-shadow),
+    inset 0 1px 0 var(--btfw-surface-highlight);
+}
+
+/* Translucent glass for stack panels and nested feature blocks */
+.btfw-stack-surface {
+  background: var(--btfw-stack-glass-bg-nested);
+  border: 0;
+  border-radius: var(--btfw-radius);
+  box-shadow:
+    var(--btfw-stack-glass-shadow),
+    inset 0 1px 0 var(--btfw-stack-surface-highlight);
+}

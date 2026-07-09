@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import { verifyCss } from "./build-css.js";
+
 const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const required = [
   "dist/core.bundle.js",
@@ -28,3 +30,7 @@ if (!/util:motion/.test(coreBundle)) {
 
 console.log("✓ All production bundles present");
 console.log("✓ core.bundle.js includes util:motion");
+
+if (!verifyCss()) {
+  process.exit(1);
+}

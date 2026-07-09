@@ -1,0 +1,134 @@
+/* Summernote Dark Theme for BTFW */
+/* Editor Container */
+#btfw-motd-modal .note-editor,
+#channeloptions .note-editor {
+  background: color-mix(in srgb, var(--btfw-color-panel) 92%, transparent 8%);
+  border: 1px solid var(--btfw-border);
+  border-radius: 8px;
+  color: var(--btfw-color-text);
+}
+
+/* Toolbar */
+#btfw-motd-modal .note-toolbar,
+#channeloptions .note-toolbar {
+  background: color-mix(in srgb, var(--btfw-color-surface) 94%, transparent 6%);
+  border-bottom: 1px solid var(--btfw-border);
+  padding: 8px;
+}
+
+/* Toolbar Buttons */
+#btfw-motd-modal .note-btn,
+#channeloptions .note-btn {
+  background: transparent;
+  border: none;
+  color: color-mix(in srgb, var(--btfw-color-text) 88%, transparent 12%);
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+#btfw-motd-modal .note-btn:hover,
+#channeloptions .note-btn:hover {
+  background: color-mix(in srgb, var(--btfw-color-accent) 18%, transparent 82%);
+  color: var(--btfw-color-text);
+}
+
+#btfw-motd-modal .note-btn.active,
+#channeloptions .note-btn.active {
+  background: color-mix(in srgb, var(--btfw-color-accent) 30%, transparent 70%);
+  color: var(--btfw-color-accent);
+}
+
+/* Dropdowns */
+#btfw-motd-modal .dropdown-menu,
+#channeloptions .dropdown-menu {
+  background: color-mix(in srgb, var(--btfw-color-surface) 96%, transparent 4%);
+  border: 1px solid var(--btfw-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--btfw-color-bg) 60%, transparent 40%);
+}
+
+#btfw-motd-modal .dropdown-item,
+#channeloptions .dropdown-item {
+  color: var(--btfw-color-text);
+  padding: 6px 12px;
+}
+
+#btfw-motd-modal .dropdown-item:hover,
+#channeloptions .dropdown-item:hover {
+  background: color-mix(in srgb, var(--btfw-color-accent) 20%, transparent 80%);
+}
+
+/* Editing Area */
+#btfw-motd-modal .note-editable,
+#channeloptions .note-editable {
+  background: color-mix(in srgb, var(--btfw-color-panel) 92%, transparent 8%);
+  color: var(--btfw-color-text);
+  padding: 16px;
+}
+
+#btfw-motd-modal .note-editable:focus,
+#channeloptions .note-editable:focus {
+  background: color-mix(in srgb, var(--btfw-color-panel) 94%, transparent 6%);
+}
+
+/* Status Bar */
+#btfw-motd-modal .note-statusbar,
+#channeloptions .note-statusbar {
+  background: color-mix(in srgb, var(--btfw-color-surface) 90%, transparent 10%);
+  border-top: 1px solid var(--btfw-border);
+}
+
+/* Code View */
+#btfw-motd-modal .note-codable,
+#channeloptions .note-codable {
+  background: color-mix(in srgb, var(--btfw-color-bg) 80%, transparent 20%);
+  color: color-mix(in srgb, var(--btfw-color-text) 92%, #4af 8%);
+  border: none;
+}
+
+/* Color Picker */
+#btfw-motd-modal .note-color .dropdown-menu,
+#channeloptions .note-color .dropdown-menu {
+  padding: 8px;
+}
+
+#btfw-motd-modal .note-color-btn,
+#channeloptions .note-color-btn {
+  border: 1px solid var(--btfw-border);
+  border-radius: 3px;
+}
+
+/* Modals/Dialogs */
+#btfw-motd-modal .modal-content,
+#channeloptions .modal-content {
+  background: color-mix(in srgb, var(--btfw-color-surface) 96%, transparent 4%);
+  color: var(--btfw-color-text);
+  border: 1px solid var(--btfw-border);
+}
+
+#btfw-motd-modal .modal-header,
+#channeloptions .modal-header {
+  background: color-mix(in srgb, var(--btfw-color-panel) 90%, transparent 10%);
+  border-bottom: 1px solid var(--btfw-border);
+}
+
+#btfw-motd-modal .modal-footer,
+#channeloptions .modal-footer {
+  background: color-mix(in srgb, var(--btfw-color-panel) 90%, transparent 10%);
+  border-top: 1px solid var(--btfw-border);
+}
+
+/* Form Elements */
+#btfw-motd-modal .form-control,
+#channeloptions .form-control {
+  background: color-mix(in srgb, var(--btfw-color-panel) 86%, transparent 14%);
+  border: 1px solid var(--btfw-border);
+  color: var(--btfw-color-text);
+}
+
+#btfw-motd-modal .form-control:focus,
+#channeloptions .form-control:focus {
+  border-color: var(--btfw-color-accent);
+  background: color-mix(in srgb, var(--btfw-color-panel) 90%, transparent 10%);
+}
+
