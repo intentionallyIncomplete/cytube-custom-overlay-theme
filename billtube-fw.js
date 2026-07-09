@@ -133,19 +133,19 @@
     }, 50);
   }
 
-  // src/billtube-fw.js
+  // src/billtube-fw.ts
   patchWaitUntilDefinedForVjsPlugins();
   var FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@latest";
   var DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
   (function() {
     const { define, init } = createBtfwRegistry(DEV_CDN);
-    var BASE = DEV_CDN;
+    const BASE = DEV_CDN;
     window.BTFW = { define, init, DEV_CDN, BASE };
-    var BootOverlay = /* @__PURE__ */ function() {
-      var overlay = null;
-      var styleEl = null;
-      var muteInterval = null;
-      var suppressedVideos = /* @__PURE__ */ new Map();
+    const BootOverlay = /* @__PURE__ */ function() {
+      let overlay = null;
+      let styleEl = null;
+      let muteInterval = null;
+      const suppressedVideos = /* @__PURE__ */ new Map();
       function cleanupVideoRefs() {
         for (const [video] of suppressedVideos) {
           if (!(video instanceof HTMLVideoElement) || !video.isConnected) {
@@ -155,12 +155,12 @@
       }
       function suppressVideoAudio() {
         cleanupVideoRefs();
-        var videos = document.querySelectorAll("video");
+        const videos = document.querySelectorAll("video");
         videos.forEach(function(video) {
           if (!(video instanceof HTMLVideoElement))
             return;
           if (!suppressedVideos.has(video)) {
-            var state = {
+            const state = {
               muted: video.muted,
               volume: typeof video.volume === "number" ? video.volume : null
             };
@@ -173,13 +173,15 @@
         });
       }
       function startAudioSuppression() {
+        var _a;
         suppressVideoAudio();
         if (muteInterval)
           return;
         muteInterval = setInterval(suppressVideoAudio, 250);
-        document.documentElement && document.documentElement.classList.add("btfw-loading-muted");
+        (_a = document.documentElement) == null ? void 0 : _a.classList.add("btfw-loading-muted");
       }
       function stopAudioSuppression() {
+        var _a;
         if (muteInterval) {
           clearInterval(muteInterval);
           muteInterval = null;
@@ -199,7 +201,7 @@
           }
           suppressedVideos.delete(video);
         }
-        document.documentElement && document.documentElement.classList.remove("btfw-loading-muted");
+        (_a = document.documentElement) == null ? void 0 : _a.classList.remove("btfw-loading-muted");
       }
       function attach() {
         if (overlay)
@@ -208,11 +210,20 @@
         overlay.id = "btfw-boot-overlay";
         overlay.setAttribute("role", "status");
         overlay.setAttribute("aria-live", "polite");
-        overlay.innerHTML = '\n        <div class="btfw-boot-overlay__card">\n          <div class="btfw-boot-overlay__ring"></div>\n          <p class="btfw-boot-overlay__label">\n            <strong>BillTube theme</strong>\n            Preparing the channel experience\u2026\n          </p>\n          <p class="btfw-boot-overlay__error"></p>\n        </div>\n      ';
-        var mount = function() {
+        overlay.innerHTML = `
+        <div class="btfw-boot-overlay__card">
+          <div class="btfw-boot-overlay__ring"></div>
+          <p class="btfw-boot-overlay__label">
+            <strong>BillTube theme</strong>
+            Preparing the channel experience\u2026
+          </p>
+          <p class="btfw-boot-overlay__error"></p>
+        </div>
+      `;
+        const mount = function() {
           if (!overlay || overlay.isConnected)
             return;
-          var host = document.body || document.documentElement;
+          const host = document.body || document.documentElement;
           host.appendChild(overlay);
         };
         if (document.body)
@@ -242,12 +253,13 @@
         }, 260);
       }
       function fail(message) {
-        var ov = attach();
+        const ov = attach();
         ov.setAttribute("data-state", "error");
-        var label = ov.querySelector(".btfw-boot-overlay__label");
-        if (label)
+        const label = ov.querySelector(".btfw-boot-overlay__label");
+        if (label) {
           label.innerHTML = "<strong>BillTube theme</strong>Something went wrong loading the experience.";
-        var err = ov.querySelector(".btfw-boot-overlay__error");
+        }
+        const err = ov.querySelector(".btfw-boot-overlay__error");
         if (err)
           err.textContent = message || "Please refresh to retry.";
         setTimeout(function() {
@@ -260,11 +272,11 @@
     function qparam(u, kv) {
       return u + (u.indexOf("?") >= 0 ? "&" : "?") + kv;
     }
-    var BTFW_VERSION = function() {
-      var m = /[?&]v=([^&]+)/.exec(location.search);
+    const BTFW_VERSION = function() {
+      const m = /[?&]v=([^&]+)/.exec(location.search);
       return m && m[1] || "dev-" + Date.now();
     }();
-    var SUPPORTS_PRELOAD = function() {
+    const SUPPORTS_PRELOAD = function() {
       try {
         return document.createElement("link").relList.supports("preload");
       } catch (e) {
@@ -273,15 +285,15 @@
     }();
     function preload(href) {
       return new Promise(function(resolve, reject) {
-        var link = document.createElement("link");
-        var url;
+        const link = document.createElement("link");
+        let url;
         try {
           url = qparam(href, "v=" + encodeURIComponent(BTFW_VERSION));
         } catch (err) {
           reject(err instanceof Error ? err : new Error("Failed to prepare preload URL"));
           return;
         }
-        var settled = false;
+        let settled = false;
         function promoteToStylesheet() {
           link.rel = "stylesheet";
           link.removeAttribute("onload");
@@ -299,7 +311,7 @@
             return;
           settled = true;
           promoteToStylesheet();
-          var reason = event && event.error ? event.error : new Error("Failed to preload stylesheet: " + href);
+          const reason = event && typeof event === "object" && "error" in event && event.error ? event.error : new Error("Failed to preload stylesheet: " + href);
           reject(reason);
         }
         if (SUPPORTS_PRELOAD) {
@@ -324,7 +336,7 @@
     }
     function load(src) {
       return new Promise(function(resolve, reject) {
-        var s = document.createElement("script");
+        const s = document.createElement("script");
         s.async = true;
         s.defer = true;
         s.src = qparam(src, "v=" + encodeURIComponent(BTFW_VERSION)) + "&t=" + Date.now();
@@ -348,7 +360,7 @@
       preload(BASE + "/css/mobile.css"),
       preload(BASE + "/css/boot-overlay.css")
     ]).then(function() {
-      var scripts = [
+      const scripts = [
         "dist/core.bundle.js",
         "dist/chat.bundle.js",
         "dist/player.bundle.js",
@@ -356,72 +368,79 @@
         "dist/admin.bundle.js",
         "dist/features.bundle.js"
       ];
-      return Promise.all(scripts.map(function(file) {
-        return load(BASE + "/" + file);
-      }));
+      return Promise.all(
+        scripts.map(function(file) {
+          return load(BASE + "/" + file);
+        })
+      );
     }).then(function() {
       return Promise.all([
-        BTFW.init("feature:styleCore"),
-        BTFW.init("feature:themeMode")
+        window.BTFW.init("feature:styleCore"),
+        window.BTFW.init("feature:themeMode")
       ]);
     }).then(function() {
-      return BTFW.init("feature:layout");
+      return window.BTFW.init("feature:layout");
     }).then(function() {
-      var inits = [
-        BTFW.init("feature:footer"),
-        BTFW.init("feature:player"),
-        BTFW.init("feature:stack"),
-        BTFW.init("feature:chat"),
-        BTFW.init("feature:chat-tools"),
-        BTFW.init("feature:chat-filters"),
-        BTFW.init("feature:chat-username-colors"),
-        BTFW.init("feature:emotes"),
-        BTFW.init("feature:chatMedia"),
-        BTFW.init("feature:emoji-compat"),
-        BTFW.init("feature:chat-avatars"),
-        BTFW.init("feature:chat-timestamps"),
-        BTFW.init("feature:chat-ignore"),
-        BTFW.init("feature:themeIcons"),
-        BTFW.init("feature:navbar"),
-        BTFW.init("feature:modal-skin"),
-        BTFW.init("feature:nowplaying"),
-        BTFW.init("feature:gifs"),
-        BTFW.init("feature:videoOverlay"),
-        BTFW.init("feature:poll-overlay"),
-        BTFW.init("feature:notify"),
-        BTFW.init("feature:notification-sounds"),
-        BTFW.init("feature:syncGuard"),
-        BTFW.init("feature:chat-commands"),
-        BTFW.init("feature:drink-counter"),
-        BTFW.init("feature:playlistPerformance"),
-        BTFW.init("feature:playlist-tools"),
-        BTFW.init("feature:local-subs"),
-        BTFW.init("feature:emoji-loader"),
-        BTFW.init("feature:motd-editor"),
-        BTFW.init("feature:channelThemeAdmin"),
-        BTFW.init("feature:themeSettings"),
-        BTFW.init("feature:audio"),
-        BTFW.init("feature:movie-info"),
-        BTFW.init("ext:movie-suggestion")
+      const inits = [
+        window.BTFW.init("feature:footer"),
+        window.BTFW.init("feature:player"),
+        window.BTFW.init("feature:stack"),
+        window.BTFW.init("feature:chat"),
+        window.BTFW.init("feature:chat-tools"),
+        window.BTFW.init("feature:chat-filters"),
+        window.BTFW.init("feature:chat-username-colors"),
+        window.BTFW.init("feature:emotes"),
+        window.BTFW.init("feature:chatMedia"),
+        window.BTFW.init("feature:emoji-compat"),
+        window.BTFW.init("feature:chat-avatars"),
+        window.BTFW.init("feature:chat-timestamps"),
+        window.BTFW.init("feature:chat-ignore"),
+        window.BTFW.init("feature:themeIcons"),
+        window.BTFW.init("feature:navbar"),
+        window.BTFW.init("feature:modal-skin"),
+        window.BTFW.init("feature:nowplaying"),
+        window.BTFW.init("feature:gifs"),
+        window.BTFW.init("feature:videoOverlay"),
+        window.BTFW.init("feature:poll-overlay"),
+        window.BTFW.init("feature:notify"),
+        window.BTFW.init("feature:notification-sounds"),
+        window.BTFW.init("feature:syncGuard"),
+        window.BTFW.init("feature:chat-commands"),
+        window.BTFW.init("feature:drink-counter"),
+        window.BTFW.init("feature:playlistPerformance"),
+        window.BTFW.init("feature:playlist-tools"),
+        window.BTFW.init("feature:local-subs"),
+        window.BTFW.init("feature:emoji-loader"),
+        window.BTFW.init("feature:motd-editor"),
+        window.BTFW.init("feature:channelThemeAdmin"),
+        window.BTFW.init("feature:themeSettings"),
+        window.BTFW.init("feature:audio"),
+        window.BTFW.init("feature:movie-info"),
+        window.BTFW.init("ext:movie-suggestion")
       ];
       return Promise.all(inits);
     }).then(function() {
-      return BTFW.init("feature:layout").then(function(layout) {
-        return layout && layout.commitLayout ? layout.commitLayout() : Promise.resolve();
+      return window.BTFW.init("feature:layout").then(function(layout) {
+        const layoutApi = layout;
+        return layoutApi && layoutApi.commitLayout ? layoutApi.commitLayout() : Promise.resolve();
       });
     }).then(function() {
-      return BTFW.init("feature:syncGuard").then(function(sg) {
-        return sg && sg.playbackResyncIfNeeded ? sg.playbackResyncIfNeeded() : Promise.resolve();
+      return window.BTFW.init("feature:syncGuard").then(function(sg) {
+        const syncGuard = sg;
+        return syncGuard && syncGuard.playbackResyncIfNeeded ? syncGuard.playbackResyncIfNeeded() : Promise.resolve();
       });
     }).then(function() {
       console.log("[BTFW v3.4f] Ready.");
-      document.dispatchEvent(new CustomEvent("btfw:ready", {
-        detail: { version: "3.4f", timestamp: Date.now() }
-      }));
+      document.dispatchEvent(
+        new CustomEvent("btfw:ready", {
+          detail: { version: "3.4f", timestamp: Date.now() }
+        })
+      );
       BootOverlay.hide();
     }).catch(function(e) {
-      console.error("[BTFW v3.4f] boot failed:", e && e.message || e);
-      BootOverlay.fail(e && e.message || "Unknown error");
+      const err = e;
+      console.error("[BTFW v3.4f] boot failed:", err && err.message || e);
+      BootOverlay.fail(err && err.message || "Unknown error");
     });
   })();
 })();

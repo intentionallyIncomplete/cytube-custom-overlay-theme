@@ -6,6 +6,12 @@ import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import * as esbuild from "esbuild";
 import { minify } from "terser";
+import { buildCss } from "./build-css.js";
+
+const buildFlags = {
+  js: !process.argv.includes("--css-only"),
+  css: !process.argv.includes("--js-only")
+};
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
@@ -153,7 +159,7 @@ async function buildBundle(bundle) {
 
 async function buildFrameworkLoader() {
   const rootDir = path.join(__dirname, "..");
-  const entry = path.join(rootDir, "src", "billtube-fw.js");
+  const entry = path.join(rootDir, "src", "billtube-fw.ts");
   const outfile = path.join(rootDir, "billtube-fw.js");
   await esbuild.build({
     entryPoints: [entry],
@@ -167,16 +173,26 @@ async function buildFrameworkLoader() {
 }
 
 (async function build() {
-  console.log("🔨 Building Quiglytube bundles with Terser...\n");
-  generateUserReleaseNotes();
-  await buildFrameworkLoader();
-  for (const bundle of bundles) {
-    await buildBundle(bundle);
+  console.log("🔨 Building Quiglytube...\n");
+  if (buildFlags.css) {
+    buildCss();
+    console.log("");
   }
-  console.log("\n✨ Build complete!");
-  const verify = spawnSync(process.execPath, ["scripts/verify-dist.js"], {
-    cwd: path.join(__dirname, ".."),
-    stdio: "inherit"
-  });
-  if (verify.status !== 0) process.exit(verify.status || 1);
+  if (buildFlags.js) {
+    generateUserReleaseNotes();
+    await buildFrameworkLoader();
+    console.log("");
+    console.log("Bundling modules with Terser...\n");
+    for (const bundle of bundles) {
+      await buildBundle(bundle);
+    }
+    console.log("\n✨ Build complete!");
+    const verify = spawnSync(process.execPath, ["scripts/verify-dist.js"], {
+      cwd: path.join(__dirname, ".."),
+      stdio: "inherit"
+    });
+    if (verify.status !== 0) process.exit(verify.status || 1);
+  } else {
+    console.log("\n✨ CSS build complete!");
+  }
 })();

@@ -1,0 +1,179 @@
+/* --------- Tablet & down (<= 1100px): stack columns --------- */
+@media (max-width: 1100px){
+  :root {
+    --btfw-stack-header-min-h: 44px;
+  }
+
+  #btfw-grid.btfw-grid--vertical{
+    padding: var(--btfw-gap, 10px) 8px;
+    margin-top: 0;
+    --btfw-emote-size: 84px;
+    --btfw-chat-gif-max-width: 56%;
+  }
+
+  #btfw-grid.btfw-grid--vertical #videowrap{
+    max-height: var(--btfw-videowrap-max-h, var(--btfw-video-max-h));
+    height: var(--btfw-videowrap-max-h, auto);
+    aspect-ratio: unset;
+  }
+
+  .btfw-stack-item__header {
+    padding: 8px 10px;
+  }
+
+  .btfw-arrow {
+    min-height: 28px;
+    min-width: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+body.btfw-mobile-nav-open{
+  overflow: hidden;
+}
+
+/* --------- Phones (<= 768px): larger touch targets, overlay sizes ---------- */
+@media (max-width: 768px){
+  #btfw-grid.btfw-grid--vertical{
+    --btfw-emote-size: 68px;
+    --btfw-chat-gif-max-width: 48%;
+  }
+
+  /* Chat bars */
+  #chatwrap .btfw-chat-topbar{
+    padding: 8px 10px 6px;
+    border-radius: 0;
+  }
+  #chatwrap .btfw-chat-bottombar{
+    padding: 8px 10px 10px;
+  }
+  .btfw-chat-composer{
+    border-radius: 0;
+    padding: 0;
+  }
+  .btfw-chat-actions{ gap: 6px; flex-wrap: nowrap; }
+  .button.btfw-chatbtn{
+    font-size: 12px;
+    line-height: 1;
+    padding: 8px 10px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 10px;
+  }
+
+  /* Message area scroll with momentum */
+  #messagebuffer{
+    -webkit-overflow-scrolling: touch;
+    padding: 6px;
+  }
+
+  /* Keep controls row visible; avoid wrap jitter while resizing */
+  .btfw-controls-row{
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  #chatline{ flex: 1 1 auto; min-width: 0; }
+
+  /* Userlist overlay as a sheet */
+  #userlist.btfw-userlist-overlay{
+    left: 8px; right: 8px; width: auto;
+    top: calc(var(--btfw-top,48px) + 8px);
+    bottom: 120px;
+    padding: 8px;
+  }
+
+  /* GIF/Theme modals fit viewport nicely */
+  .modal .modal-card{
+    width: 96vw !important;
+    max-height: 90vh !important;
+  }
+
+  /* Video overlay toolbar below player */
+  #btfw-video-overlay .btfw-vo-bar{
+    gap: 8px;
+  }
+  #btfw-video-overlay .btfw-vo-section{
+    gap: 6px;
+  }
+  #btfw-video-overlay .btfw-vo-btn,
+  #btfw-video-overlay .btfw-vo-adopted{
+    min-width: 40px;
+    height: 40px;
+    border-radius: 20px;
+  }
+
+  #btfw-video-overlay .btfw-vo-btn i,
+  #btfw-video-overlay .btfw-vo-adopted i{
+    font-size: 15px;
+  }
+
+  /* Give the video breathing room on phones */
+  #btfw-grid.btfw-grid--vertical #videowrap{
+    margin-top: clamp(5px, 5vw, 5px);
+    min-height: 120px;
+  }
+
+  /* Compact the playlist toolbar columns */
+  .btfw-plbar__primary,
+  .btfw-plbar__aside{
+    flex: 1 1 20px;
+    min-width: 0;
+  }
+  .btfw-plbar__aside{
+    align-items: stretch;
+  }
+
+  /* Hide runtime chips in the tight mobile queue */
+  #queue li.queue_entry .qe_time,
+  .queue_entry .qe_time{
+    display: none;
+  }
+
+  /* Content stack spacing tighter on mobile */
+  #btfw-stack .btfw-stack-list{ gap: var(--btfw-stack-gap); }
+  .btfw-stack-item__body{ padding: 6px; }
+
+  /* Footer spacing inside stack */
+  #btfw-stack-footer { display: none !important; }
+}
+
+/* --------- Small phones (<= 480px): extra tightening ---------------------- */
+@media (max-width: 480px){
+  #btfw-grid{ padding: 0 6px; }
+  .button.btfw-chatbtn{ padding: 6px 8px; min-width: 30px; min-height: 30px; }
+  #messagebuffer .chat-msg{ padding: 2px 0; }
+  #btfw-nowplaying-slot{ font-size: 14px; }
+}
+
+/* --------- Safe-area insets (iOS notch) ---------------------------------- */
+@supports (padding: max(0px)){
+  @media (max-width: 768px){
+    #btfw-grid{
+      padding-left: max(8px, env(safe-area-inset-left));
+      padding-right: max(8px, env(safe-area-inset-right));
+    }
+    #chatwrap .btfw-chat-bottombar{
+      padding-bottom: max(6px, env(safe-area-inset-bottom));
+    }
+    .modal .modal-card{
+      margin-top: max(10px, env(safe-area-inset-top));
+      margin-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* --------- Misc mobile polish -------------------------------------------- */
+@media (max-width: 768px){
+  /* Make big images dropped in chat scale down gracefully */
+  #messagebuffer img{
+    max-width: 100%;
+    height: auto;
+  }
+  /* Avatars next to names keep size but don’t overflow */
+  .btfw-chat-avatar{
+    width: 28px; height: 28px; object-fit: cover;
+  }
+}
+
