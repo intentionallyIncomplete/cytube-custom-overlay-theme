@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "prepare": "husky install",
-    "lint-staged": "eslint . --ext .js,.ts,.css,.md,.json",
-    "lint": "npm run lint:js && npm run lint:css",
-    "lint:js": "eslint . --ext .js,.ts,.md,.json",
+    "lint:repo": "eslint modules lib src scripts test --ext .js,.ts",
+    "lint": "npm run lint:css && npm run lint:js",
+    "lint:ci": "eslint scripts src --ext .js,.ts",
+    "lint:js": "eslint modules lib src scripts test --ext .js,.ts",
     "lint:css": "stylelint \"scss/**/*.scss\"",
     "lint:fix": "npm run lint:js -- --fix && npm run lint:css -- --fix",
     "typecheck": "tsc --noEmit",
@@ -21,7 +22,14 @@
     "dev": "node scripts/dev.js",
     "watch": "node scripts/dev.js",
     "dev:server": "node scripts/dev-server.js",
-    "dev:channel": "node scripts/generate-dev-channel.js"
+    "dev:channel": "node scripts/generate-dev-channel.js",
+    "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run"
+  },
+  "lint-staged": {
+    "*.{js,ts}": "eslint",
+    "*.scss": "stylelint --allow-empty-input"
   },
   "repository": {
     "type": "git",
@@ -45,11 +53,11 @@
     "eslint": "^8.57.0",
     "husky": "^8.0.3",
     "lint-staged": "^15.2.0",
+    "postcss-scss": "^4.0.9",
     "sass": "^1.101.0",
     "semantic-release": "^24.2.9",
     "stylelint": "^16.2.1",
     "stylelint-config-standard": "^36.0.0",
-    "terser": "^5.44.1",
     "typescript": "^6.0.3"
   },
   "release": {

@@ -5,8 +5,12 @@ import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import * as esbuild from "esbuild";
-import { minify } from "terser";
 import { buildCss } from "./build-css.js";
+import {
+  getEsbuildBaseOptions,
+  isDevBuild,
+  MODULE_BUNDLE_BANNER
+} from "./build-options.js";
 
 const buildFlags = {
   js: !process.argv.includes("--css-only"),
@@ -16,6 +20,8 @@ const buildFlags = {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
+const entriesDir = path.join(__dirname, ".entries");
+
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
@@ -42,153 +48,162 @@ function generateUserReleaseNotes() {
   console.log("✓ Generated modules/user-release-notes.generated.js");
 }
 
-// Bundle configurations - logically grouped modules
 const bundles = [
   {
-    name: 'core',
+    name: "core",
     modules: [
-      'modules/util-motion.js',
-      'modules/util-tmdb-proxy.js',
-      'modules/feature-style-core.js',
-      'modules/feature-theme-mode.js',
-      'modules/feature-layout.js'
+      "modules/util-motion.js",
+      "modules/util-tmdb-proxy.js",
+      "modules/feature-style-core.js",
+      "modules/feature-theme-mode.js",
+      "modules/feature-layout.js"
     ]
   },
   {
-    name: 'chat',
+    name: "chat",
     modules: [
-      'modules/util-chat-autoscroll.js',
-      'modules/util-letterboxd.js',
-      'modules/util-tenor.js',
-      'modules/util-tmdb-card.js',
-      'modules/feature-chat.js',
-      'modules/feature-chat-tools.js',
-      'modules/feature-chat-filters.js',
-      'modules/feature-chat-username-colors.js',
-      'modules/feature-chat-media.js',
-      'modules/feature-chat-avatars.js',
-      'modules/feature-chat-timestamps.js',
-      'modules/feature-chat-ignore.js',
-      'modules/feature-chat-commands.js',
-      'modules/feature-drink-counter.js'
+      "modules/util-chat-autoscroll.js",
+      "modules/util-letterboxd.js",
+      "modules/util-tenor.js",
+      "modules/util-tmdb-card.js",
+      "modules/feature-chat.js",
+      "modules/feature-chat-tools.js",
+      "modules/feature-chat-filters.js",
+      "modules/feature-chat-username-colors.js",
+      "modules/feature-chat-media.js",
+      "modules/feature-chat-avatars.js",
+      "modules/feature-chat-timestamps.js",
+      "modules/feature-chat-ignore.js",
+      "modules/feature-chat-commands.js",
+      "modules/feature-drink-counter.js"
     ]
   },
   {
-    name: 'player',
+    name: "player",
     modules: [
-      'modules/feature-player.js',
-      'modules/feature-stack.js',
-      'modules/feature-video-overlay.js',
-      'modules/feature-resize.js',
-      'modules/feature-audio.js',
-      'modules/feature-movie-info.js',
-      'modules/feature-monkey-paw.js',
-      'modules/feature-movie-suggestions.js'
+      "modules/feature-player.js",
+      "modules/feature-stack.js",
+      "modules/feature-video-overlay.js",
+      "modules/feature-resize.js",
+      "modules/feature-audio.js",
+      "modules/feature-movie-info.js",
+      "modules/feature-monkey-paw.js",
+      "modules/feature-movie-suggestions.js"
     ]
   },
   {
-    name: 'playlist',
+    name: "playlist",
     modules: [
-      'modules/feature-nowplaying.js',
-      'modules/feature-playlist-performance.js',
-      'modules/feature-playlist-tools.js',
-      'modules/feature-playlist-search.js'
+      "modules/feature-nowplaying.js",
+      "modules/feature-playlist-performance.js",
+      "modules/feature-playlist-tools.js",
+      "modules/feature-playlist-search.js"
     ]
   },
   {
-    name: 'admin',
+    name: "admin",
     modules: [
-      'modules/user-release-notes.generated.js',
-      'modules/util-theme-runtime.js',
-      'modules/util-theme-icon-packs.js',
-      'modules/util-theme-presets.js',
-      'modules/feature-channel-theme-admin.js',
-      'modules/feature-theme-settings.js',
-      'modules/feature-motd-editor.js'
+      "modules/user-release-notes.generated.js",
+      "modules/util-theme-runtime.js",
+      "modules/util-theme-icon-packs.js",
+      "modules/util-theme-presets.js",
+      "modules/feature-channel-theme-admin.js",
+      "modules/feature-theme-settings.js",
+      "modules/feature-motd-editor.js"
     ]
   },
   {
-    name: 'features',
+    name: "features",
     modules: [
-      'modules/feature-footer.js',
-      'modules/feature-theme-icons.js',
-      'modules/feature-navbar.js',
-      'modules/feature-modal-skin.js',
-      'modules/feature-emotes.js',
-      'modules/feature-emoji-compat.js',
-      'modules/feature-emoji-loader.js',
-      'modules/util-giphy-proxy.js',
-      'modules/util-klipy-proxy.js',
-      'modules/feature-gifs.js',
-      'modules/feature-poll-overlay.js',
-      'modules/feature-notify.js',
-      'modules/feature-notification-sounds.js',
-      'modules/feature-sync-guard.js',
-      'modules/feature-local-subs.js',
-      'modules/feature-overlays.js',
-      'modules/feature-userlist-overlay.js'
+      "modules/feature-footer.js",
+      "modules/feature-theme-icons.js",
+      "modules/feature-navbar.js",
+      "modules/feature-modal-skin.js",
+      "modules/feature-emotes.js",
+      "modules/feature-emoji-compat.js",
+      "modules/feature-emoji-loader.js",
+      "modules/util-giphy-proxy.js",
+      "modules/util-klipy-proxy.js",
+      "modules/feature-gifs.js",
+      "modules/feature-poll-overlay.js",
+      "modules/feature-notify.js",
+      "modules/feature-notification-sounds.js",
+      "modules/feature-sync-guard.js",
+      "modules/feature-local-subs.js",
+      "modules/feature-overlays.js",
+      "modules/feature-userlist-overlay.js"
     ]
   }
 ];
 
-async function buildBundle(bundle) {
-  let code = `/*! Quiglytube ${bundle.name} bundle */\n`;
-
-  for (const modulePath of bundle.modules) {
-    const fullPath = path.join(rootDir, modulePath);
-    if (!fs.existsSync(fullPath)) {
-      console.warn(`⚠ Skipping missing module: ${modulePath}`);
-      continue;
-    }
-    code += `\n/* ${modulePath} */\n` + fs.readFileSync(fullPath, "utf8");
-  }
-
-  // Pass combined code to Terser for minification
-  const result = await minify(code, {
-    compress: true,
-    mangle: true,
-    format: {
-      comments: false
-    }
-  });
-
-  const outPath = path.join(distDir, `${bundle.name}.bundle.js`);
-  fs.writeFileSync(outPath, result.code, "utf-8");
-  console.log(`✓ Built ${bundle.name}.bundle.js (${(result.code.length / 1024).toFixed(1)}KB)`);
+function writeBundleEntry(bundle) {
+  fs.mkdirSync(entriesDir, { recursive: true });
+  const entryPath = path.join(entriesDir, `${bundle.name}.entry.js`);
+  const imports = bundle.modules
+    .map((modulePath) => `import "../../${modulePath.replace(/\\/g, "/")}";`)
+    .join("\n");
+  const body = `/*! Quiglytube ${bundle.name} bundle entry — generated by scripts/build.js */\n${imports}\n`;
+  fs.writeFileSync(entryPath, body, "utf8");
+  return entryPath;
 }
 
-async function buildFrameworkLoader() {
-  const rootDir = path.join(__dirname, "..");
+async function buildBundle(bundle, esbuildOptions) {
+  const missing = bundle.modules.filter(
+    (modulePath) => !fs.existsSync(path.join(rootDir, modulePath))
+  );
+  if (missing.length) {
+    console.warn(`⚠ Skipping missing modules in ${bundle.name}: ${missing.join(", ")}`);
+  }
+
+  const entryPath = writeBundleEntry(bundle);
+  const outfile = path.join(distDir, `${bundle.name}.bundle.js`);
+  const result = await esbuild.build({
+    ...esbuildOptions,
+    entryPoints: [entryPath],
+    outfile,
+    banner: { js: `/*! Quiglytube ${bundle.name} bundle */\n${MODULE_BUNDLE_BANNER}` }
+  });
+
+  if (result.errors.length) {
+    throw new Error(`esbuild failed for ${bundle.name}: ${result.errors.map((e) => e.text).join("; ")}`);
+  }
+
+  const sizeKb = (fs.statSync(outfile).size / 1024).toFixed(1);
+  console.log(`✓ Built ${bundle.name}.bundle.js (${sizeKb}KB)`);
+}
+
+async function buildFrameworkLoader(esbuildOptions) {
   const entry = path.join(rootDir, "src", "billtube-fw.ts");
   const outfile = path.join(rootDir, "billtube-fw.js");
   await esbuild.build({
+    ...esbuildOptions,
     entryPoints: [entry],
-    outfile,
-    bundle: true,
-    format: "iife",
-    target: ["es2018"],
-    logLevel: "silent"
+    outfile
   });
   console.log("✓ Built billtube-fw.js");
 }
 
 (async function build() {
-  console.log("🔨 Building Quiglytube...\n");
+  const isDev = isDevBuild();
+  const esbuildOptions = getEsbuildBaseOptions(isDev);
+  const modeLabel = isDev ? "development" : "production";
+
+  console.log(`🔨 Building Quiglytube (${modeLabel})...\n`);
   if (buildFlags.css) {
     buildCss();
     console.log("");
   }
   if (buildFlags.js) {
     generateUserReleaseNotes();
-    await buildFrameworkLoader();
+    await buildFrameworkLoader(esbuildOptions);
     console.log("");
-    console.log("Bundling modules with Terser...\n");
+    console.log("Bundling modules with esbuild...\n");
     for (const bundle of bundles) {
-      await buildBundle(bundle);
+      await buildBundle(bundle, esbuildOptions);
     }
     console.log("\n✨ Build complete!");
     const verify = spawnSync(process.execPath, ["scripts/verify-dist.js"], {
-      cwd: path.join(__dirname, ".."),
+      cwd: rootDir,
       stdio: "inherit"
     });
     if (verify.status !== 0) process.exit(verify.status || 1);

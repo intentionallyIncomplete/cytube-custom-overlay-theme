@@ -1,6 +1,8 @@
 node_modules/
 scripts/bundles/
 css/
+scripts/.entries/
+*.map
 *.log
 .DS_Store
 .continue/

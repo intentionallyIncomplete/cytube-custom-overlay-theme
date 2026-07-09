@@ -29,6 +29,7 @@ interface BootOverlayApi {
     let styleEl: HTMLStyleElement | null = null;
     let muteInterval: ReturnType<typeof setInterval> | null = null;
     const suppressedVideos = new Map<HTMLVideoElement, VideoAudioState>();
+    const documentElement = document.documentElement;
 
     function cleanupVideoRefs() {
       for (const [video] of suppressedVideos) {
@@ -62,7 +63,7 @@ interface BootOverlayApi {
       suppressVideoAudio();
       if (muteInterval) return;
       muteInterval = setInterval(suppressVideoAudio, 250);
-      document.documentElement?.classList.add("btfw-loading-muted");
+      documentElement?.classList.add("btfw-loading-muted");
     }
 
     function stopAudioSuppression() {
@@ -85,7 +86,7 @@ interface BootOverlayApi {
         }
         suppressedVideos.delete(video);
       }
-      document.documentElement?.classList.remove("btfw-loading-muted");
+      documentElement?.classList.remove("btfw-loading-muted");
     }
 
     function attach() {

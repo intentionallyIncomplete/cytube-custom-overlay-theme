@@ -27,7 +27,8 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 
 ```bash
 npm install
-npm run build          # writes dist/*.bundle.js and css/*.css from scss/
+npm run build          # esbuild: scss → css/, src + modules → billtube-fw.js + dist/*.bundle.js
+npm run release:verify # lint, typecheck, test, build (CI + local preflight)
 npm run verify-dist    # fail if bundles missing
 ```
 

@@ -1,4 +1,10 @@
 node_modules/
 .cursor/
+wiki/
+workers/
+dist/
+css/
+scripts/.entries/
 *.min.js
+billtube-fw.js
 

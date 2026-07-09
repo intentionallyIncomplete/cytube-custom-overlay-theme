@@ -27,7 +27,8 @@ function shouldIgnoreWatch(filename) {
 function runBuild() {
   const result = spawnSync(process.execPath, ["scripts/build.js"], {
     cwd: rootDir,
-    stdio: "inherit"
+    stdio: "inherit",
+    env: { ...process.env, BTFW_DEV: "1" }
   });
   return result.status === 0;
 }
