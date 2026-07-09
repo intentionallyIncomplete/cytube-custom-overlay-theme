@@ -307,7 +307,7 @@ function startAutoclose(o){
     o._state = null;
     if (o.el && o.el.parentNode) {
       o.el.classList.add("btfw-notice--leaving");
-      setTimeout(()=>{ try { o.el.remove(); } catch(_){}; }, 160);
+      setTimeout(()=>{ try { o.el.remove(); } catch(_){} }, 160);
     }
     const i = visible.indexOf(o);
     if (i>=0) visible.splice(i,1);
@@ -399,7 +399,7 @@ function startAutoclose(o){
   }
 
   function stripNowPlayingPrefix(value){
-    return String(value || "").replace(/^\s*(?:currently|now)\s*playing\s*[:\-]\s*/i, "").trim();
+    return String(value || "").replace(/^\s*(?:currently|now)\s*playing\s*[:-]\s*/i, "").trim();
   }
 
   function titleFromData(d){

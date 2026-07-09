@@ -169,7 +169,7 @@ BTFW.define("feature:nowplaying", [], async () => {
 
   function stripPrefix(t) {
     return String(t || "")
-      .replace(/^\s*(?:currently|now)\s*playing\s*[:\-]\s*/i, "")
+      .replace(/^\s*(?:currently|now)\s*playing\s*[:-]\s*/i, "")
       .replace(/[.]/g, ' ')
       .trim();
   }

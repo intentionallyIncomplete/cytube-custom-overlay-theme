@@ -1,5 +1,5 @@
 /* BTFW — feature:player (Video.js theme + tech guards) */
-BTFW.define("feature:player", ["feature:layout"], async ({}) => {
+BTFW.define("feature:player", ["feature:layout"], async () => {
   const PLAYER_SELECTOR = "#videowrap .video-js";
   const DEFAULT_SKIN_CLASS = "vjs-default-skin";
   const CITY_THEME_CLASS = "vjs-theme-city";

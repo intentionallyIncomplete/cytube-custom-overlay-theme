@@ -7,7 +7,7 @@
     "prepare": "husky install",
     "lint:repo": "eslint modules lib src scripts test --ext .js,.ts",
     "lint": "npm run lint:css && npm run lint:js",
-    "lint:ci": "eslint scripts src --ext .js,.ts",
+    "lint:ci": "npm run lint",
     "lint:js": "eslint modules lib src scripts test --ext .js,.ts",
     "lint:css": "stylelint \"scss/**/*.scss\"",
     "lint:fix": "npm run lint:js -- --fix && npm run lint:css -- --fix",
@@ -29,7 +29,7 @@
   },
   "lint-staged": {
     "*.{js,ts}": "eslint",
-    "*.scss": "stylelint --allow-empty-input"
+    "*.scss": "stylelint --fix --allow-empty-input"
   },
   "repository": {
     "type": "git",
@@ -58,6 +58,7 @@
     "semantic-release": "^24.2.9",
     "stylelint": "^16.2.1",
     "stylelint-config-standard": "^36.0.0",
+    "stylelint-config-standard-scss": "^14.0.0",
     "typescript": "^6.0.3"
   },
   "release": {

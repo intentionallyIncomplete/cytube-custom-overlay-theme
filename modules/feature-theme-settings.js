@@ -1,3 +1,4 @@
+/* global BTFW_USER_RELEASE_NOTES */
 /* BTFW — feature:themeSettings */
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
