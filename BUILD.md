@@ -61,6 +61,27 @@ Before a user-facing release, update `user-release-notes.json` (see `.cursor/ski
 
 Boot always loads `dist/*.bundle.js` from the same origin/ref as `billtube-fw.js`.
 
+## CSS / SCSS
+
+**Source of truth:** `scss/`. **Ship target:** compiled `css/*.css` on jsDelivr (plain CSS only — no SCSS at runtime).
+
+| Layer | Path | Role |
+|-------|------|------|
+| Entry bundles | `scss/*.scss` (no `_` prefix) | One compiled file each → `css/<name>.css` |
+| Partials | `scss/partials/_*.scss` | Shared layout, theme, tokens; pulled in via `@use` |
+| Theme tokens | `scss/partials/_variables.scss` | SCSS variables compiled to `:root` CSS custom properties |
+| Token bundle | `scss/tokens.scss` | Surfaces + root tokens → `css/tokens.css` (loaded first at boot) |
+
+**Edit workflow**
+
+1. Change styles in `scss/` only — do not hand-edit `css/` (overwritten by build).
+2. `npm run build:css` — compile all entry SCSS → `css/`.
+3. `npm run build` — CSS + JS bundles (what CI and release run).
+
+`billtube-fw.js` preloads `css/tokens.css`, `css/base.css`, and the feature sheets from the same `BASE` ref as bundles. CyTube channels never load `.scss`.
+
+**Lint:** `npm run lint:css` (stylelint on `scss/**/*.scss`).
+
 ## Release pipeline
 
 On each semantic-release to `main`:
@@ -94,12 +115,14 @@ BillTube3-slim/
 ├── modules/              # Source (build input)
 ├── user-release-notes.json  # End-user Recent Updates copy (bundled into admin)
 ├── dist/                 # Built bundles (committed on release)
-├── scss/                 # Stylesheet source (SCSS)
+├── scss/                 # Stylesheet source (SCSS) — edit here
+│   └── partials/         # Shared partials (_*.scss); not compiled directly
 ├── css/                  # Compiled CSS (build output; committed on release)
 ├── billtube-fw.js        # Loader + boot (must match release tag)
 ├── channel_config_settings.js  # CyTube channel snippet (pinned on release)
 └── scripts/
-    ├── build.js
+    ├── build.js          # JS bundles + billtube-fw.js; calls build-css.js
+    ├── build-css.js      # scss/*.scss → css/*.css (dart-sass)
     ├── verify-dist.js
     ├── inject-cdn-version.js
     └── purge-cdn.js
