@@ -2,9 +2,10 @@
   {
     "version": "1.19.3",
     "date": "2026-07-10",
-    "summary": "The chat commands list is trimmed to essentials, and the commands help menu no longer shows misleading entries.",
+    "summary": "Chat commands are trimmed to essentials, and username clicks resolve more reliably across the channel page.",
     "categories": {
       "improvements": [
+        "Userlist lookups: clicking a chat name or loading avatars uses the same matching logic everywhere, so mods and viewers see fewer missed profile menus.",
         "Commands menu: the bogus !/me entry is gone — use /me (no exclamation mark) for action messages, as provided by CyTube."
       ],
       "deprecations": [
@@ -12,6 +13,7 @@
       ]
     },
     "highlights": [
+      "Clicking usernames in chat opens the correct user menu more reliably.",
       "Removed !bump, !next, and !now — use the playlist panel or CyTube queue controls instead.",
       "Removed random commands !pick, !roll, !dice, and !ask.",
       "Commands help (?) lists only commands that actually work.",

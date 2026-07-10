@@ -1,7 +1,9 @@
-BTFW.define("feature:chat-avatars", [], async () => {
+BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ init }) => {
+  const dom = await init("util:dom");
+  const { LS_KEYS } = await init("util:constants");
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
-  const AVATAR_KEY = "btfw:chat:avatars";
+  const AVATAR_KEY = LS_KEYS.avatarsMode;
   const AVATAR_URL_CACHE_KEY = `${AVATAR_KEY}:urls:v1`;
   const AVATAR_URL_CACHE_LIMIT = 200;
 
@@ -103,25 +105,13 @@ BTFW.define("feature:chat-avatars", [], async () => {
 
   function getProfileImgFromUserlist(name){
     try {
-      const li = findUserlistItem(name);
+      const li = dom.findUserlistItem(name);
       if (!li || !window.jQuery) return "";
       const $li = window.jQuery(li);
       const prof = $li.data && $li.data("profile");
       const img = prof && prof.image;
       return img || "";
     } catch(_) { return ""; }
-  }
-
-  function findUserlistItem(name){
-    if (!name) return null;
-    const byData = document.querySelector(`#userlist li[data-name="${CSS.escape(name)}"]`);
-    if (byData) return byData;
-    const items = document.querySelectorAll("#userlist li, #userlist .userlist_item, #userlist .user");
-    for (const el of items) {
-      const t = (el.textContent || "").trim();
-      if (t && t.replace(/\s+/g,"").toLowerCase().startsWith(name.toLowerCase())) return el;
-    }
-    return null;
   }
 
   function getCyTubeAvatarMaybe(name){

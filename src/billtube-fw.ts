@@ -1,6 +1,8 @@
 import { createBtfwRegistry } from "../lib/btfw-registry.js";
 import { resolveBtfwBase } from "../lib/resolve-btfw-base.js";
 import { patchWaitUntilDefinedForVjsPlugins } from "../lib/patch-vjs-plugin-wait.js";
+import { bootOverlayCardHtml } from "../lib/templates/boot-overlay.js";
+import { BOOT_FEATURES, BOOT_FOUNDATION, BOOT_LAYOUT } from "./boot/manifest.js";
 
 patchWaitUntilDefinedForVjsPlugins();
 
@@ -22,7 +24,7 @@ interface BootOverlayApi {
   const { define, init } = createBtfwRegistry(DEV_CDN);
 
   const BASE = DEV_CDN;
-  window.BTFW = { define, init, DEV_CDN, BASE };
+  window.BTFW = { define, init, DEV_CDN, BASE, state: null };
 
   const BootOverlay: BootOverlayApi = (function () {
     let overlay: HTMLDivElement | null = null;
@@ -95,16 +97,7 @@ interface BootOverlayApi {
       overlay.id = "btfw-boot-overlay";
       overlay.setAttribute("role", "status");
       overlay.setAttribute("aria-live", "polite");
-      overlay.innerHTML = `
-        <div class="btfw-boot-overlay__card">
-          <div class="btfw-boot-overlay__ring"></div>
-          <p class="btfw-boot-overlay__label">
-            <strong>BillTube theme</strong>
-            Preparing the channel experience…
-          </p>
-          <p class="btfw-boot-overlay__error"></p>
-        </div>
-      `;
+      overlay.innerHTML = bootOverlayCardHtml();
       const mount = function () {
         if (!overlay || overlay.isConnected) return;
         const host = document.body || document.documentElement;
@@ -279,52 +272,26 @@ interface BootOverlayApi {
       );
     })
     .then(function () {
-      return Promise.all([
-        window.BTFW.init("feature:styleCore"),
-        window.BTFW.init("feature:themeMode")
-      ]);
+      return window.BTFW.init("util:state");
     })
     .then(function () {
-      return window.BTFW.init("feature:layout");
+      return Promise.all(
+        BOOT_FOUNDATION.map(function (name) {
+          return window.BTFW.init(name);
+        })
+      );
     })
     .then(function () {
-      const inits = [
-        window.BTFW.init("feature:footer"),
-        window.BTFW.init("feature:player"),
-        window.BTFW.init("feature:stack"),
-        window.BTFW.init("feature:chat"),
-        window.BTFW.init("feature:chat-tools"),
-        window.BTFW.init("feature:chat-filters"),
-        window.BTFW.init("feature:chat-username-colors"),
-        window.BTFW.init("feature:emotes"),
-        window.BTFW.init("feature:chatMedia"),
-        window.BTFW.init("feature:emoji-compat"),
-        window.BTFW.init("feature:chat-avatars"),
-        window.BTFW.init("feature:chat-timestamps"),
-        window.BTFW.init("feature:chat-ignore"),
-        window.BTFW.init("feature:themeIcons"),
-        window.BTFW.init("feature:navbar"),
-        window.BTFW.init("feature:modal-skin"),
-        window.BTFW.init("feature:nowplaying"),
-        window.BTFW.init("feature:gifs"),
-        window.BTFW.init("feature:videoOverlay"),
-        window.BTFW.init("feature:poll-overlay"),
-        window.BTFW.init("feature:notify"),
-        window.BTFW.init("feature:notification-sounds"),
-        window.BTFW.init("feature:syncGuard"),
-        window.BTFW.init("feature:chat-commands"),
-        window.BTFW.init("feature:drink-counter"),
-        window.BTFW.init("feature:playlistPerformance"),
-        window.BTFW.init("feature:playlist-tools"),
-        window.BTFW.init("feature:local-subs"),
-        window.BTFW.init("feature:emoji-loader"),
-        window.BTFW.init("feature:motd-editor"),
-        window.BTFW.init("feature:channelThemeAdmin"),
-        window.BTFW.init("feature:themeSettings"),
-        window.BTFW.init("feature:audio"),
-        window.BTFW.init("feature:movie-info"),
-        window.BTFW.init("ext:movie-suggestion")
-      ];
+      return Promise.all(
+        BOOT_LAYOUT.map(function (name) {
+          return window.BTFW.init(name);
+        })
+      );
+    })
+    .then(function () {
+      const inits = BOOT_FEATURES.map(function (name) {
+        return window.BTFW.init(name);
+      });
       return Promise.all(inits);
     })
     .then(function () {

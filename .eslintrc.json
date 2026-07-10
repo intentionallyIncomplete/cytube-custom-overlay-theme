@@ -47,6 +47,13 @@
       }
     },
     {
+      "files": ["modules/util-constants.js", "modules/util-dom.js", "modules/util-state.js"],
+      "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+      }
+    },
+    {
       "files": ["modules/user-release-notes.generated.js"],
       "rules": {
         "no-unused-vars": "off"

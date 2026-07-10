@@ -1,7 +1,9 @@
-BTFW.define("feature:chat-username-colors", [], async () => {
+BTFW.define("feature:chat-username-colors", ["util:dom", "util:constants"], async ({ init }) => {
+  const dom = await init("util:dom");
+  const { LS_KEYS } = await init("util:constants");
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
-  const LS = "btfw:chat:unameColors";
+  const LS = LS_KEYS.chatUnameColors;
 
   function getEnabled(){ try { return (localStorage.getItem(LS) ?? "1")==="1"; } catch(_) { return true; } }
   function setEnabled(v){ try { localStorage.setItem(LS, v?"1":"0"); } catch(_){} applyAll(); }
@@ -19,23 +21,11 @@ BTFW.define("feature:chat-username-colors", [], async () => {
   }
 
   function colorFor(name){
-    const li = findUserlistItem(name);
+    const li = dom.findUserlistItem(name);
     const color = li?.getAttribute?.("data-color")
                || li?.style?.color
                || null;
     return color || pickColor(name);
-  }
-
-  function findUserlistItem(name){
-    if (!name) return null;
-    const byData = document.querySelector(`#userlist li[data-name="${CSS.escape(name)}"]`);
-    if (byData) return byData;
-    const items = document.querySelectorAll("#userlist li, #userlist .userlist_item, #userlist .user");
-    for (const el of items) {
-      const t = (el.textContent || "").trim();
-      if (t && t.replace(/\s+/g,"").toLowerCase().startsWith(name.toLowerCase())) return el;
-    }
-    return null;
   }
 
   function tint(el, name){

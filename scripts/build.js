@@ -52,6 +52,9 @@ const bundles = [
   {
     name: "core",
     modules: [
+      "modules/util-constants.js",
+      "modules/util-dom.js",
+      "modules/util-state.js",
       "modules/util-motion.js",
       "modules/util-tmdb-proxy.js",
       "modules/feature-style-core.js",
@@ -84,7 +87,6 @@ const bundles = [
       "modules/feature-player.js",
       "modules/feature-stack.js",
       "modules/feature-video-overlay.js",
-      "modules/feature-resize.js",
       "modules/feature-audio.js",
       "modules/feature-movie-info.js",
       "modules/feature-monkey-paw.js",
@@ -96,8 +98,7 @@ const bundles = [
     modules: [
       "modules/feature-nowplaying.js",
       "modules/feature-playlist-performance.js",
-      "modules/feature-playlist-tools.js",
-      "modules/feature-playlist-search.js"
+      "modules/feature-playlist-tools.js"
     ]
   },
   {
@@ -129,9 +130,7 @@ const bundles = [
       "modules/feature-notify.js",
       "modules/feature-notification-sounds.js",
       "modules/feature-sync-guard.js",
-      "modules/feature-local-subs.js",
-      "modules/feature-overlays.js",
-      "modules/feature-userlist-overlay.js"
+      "modules/feature-local-subs.js"
     ]
   }
 ];

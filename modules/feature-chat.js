@@ -1,15 +1,18 @@
-BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll"], async ({ init }) => {
+BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom", "util:constants", "util:state"], async ({ init }) => {
   const motion = await init("util:motion");
   const chatAutoscroll = await init("util:chatAutoscroll");
+  const dom = await init("util:dom");
+  const { SELECTORS } = await init("util:constants");
+  const { state } = await init("util:state");
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-  const MESSAGE_SELECTOR = ".chat-msg, .message, [class*=message]";
+  const MESSAGE_SELECTOR = SELECTORS.chatMsg;
   const BASE = (window.BTFW && BTFW.BASE ? BTFW.BASE.replace(/\/+$/,'') : "");
 
   const CHAT_PLACEHOLDER = "Type your message here…";
 
   function applyChatInputPlaceholder(){
-    const input = document.getElementById("chatline");
+    const input = document.getElementById(SELECTORS.chatline.slice(1));
     if (!input) return false;
 
     const existing = (typeof input.getAttribute === "function") ? input.getAttribute("placeholder") : input.placeholder;
@@ -284,10 +287,10 @@ document.addEventListener("btfw:layoutReady", ()=> setTimeout(repositionOpenPopi
   })();
 
   function ensureUserlistWatch(){
-    if (document._btfw_userlist_watch?.disconnect) {
-      try { document._btfw_userlist_watch.disconnect(); } catch (_) {}
+    if (state.chat.userlistWatch?.disconnect) {
+      try { state.chat.userlistWatch.disconnect(); } catch (_) {}
     }
-    document._btfw_userlist_watch = true;
+    state.chat.userlistWatch = true;
     ensureUserlistDomTriggers();
     scheduleAdoptUserlist();
     wireUserlistSocketWatchers();
@@ -715,51 +718,20 @@ const scheduleNormalizeChatActions = (() => {
     }
   }
 
-  function normalizeUserIdentifier(str){
-    if (str == null) return "";
-    let result = String(str).trim();
-    if (!result) return "";
-    if (result.endsWith(":")) {
-      result = result.slice(0, -1).trimEnd();
-    }
-    return result;
-  }
-
-  function locateUserlistItem(name){
-    const targetName = normalizeUserIdentifier(name);
-    if (!targetName) return null;
-    const direct = document.querySelector(`#userlist li[data-name="${CSS.escape(targetName)}"]`);
-    if (direct) return direct;
-    const candidates = document.querySelectorAll('#userlist li, #userlist .userlist_item, #userlist .user');
-    const normalizedTarget = targetName.toLowerCase();
-
-    for (const el of candidates) {
-      const attr = (el.getAttribute && el.getAttribute('data-name')) || '';
-      const text = attr || (el.textContent || '');
-      if (!text) continue;
-
-      const normalizedText = normalizeUserIdentifier(text);
-      if (!normalizedText) continue;
-
-      if (normalizedText.toLowerCase() === normalizedTarget) return el;
-    }
-    return null;
-  }
-
   function wireChatUsernameContextMenu(){
-    const buf = document.getElementById('messagebuffer');
-    if (!buf || buf._btfwNameContext) return;
-    buf._btfwNameContext = true;
+    const buf = document.getElementById(SELECTORS.messagebuffer.slice(1));
+    if (!buf || state.chat.nameContextWired) return;
+    state.chat.nameContextWired = true;
 
     buf.addEventListener('click', (ev) => {
       if (ev.button !== 0) return;
       const target = ev.target.closest('.username');
       if (!target) return;
       const raw = target.textContent || '';
-      const name = normalizeUserIdentifier(raw);
+      const name = dom.normalizeUserIdentifier(raw);
       if (!name) return;
 
-      const item = locateUserlistItem(name);
+      const item = dom.findUserlistItem(name);
       if (!item) return;
 
       const rect = target.getBoundingClientRect();
@@ -862,24 +834,24 @@ const scheduleNormalizeChatActions = (() => {
     window.addEventListener("resize", position);
     window.addEventListener("scroll", position, true);
 
-    document._btfw_userlist_isOpen = () => pop.dataset.btfwPopoverState === "open";
-    document._btfw_userlist_open   = () => {
+    state.userlist.isOpen = () => pop.dataset.btfwPopoverState === "open";
+    state.userlist.open = () => {
       adoptUserlistIntoPopover();
       const ul = $("#userlist");
       if (ul) ul.classList.add("btfw-userlist-overlay--open");
       motion.openPopover(pop, { backdrop: back });
       positionAboveChatBar(pop);
     };
-    document._btfw_userlist_close  = close;
-    document._btfw_userlist_position = position;
+    state.userlist.close = close;
+    state.userlist.position = position;
   }
 
   function toggleUserlist(){
     ensureUserlistPopover();
-    if (document._btfw_userlist_isOpen && document._btfw_userlist_isOpen()){
-      document._btfw_userlist_close && document._btfw_userlist_close();
+    if (state.userlist.isOpen && state.userlist.isOpen()){
+      state.userlist.close && state.userlist.close();
     } else {
-      document._btfw_userlist_open && document._btfw_userlist_open();
+      state.userlist.open && state.userlist.open();
     }
   }
 
@@ -1299,7 +1271,7 @@ const scheduleNormalizeChatActions = (() => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 
-  document._btfw_openThemeSettings = openThemeSettings;
+  state.theme.openSettings = openThemeSettings;
 
   return { name:"feature:chat" };
 });

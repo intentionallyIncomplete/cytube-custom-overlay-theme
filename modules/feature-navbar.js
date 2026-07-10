@@ -1,5 +1,6 @@
-
-BTFW.define("feature:navbar", [], async () => {
+BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
+  const dom = await init("util:dom");
+  const { state } = await init("util:state");
   const $  = (s,r=document)=>r.querySelector(s);
 
   const MOBILE_BREAKPOINT = 768;
@@ -28,21 +29,9 @@ BTFW.define("feature:navbar", [], async () => {
     catch(_) { return ""; }
   }
 
-  function findUserlistItem(name){
-    if (!name) return null;
-    const byData = document.querySelector(`#userlist li[data-name="${CSS.escape(name)}"]`);
-    if (byData) return byData;
-    const items = document.querySelectorAll("#userlist li, #userlist .userlist_item, #userlist .user");
-    for (const el of items) {
-      const t = (el.textContent || "").trim();
-      if (t && t.replace(/\s+/g,"").toLowerCase().startsWith(name.toLowerCase())) return el;
-    }
-    return null;
-  }
-
   function getProfileImgFromUserlist(name){
     try {
-      const li = findUserlistItem(name);
+      const li = dom.findUserlistItem(name);
       if (!li || !window.jQuery) return "";
       const $li = window.jQuery(li);
       const prof = $li.data && $li.data("profile");
@@ -836,11 +825,11 @@ BTFW.define("feature:navbar", [], async () => {
     document.addEventListener("btfw:layout:orientation", () => syncNavMenuVisibility());
   }
 
-  document._btfw_nav_setMobileOpen = setMobileNavOpen;
-  document._btfw_nav_toggleMobile = toggleMobileNav;
-  document._btfw_nav_isMobileOpen = isMobileNavOpen;
-  document._btfw_nav_setMenuOpen = setNavMenuOpen;
-  document._btfw_nav_toggleMenu = toggleNavMenu;
+  state.nav.setMobileOpen = setMobileNavOpen;
+  state.nav.toggleMobile = toggleMobileNav;
+  state.nav.isMobileOpen = isMobileNavOpen;
+  state.nav.setMenuOpen = setNavMenuOpen;
+  state.nav.toggleMenu = toggleNavMenu;
 
   // ---------- Boot ----------
   function boot(){
