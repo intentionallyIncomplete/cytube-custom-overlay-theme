@@ -280,7 +280,6 @@ function sanitizeTitleForSearch(t){
   function listPrimary(){ return Array.from(new Set(Array.from(REG.values()).map(c=>c.name))).sort(); }
   function parseCommand(text){
     if (!text || text.length<2) return null;
-    if (text.startsWith("/me ")) return { name:"/me", args:[text.slice(4)] };
     if (text[0] !== "!") return null;
     const parts = text.slice(1).trim().split(/\s+/);
     const name = (parts.shift()||"").toLowerCase();
@@ -306,7 +305,6 @@ addCommand("cast", async (ctx)=>{
   return "";
 }, { desc:"Show cast for current or given title", usage:"!cast [title]" });
   
-  addCommand("ask",   ()=>{ const a=["Yes.","No.","Maybe.","Probably.","Probably not.","Absolutely.","Definitely not.","Ask again later."]; sendChat(a[Math.floor(Math.random()*a.length)]); return ""; }, { desc:"Magic-8", usage:"!ask <q>" });
   addCommand("time", async () => {
     const sg = await BTFW.init("feature:syncGuard");
     const seconds = await sg.getPlayerTime();
@@ -320,7 +318,6 @@ addCommand("cast", async (ctx)=>{
   addCommand("skip",  ()=>{ if (!hasRank(2)) return "You lack permission to voteskip."; emitVoteSkip(); return ""; }, { desc:"Vote skip", usage:"!skip" });
   addCommand("add",   (ctx)=>{ if (!hasRank(2)) return "You lack permission to add."; const url=ctx.args.join(" ").trim(); if (!url) return "Usage: !add <url>"; const e=emitQueueAdd(url); return e||""; }, { desc:"Queue URL", usage:"!add <url>" });
   addCommand("sm",    ()=>{ const em=getChannelEmotes(); if (!em.length) return "No channel emotes found."; sendChat(em[Math.floor(Math.random()*em.length)]); return ""; }, { desc:"Random channel emote", usage:"!sm" });
-  addCommand("/me",   (ctx)=>{ const msg=(ctx.args[0]||"").trim(); if (msg) sendChat(`/me ${msg}`); return ""; });
 
   function onEnterIntercept(e){
     try {

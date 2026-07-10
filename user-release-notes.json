@@ -1,5 +1,24 @@
 [
   {
+    "version": "1.19.3",
+    "date": "2026-07-10",
+    "summary": "The chat commands list is trimmed to essentials, and the commands help menu no longer shows misleading entries.",
+    "categories": {
+      "improvements": [
+        "Commands menu: the bogus !/me entry is gone — use /me (no exclamation mark) for action messages, as provided by CyTube."
+      ],
+      "deprecations": [
+        "Chat commands: removed !bump, !next, !now, !pick, !roll, !dice, and !ask. Use CyTube's queue and skip tools, or type !help for the commands that remain."
+      ]
+    },
+    "highlights": [
+      "Removed !bump, !next, and !now — use the playlist panel or CyTube queue controls instead.",
+      "Removed random commands !pick, !roll, !dice, and !ask.",
+      "Commands help (?) lists only commands that actually work.",
+      "Use /me for action messages — not !/me."
+    ]
+  },
+  {
     "version": "1.16.1",
     "date": "2026-07-01",
     "summary": "Channel staff get a clearer Theme tab, audio adds mono mix, and personal theme settings stay focused on your look.",
@@ -88,31 +107,6 @@
       "Panels menu: one button for playlist, MOTD, polls, and more.",
       "Chat toolbar stays put when you resize the window.",
       "Resizing no longer breaks video, chat, or panels."
-    ]
-  },
-  {
-    "version": "1.12.0",
-    "date": "2026-06-25",
-    "summary": "Playlist and MOTD are easier to reach, with clearer controls and fewer layout glitches.",
-    "categories": {
-      "features": [
-        "Playlist panel: open your queue from the Panels menu without hunting through the page.",
-        "MOTD chip: when a message of the day is set, a quick link appears in chat."
-      ],
-      "improvements": [
-        "Panel chips: labeled shortcuts in chat for playlist, MOTD, and polls.",
-        "Video area: player and controls resize more predictably on different screen sizes."
-      ],
-      "bugFixes": [
-        "Docked panels no longer cover the chat input on medium-width layouts."
-      ]
-    },
-    "highlights": [
-      "Open the playlist from the Panels menu.",
-      "MOTD and poll chips in chat when active.",
-      "Labeled panel shortcuts in chat.",
-      "Player resizes more predictably.",
-      "Docked panels no longer block chat input."
     ]
   }
 ]
