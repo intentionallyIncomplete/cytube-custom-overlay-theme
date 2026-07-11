@@ -1,4 +1,4 @@
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@v1.21.0";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@v1.21.1";
 
 // CyTube defers video.js plugins; wait until resolution switcher registers before player init.
 (function () {

@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.21.0...v1.21.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* **chat:** cap inline media embeds at 300px ([#163](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/163)) ([8ba8f6e](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/8ba8f6e04a8819371b35154009077650b0d7fade))
+
 # [1.21.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.20.0...v1.21.0) (2026-07-11)
 
 
