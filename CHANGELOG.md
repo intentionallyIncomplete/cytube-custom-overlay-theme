@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.20.0...v1.21.0) (2026-07-11)
+
+
+### Features
+
+* **chat:** IMDB, Imgur, and Lensdump chat filters ([#162](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/162)) ([db2195e](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/db2195e1250a9b72f60d81cc0089cbf11b52b1a2))
+
 # [1.20.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.19.4...v1.20.0) (2026-07-11)
 
 
