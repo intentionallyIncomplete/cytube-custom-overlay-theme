@@ -1397,6 +1397,19 @@ body.btfw-ts-hide #messagebuffer .timestamp { display:none !important; }
   max-width: var(--btfw-chat-card-max-width, 600px);
 }
 
+a.letterboxd-card,
+a.tmdb-card {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: color-mix(in srgb, #40c057 65%, transparent 35%);
+    box-shadow: 0 0 0 1px color-mix(in srgb, #40c057 35%, transparent 65%);
+  }
+}
+
 .letterboxd-card__poster {
   width: 92px;
   min-width: 92px;

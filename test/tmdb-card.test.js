@@ -8,13 +8,25 @@ function escapeCardField(value) {
     .replace(/\]/g, "&#93;");
 }
 
+function encodeSourceUrl(url) {
+  return String(url || "").trim().replace(/^https:\/\//i, "//");
+}
+
 function formatCardTag(media) {
   const title = escapeCardField(media.title || "Unknown");
   const year = escapeCardField(media.year || "");
   const rating = escapeCardField(media.rating || "n/a");
   const overview = escapeCardField(media.overview || "No summary available.");
   const posterPath = escapeCardField(media.posterPath || "");
-  return `[tmdbcard]${title}|${year}|${rating}|${overview}|${posterPath}[/tmdbcard]`;
+  const pageUrl = escapeCardField(
+    encodeSourceUrl(
+      media.sourceUrl ||
+        (media.mediaType && media.id
+          ? `https://www.themoviedb.org/${media.mediaType}/${media.id}`
+          : "")
+    )
+  );
+  return `[tmdbcard]${title}|${year}|${rating}|${overview}|${posterPath}|${pageUrl}[/tmdbcard]`;
 }
 
 function posterUrlFromPath(posterPath) {
@@ -32,9 +44,9 @@ function parseUrl(url) {
 
 const tmdbFilter = {
   source:
-    "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^\\[]+)\\[\\/tmdbcard\\]",
+    "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/tmdbcard\\]",
   replace:
-    '<div class="tmdb-card chat-media-card"><img class="tmdb-card__poster chat-media" src="https://image.tmdb.org/t/p/w342\\5" alt="\\1 poster" onerror="this.style.display=\'none\'"><div class="tmdb-card__content"><div class="tmdb-card__title">\\1 <span class="tmdb-card__year">(\\2)</span></div><div class="tmdb-card__rating">★ \\3</div><div class="tmdb-card__overview">\\4</div></div></div>',
+    '<a class="tmdb-card chat-media-card" href="https:\\6" target="_blank" rel="noopener noreferrer"><img class="tmdb-card__poster chat-media" src="https://image.tmdb.org/t/p/w342\\5" alt="\\1 poster" onerror="this.style.display=\'none\'"><div class="tmdb-card__content"><div class="tmdb-card__title">\\1 <span class="tmdb-card__year">(\\2)</span></div><div class="tmdb-card__rating">★ \\3</div><div class="tmdb-card__overview">\\4</div></div></a>',
   flags: "g",
 };
 
@@ -86,10 +98,14 @@ test("tmdb card tag renders through CyTube filter", () => {
     rating: "4.2",
     overview: "A update on the classic.",
     posterPath: "/abc.jpg",
+    mediaType: "movie",
+    id: "755898",
+    sourceUrl: "https://www.themoviedb.org/movie/755898-war-of-the-worlds",
   });
   const out = simulateCyTubeFilterMessage(tag, tmdbFilter);
   assert.match(out, /tmdb-card/);
   assert.match(out, /image\.tmdb\.org\/t\/p\/w342\/abc\.jpg/);
+  assert.match(out, /href="https:\/\/www\.themoviedb\.org\/movie\/755898-war-of-the-worlds"/);
   assert.doesNotMatch(out, /\[\/tmdbcard\]/);
 });
 

@@ -7,7 +7,7 @@ BTFW.define("util:tmdb-card", ["util:tmdb-proxy"], async ({ init }) => {
     /https?:\/\/(?:www\.)?themoviedb\.org\/(movie|tv)\/(\d+)(?:-[a-zA-Z0-9-]+)?\/?/gi;
 
   const TMDB_CARD_TAG_RE =
-    /\[tmdbcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^[]+)\[\/tmdbcard\]/g;
+    /\[tmdbcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|([^[]*))?\[\/tmdbcard\]/g;
 
   const MISSING_PROXY_MSG =
     "TMDB proxy is unavailable. Ensure the movies-storage worker is deployed with TMDB_API_KEY set.";
@@ -72,41 +72,69 @@ BTFW.define("util:tmdb-card", ["util:tmdb-proxy"], async ({ init }) => {
     };
   }
 
+  function encodeSourceUrl(url) {
+    return String(url || "").trim().replace(/^https:\/\//i, "//");
+  }
+
+  function decodeSourceUrl(url) {
+    const u = decodeCardField(url).trim();
+    if (/^\/\//.test(u)) return `https:${u}`;
+    return u.replace(/^https&#58;\/\//i, "https://");
+  }
+
+  function tmdbPageUrl(mediaType, id) {
+    const type = String(mediaType || "").trim().toLowerCase();
+    const mediaId = String(id || "").trim();
+    if (!type || !mediaId) return "";
+    return `https://www.themoviedb.org/${type}/${mediaId}`;
+  }
+
   function formatCardTag(media) {
     const title = escapeCardField(media.title || "Unknown");
     const year = escapeCardField(media.year || "");
     const rating = escapeCardField(media.rating || "n/a");
     const overview = escapeCardField(media.overview || "No summary available.");
     const posterPath = escapeCardField(media.posterPath || "");
-    return `[tmdbcard]${title}|${year}|${rating}|${overview}|${posterPath}[/tmdbcard]`;
+    const pageUrl = escapeCardField(
+      encodeSourceUrl(media.sourceUrl || tmdbPageUrl(media.mediaType, media.id))
+    );
+    return `[tmdbcard]${title}|${year}|${rating}|${overview}|${posterPath}|${pageUrl}[/tmdbcard]`;
   }
 
-  function renderCardHtml(title, year, rating, overview, posterPath) {
+  function renderCardHtml(title, year, rating, overview, posterPath, sourceUrl) {
     const posterSrc = posterUrlFromPath(decodeCardField(posterPath));
     const img = posterSrc
       ? `<img class="tmdb-card__poster chat-media" src="${escapeHtml(posterSrc)}" alt="${escapeHtml(title)} poster" onerror="this.style.display='none'">`
       : "";
-    return (
-      `<div class="tmdb-card chat-media-card">` +
+    const inner =
       img +
       `<div class="tmdb-card__content">` +
       `<div class="tmdb-card__title">${escapeHtml(title)} <span class="tmdb-card__year">(${escapeHtml(year)})</span></div>` +
       `<div class="tmdb-card__rating">★ ${escapeHtml(rating)}</div>` +
       `<div class="tmdb-card__overview">${escapeHtml(overview)}</div>` +
-      `</div></div>`
-    );
+      `</div>`;
+    const href = decodeSourceUrl(sourceUrl || "").trim();
+    if (/^https?:\/\//i.test(href)) {
+      return (
+        `<a class="tmdb-card chat-media-card" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">` +
+        inner +
+        `</a>`
+      );
+    }
+    return `<div class="tmdb-card chat-media-card">` + inner + `</div>`;
   }
 
   function renderCardsInHtml(html) {
     return String(html || "").replace(
       TMDB_CARD_TAG_RE,
-      (_, title, year, rating, overview, poster) =>
+      (_, title, year, rating, overview, poster, sourceUrl) =>
         renderCardHtml(
           decodeCardField(title),
           decodeCardField(year),
           decodeCardField(rating),
           decodeCardField(overview),
-          poster
+          poster,
+          sourceUrl
         )
     );
   }
@@ -142,7 +170,7 @@ BTFW.define("util:tmdb-card", ["util:tmdb-proxy"], async ({ init }) => {
       seen.add(key);
       try {
         const media = await fetchMedia(match[1], match[2], options);
-        const card = formatCardTag(media);
+        const card = formatCardTag({ ...media, sourceUrl: fullUrl });
         out = out.replace(
           new RegExp(
             `https?:\\/\\/(?:www\\.)?themoviedb\\.org\\/${match[1]}\\/${match[2]}(?:-[a-zA-Z0-9-]+)?\\/?`,

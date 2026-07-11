@@ -15,6 +15,16 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
     return String(url || "").trim().replace(/^https:\/\//i, "//");
   }
 
+  function encodeSourceUrl(url) {
+    return String(url || "").trim().replace(/^https:\/\//i, "//");
+  }
+
+  function decodeSourceUrl(url) {
+    const u = decodeCardField(url).trim();
+    if (/^\/\//.test(u)) return `https:${u}`;
+    return u.replace(/^https&#58;\/\//i, "https://");
+  }
+
   function decodePosterUrl(url) {
     const u = String(url || "").trim();
     if (/^\/\//.test(u)) return `https:${u}`;
@@ -36,7 +46,7 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
   }
 
   const LETTERBOXD_CARD_TAG_RE =
-    /\[letterboxdcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^[]+)\[\/letterboxdcard\]/g;
+    /\[letterboxdcard\]([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|([^[]*))?\[\/letterboxdcard\]/g;
 
   const LETTERBOXD_BROKEN_CARD_TAIL_RE =
     /"\s*target="_blank"\s*rel="noopener noreferrer">https?:\/\/[^<[]*\[\/letterboxdcard\]/gi;
@@ -56,7 +66,7 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
       .replace(/"/g, "&quot;");
   }
 
-  function renderCardHtml(title, year, rating, overview, posterUrl) {
+  function renderCardHtml(title, year, rating, overview, posterUrl, sourceUrl) {
     const safePoster = decodePosterUrl(String(posterUrl || "").trim());
     const posterAttr =
       /^https?:\/\//i.test(safePoster) || /^\/\//.test(safePoster)
@@ -65,15 +75,22 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
     const img = posterAttr
       ? `<img class="letterboxd-card__poster chat-media" src="${posterAttr}" alt="${escapeHtml(title)} poster" onerror="this.style.display='none'">`
       : "";
-    return (
-      `<div class="letterboxd-card chat-media-card">` +
+    const inner =
       img +
       `<div class="letterboxd-card__content">` +
       `<div class="letterboxd-card__title">${escapeHtml(title)} <span class="letterboxd-card__year">(${escapeHtml(year)})</span></div>` +
       `<div class="letterboxd-card__rating">★ ${escapeHtml(rating)}</div>` +
       `<div class="letterboxd-card__overview">${escapeHtml(overview)}</div>` +
-      `</div></div>`
-    );
+      `</div>`;
+    const href = decodeSourceUrl(sourceUrl || "").trim();
+    if (/^https?:\/\//i.test(href)) {
+      return (
+        `<a class="letterboxd-card chat-media-card" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">` +
+        inner +
+        `</a>`
+      );
+    }
+    return `<div class="letterboxd-card chat-media-card">` + inner + `</div>`;
   }
 
   function stripBrokenCardTails(html) {
@@ -83,24 +100,28 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
   function renderCardsInHtml(html) {
     return stripBrokenCardTails(html).replace(
       LETTERBOXD_CARD_TAG_RE,
-      (_, title, year, rating, overview, poster) =>
+      (_, title, year, rating, overview, poster, sourceUrl) =>
         renderCardHtml(
           decodeCardField(title),
           decodeCardField(year),
           decodeCardField(rating),
           decodeCardField(overview),
-          decodeCardField(poster)
+          decodeCardField(poster),
+          sourceUrl
         )
     );
   }
 
-  function formatCardTag(film) {
+  function formatCardTag(film, sourceUrl) {
     const title = escapeCardField(film.title || film.slug || "Film");
     const year = escapeCardField(film.year || "");
     const rating = escapeCardField(film.rating || "n/a");
     const overview = escapeCardField(film.overview || "No description available.");
     const posterUrl = escapeCardField(encodePosterUrl(film.posterUrl || ""));
-    return `[letterboxdcard]${title}|${year}|${rating}|${overview}|${posterUrl}[/letterboxdcard]`;
+    const pageUrl = escapeCardField(
+      encodeSourceUrl(sourceUrl || (film.slug ? `https://letterboxd.com/film/${film.slug}/` : ""))
+    );
+    return `[letterboxdcard]${title}|${year}|${rating}|${overview}|${posterUrl}|${pageUrl}[/letterboxdcard]`;
   }
 
   async function fetchFilm(slug, options = {}) {
@@ -125,7 +146,7 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
       seen.add(slug);
       try {
         const film = await fetchFilm(slug, options);
-        const card = formatCardTag(film);
+        const card = formatCardTag(film, `https://letterboxd.com/film/${slug}/`);
         out = out.replace(
           new RegExp(
             `https?:\\/\\/(?:www\\.)?letterboxd\\.com\\/film\\/${slug}\\/?`,

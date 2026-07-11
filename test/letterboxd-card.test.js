@@ -16,13 +16,20 @@ function encodePosterUrl(url) {
   return String(url || "").trim().replace(/^https:\/\//i, "//");
 }
 
-function formatCardTag(film) {
+function encodeSourceUrl(url) {
+  return String(url || "").trim().replace(/^https:\/\//i, "//");
+}
+
+function formatCardTag(film, sourceUrl) {
   const title = escapeCardField(film.title || film.slug || "Film");
   const year = escapeCardField(film.year || "");
   const rating = escapeCardField(film.rating || "n/a");
   const overview = escapeCardField(film.overview || "No description available.");
   const posterUrl = escapeCardField(encodePosterUrl(film.posterUrl || ""));
-  return `[letterboxdcard]${title}|${year}|${rating}|${overview}|${posterUrl}[/letterboxdcard]`;
+  const pageUrl = escapeCardField(
+    encodeSourceUrl(sourceUrl || (film.slug ? `https://letterboxd.com/film/${film.slug}/` : ""))
+  );
+  return `[letterboxdcard]${title}|${year}|${rating}|${overview}|${posterUrl}|${pageUrl}[/letterboxdcard]`;
 }
 
 function simulateCyTubeFilterMessage(msg, filter) {
@@ -41,9 +48,9 @@ function simulateCyTubeFilterMessage(msg, filter) {
 
 const letterboxdFilter = {
   source:
-    "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^\\[]+)\\[\\/letterboxdcard\\]",
+    "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/letterboxdcard\\]",
   replace:
-    '<div class="letterboxd-card chat-media-card"><img class="letterboxd-card__poster chat-media" src="\\5" alt="\\1 poster" onerror="this.style.display=\'none\'"><div class="letterboxd-card__content"><div class="letterboxd-card__title">\\1 <span class="letterboxd-card__year">(\\2)</span></div><div class="letterboxd-card__rating">★ \\3</div><div class="letterboxd-card__overview">\\4</div></div></div>',
+    '<a class="letterboxd-card chat-media-card" href="https:\\6" target="_blank" rel="noopener noreferrer"><img class="letterboxd-card__poster chat-media" src="\\5" alt="\\1 poster" onerror="this.style.display=\'none\'"><div class="letterboxd-card__content"><div class="letterboxd-card__title">\\1 <span class="letterboxd-card__year">(\\2)</span></div><div class="letterboxd-card__rating">★ \\3</div><div class="letterboxd-card__overview">\\4</div></div></a>',
   flags: "g",
 };
 
@@ -78,12 +85,13 @@ test("encoded poster card survives CyTube link placeholder pass", () => {
     rating: "3.0",
     overview: "A warlock in the 1980s.",
     posterUrl: "https://a.ltrbxd.com/poster.jpg?v=1",
+    slug: "warlock",
   });
   const out = simulateCyTubeFilterMessage(tag, letterboxdFilter);
   assert.match(out, /letterboxd-card/);
   assert.match(out, /\/\/a\.ltrbxd\.com\/poster\.jpg/);
+  assert.match(out, /href="https:\/\/letterboxd\.com\/film\/warlock\/"/);
   assert.doesNotMatch(out, /\[\/letterboxdcard\]/);
-  assert.doesNotMatch(out, /target="_blank"/);
 });
 
 test("encoded poster card survives CyTube sanitizeText and link extraction", () => {
@@ -104,6 +112,7 @@ test("encoded poster card survives CyTube sanitizeText and link extraction", () 
     rating: "4.3",
     overview: "Mischief. Mayhem. Soap.",
     posterUrl: "https://a.ltrbxd.com/poster.jpg?v=1",
+    slug: "fight-club",
   });
   const out = simulateCyTubeFilterMessage(sanitizeText(tag), letterboxdFilter);
   assert.match(out, /letterboxd-card/);
