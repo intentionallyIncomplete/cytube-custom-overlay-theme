@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.19.4...v1.20.0) (2026-07-11)
+
+
+### Features
+
+* **ui:** clickable cards, channel brand, boot label ([#161](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/161)) ([026d5f8](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/026d5f889b0eacd05ce0d8429321902767685593))
+
 ## [1.19.4](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.19.3...v1.19.4) (2026-07-11)
 
 
