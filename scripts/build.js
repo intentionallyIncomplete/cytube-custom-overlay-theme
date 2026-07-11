@@ -55,6 +55,7 @@ const bundles = [
       "modules/util-constants.js",
       "modules/util-dom.js",
       "modules/util-state.js",
+      "modules/util-templates.js",
       "modules/util-motion.js",
       "modules/util-tmdb-proxy.js",
       "modules/feature-style-core.js",

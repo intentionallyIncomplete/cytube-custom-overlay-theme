@@ -1,4 +1,6 @@
-BTFW.define("feature:stack", ["feature:layout"], async () => {
+BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
+  const templates = await init("util:templates");
+  const { stack: stackTpl } = templates;
   const SKEY="btfw-stack-order";
   const MOTD_VISIBILITY_KEY = "btfw-stack-motd-open";
   const PLAYLIST_VISIBILITY_KEY = "btfw-stack-playlist-open";
@@ -171,20 +173,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
       panel.setAttribute("aria-label", "Add media controls");
       panel.setAttribute("aria-hidden", "true");
       panel.setAttribute("hidden", "hidden");
-      panel.innerHTML = `
-        <div class="btfw-addmedia-panel__inner">
-          <header class="btfw-addmedia-panel__header">
-            <nav class="btfw-addmedia-tabs" role="tablist"></nav>
-            <button type="button" class="btfw-addmedia-close" aria-label="Close add media">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </header>
-          <div class="btfw-addmedia-panel__body">
-            <div class="btfw-addmedia-views"></div>
-            <p class="btfw-addmedia-help">Queue media by URL or browse your library without leaving the playlist.</p>
-          </div>
-        </div>
-      `;
+      panel.innerHTML = stackTpl.addMediaPanelHtml();
     }
 
     if (panel.parentElement !== mainContainer) {
@@ -516,7 +505,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
         addMediaBtn.id = "btfw-addmedia-btn";
         addMediaBtn.type = "button";
         addMediaBtn.className = "button is-small";
-        addMediaBtn.innerHTML = `<span data-btfw-icon-slot="stack-add-media" aria-hidden="true"><i class="fa fa-plus"></i></span><span>Add media</span>`;
+        addMediaBtn.innerHTML = stackTpl.addMediaButtonHtml();
         actionsCluster.prepend(addMediaBtn);
       } else if (!actionsCluster.contains(addMediaBtn)) {
         actionsCluster.prepend(addMediaBtn);
@@ -554,7 +543,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
       addMediaBtn.classList.remove("is-dark");
       addMediaBtn.classList.add("is-primary");
       if (!addMediaBtn.dataset.iconified) {
-        addMediaBtn.innerHTML = `<span data-btfw-icon-slot="stack-add-media" aria-hidden="true"><i class="fa fa-plus"></i></span><span>Add media</span>`;
+        addMediaBtn.innerHTML = stackTpl.addMediaButtonHtml();
         addMediaBtn.dataset.iconified = "1";
       }
       addMediaBtn.setAttribute("aria-controls", "btfw-addmedia-panel");
@@ -651,16 +640,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
     
     const header = document.createElement("header");
     header.className = "btfw-stack-item__header";
-    header.innerHTML = `
-      <span class="btfw-stack-item__title">${group.title}</span>
-      <div class="btfw-stack-header-toolbar">
-        <span class="btfw-stack-header-actions"></span>
-        <span class="btfw-stack-arrows">
-          <button type="button" class="btfw-arrow btfw-up" aria-label="Move panel up">↑</button>
-          <button type="button" class="btfw-arrow btfw-down" aria-label="Move panel down">↓</button>
-        </span>
-      </div>
-    `;
+    header.innerHTML = stackTpl.stackGroupHeaderHtml(group.title);
 
     const body = document.createElement("div");
     body.className = "btfw-stack-item__body btfw-group-body";
@@ -879,7 +859,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
       btn.type = "button";
       btn.id = "btfw-panels-menu-btn";
       btn.className = "button btfw-chatbtn btfw-panels-menu-btn";
-      btn.innerHTML = '<span class="btfw-panels-menu-btn__label">Panels</span>';
+      btn.innerHTML = stackTpl.panelsMenuButtonHtml();
       btn.title = "Docked Panels";
       btn.setAttribute("aria-expanded", "false");
       btn.hidden = true;
@@ -1121,7 +1101,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
     undock.dataset.panelGroup = groupId;
     undock.setAttribute("aria-label", `Pin ${meta.title} below video`);
     undock.title = "Pin below video";
-    undock.innerHTML = '<i class="fa fa-thumb-tack" aria-hidden="true"></i>';
+    undock.innerHTML = stackTpl.panelUndockIconHtml();
     return undock;
   }
 
@@ -1129,15 +1109,7 @@ BTFW.define("feature:stack", ["feature:layout"], async () => {
     const addForm = document.createElement("form");
     addForm.className = "btfw-panel-playlist__add-form";
     addForm.hidden = true;
-    addForm.innerHTML = `
-      <label class="btfw-panel-playlist__link-label">
-        <span class="btfw-panel-playlist__link-caption">Link</span>
-        <input type="url" class="btfw-panel-playlist__link-input input is-small" placeholder="https://..." autocomplete="off" required>
-      </label>
-      <div class="btfw-panel-playlist__add-actions">
-        <button type="submit" class="button is-small is-primary btfw-panel-playlist__submit">Add to queue</button>
-      </div>
-    `;
+    addForm.innerHTML = stackTpl.playlistAddFormHtml();
     return addForm;
   }
 

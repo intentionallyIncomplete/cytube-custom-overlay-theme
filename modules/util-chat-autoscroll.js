@@ -1,10 +1,10 @@
-BTFW.define("util:chatAutoscroll", [], async () => {
-  const LS_KEY = "btfw:chat:autoScroll";
+BTFW.define("util:chatAutoscroll", ["util:constants"], async ({ init }) => {
+  const { LS_KEYS, EVENTS } = await init("util:constants");
   const PIN_THRESHOLD = 48;
 
   function readStored() {
     try {
-      return localStorage.getItem(LS_KEY);
+      return localStorage.getItem(LS_KEYS.chatAutoScroll);
     } catch (_) {
       return null;
     }
@@ -36,14 +36,13 @@ BTFW.define("util:chatAutoscroll", [], async () => {
     if (typeof window.scrollChat === "function") window.scrollChat();
   }
 
-  document.addEventListener("btfw:chat:autoScrollChanged", () => {});
+  document.addEventListener(EVENTS.chatAutoScrollChanged, () => {});
 
   return {
     name: "util:chatAutoscroll",
-    LS_KEY,
     getAutoScrollEnabled,
-    isPinnedToBottom,
     shouldAutoScroll,
-    scrollChatIfAllowed
+    scrollChatIfAllowed,
+    isPinnedToBottom
   };
 });

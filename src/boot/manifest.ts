@@ -4,10 +4,22 @@ export const BOOT_FOUNDATION = ["feature:styleCore", "feature:themeMode"] as con
 
 export const BOOT_LAYOUT = ["feature:layout"] as const;
 
-export const BOOT_FEATURES = [
+/** Shell + player + playlist (DOM layout around video). */
+export const BOOT_DOM = [
   "feature:footer",
   "feature:player",
   "feature:stack",
+  "feature:videoOverlay",
+  "feature:nowplaying",
+  "feature:playlistPerformance",
+  "feature:playlist-tools",
+  "feature:audio",
+  "feature:movie-info",
+  "ext:movie-suggestion"
+] as const;
+
+/** Chat cluster + overlays tied to chat. */
+export const BOOT_CHAT = [
   "feature:chat",
   "feature:chat-tools",
   "feature:chat-filters",
@@ -18,26 +30,39 @@ export const BOOT_FEATURES = [
   "feature:chat-avatars",
   "feature:chat-timestamps",
   "feature:chat-ignore",
-  "feature:themeIcons",
-  "feature:navbar",
-  "feature:modal-skin",
-  "feature:nowplaying",
   "feature:gifs",
-  "feature:videoOverlay",
   "feature:poll-overlay",
   "feature:notify",
   "feature:notification-sounds",
-  "feature:syncGuard",
   "feature:chat-commands",
-  "feature:drink-counter",
-  "feature:playlistPerformance",
-  "feature:playlist-tools",
-  "feature:local-subs",
+  "feature:drink-counter"
+] as const;
+
+/** Navigation chrome. */
+export const BOOT_NAV = [
+  "feature:themeIcons",
+  "feature:navbar",
+  "feature:modal-skin"
+] as const;
+
+/** Sync/socket integration and playback guard. */
+export const BOOT_SYNC = [
+  "feature:syncGuard",
+  "feature:local-subs"
+] as const;
+
+/** Settings, admin, and channel configuration. */
+export const BOOT_SETTINGS = [
   "feature:emoji-loader",
   "feature:motd-editor",
   "feature:channelThemeAdmin",
-  "feature:themeSettings",
-  "feature:audio",
-  "feature:movie-info",
-  "ext:movie-suggestion"
+  "feature:themeSettings"
+] as const;
+
+export const BOOT_FEATURES = [
+  ...BOOT_DOM,
+  ...BOOT_CHAT,
+  ...BOOT_NAV,
+  ...BOOT_SYNC,
+  ...BOOT_SETTINGS
 ] as const;

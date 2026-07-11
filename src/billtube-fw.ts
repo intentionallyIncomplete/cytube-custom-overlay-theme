@@ -2,7 +2,7 @@ import { createBtfwRegistry } from "../lib/btfw-registry.js";
 import { resolveBtfwBase } from "../lib/resolve-btfw-base.js";
 import { patchWaitUntilDefinedForVjsPlugins } from "../lib/patch-vjs-plugin-wait.js";
 import { bootOverlayCardHtml } from "../lib/templates/boot-overlay.js";
-import { BOOT_FEATURES, BOOT_FOUNDATION, BOOT_LAYOUT } from "./boot/manifest.js";
+import { BOOT_FOUNDATION, BOOT_LAYOUT, BOOT_CHAT, BOOT_DOM, BOOT_NAV, BOOT_SETTINGS, BOOT_SYNC } from "./boot/manifest.js";
 
 patchWaitUntilDefinedForVjsPlugins();
 
@@ -289,8 +289,11 @@ interface BootOverlayApi {
       );
     })
     .then(function () {
-      const inits = BOOT_FEATURES.map(function (name) {
-        return window.BTFW.init(name);
+      const groups = [BOOT_DOM, BOOT_CHAT, BOOT_NAV, BOOT_SYNC, BOOT_SETTINGS];
+      const inits = groups.flatMap(function (group) {
+        return group.map(function (name) {
+          return window.BTFW.init(name);
+        });
       });
       return Promise.all(inits);
     })

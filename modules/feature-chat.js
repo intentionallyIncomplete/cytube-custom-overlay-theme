@@ -1,9 +1,11 @@
-BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom", "util:constants", "util:state"], async ({ init }) => {
+BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom", "util:constants", "util:state", "util:templates"], async ({ init }) => {
   const motion = await init("util:motion");
   const chatAutoscroll = await init("util:chatAutoscroll");
   const dom = await init("util:dom");
   const { SELECTORS } = await init("util:constants");
   const { state } = await init("util:state");
+  const templates = await init("util:templates");
+  const { chat: chatTpl } = templates;
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const MESSAGE_SELECTOR = SELECTORS.chatMsg;
@@ -314,7 +316,7 @@ function normalizeChatActionButtons() {
     b.id = "btfw-btn-emotes";
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "Emotes / Emoji";
-    b.innerHTML = '<span data-btfw-icon-slot="chat-emotes" aria-hidden="true"><i class="fa fa-smile"></i></span>';
+    b.innerHTML = chatTpl.chatEmotesIconHtml();
     actions.appendChild(b);
   }
   if (!document.getElementById("btfw-btn-gif")) {
@@ -322,7 +324,7 @@ function normalizeChatActionButtons() {
     b.id = "btfw-btn-gif";
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "GIFs";
-    b.innerHTML = '<i class="fa-solid fa-gif"></i>';
+    b.innerHTML = chatTpl.chatGifIconHtml();
     actions.appendChild(b);
   }
 
@@ -339,7 +341,7 @@ function normalizeChatActionButtons() {
 
 const hasIcon = gifBtn.querySelector("i.fa-solid.fa-gif");
 if (!hasIcon) {
-  gifBtn.innerHTML = '<i class="fa-solid fa-gif"></i>';
+  gifBtn.innerHTML = chatTpl.chatGifIconHtml();
 }
   }
 
@@ -807,13 +809,7 @@ const scheduleNormalizeChatActions = (() => {
     pop.setAttribute("hidden", "");
     pop.setAttribute("aria-hidden", "true");
     pop.style.zIndex = "6002";
-    pop.innerHTML = `
-      <div class="btfw-pophead">
-        <span>Users</span>
-        <button class="btfw-popclose" aria-label="Close">&times;</button>
-      </div>
-      <div class="btfw-popbody"></div>
-    `;
+    pop.innerHTML = chatTpl.chatUserlistPopoverHtml();
     document.body.appendChild(pop);
 
     adoptUserlistIntoPopover();
@@ -863,12 +859,7 @@ const scheduleNormalizeChatActions = (() => {
     if (!top) {
       top = document.createElement("div");
       top.className = "btfw-chat-topbar";
-      top.innerHTML = `
-        <div class="btfw-chat-topbar-left">
-          <div class="btfw-chat-title" id="btfw-nowplaying-slot"></div>
-        </div>
-        <div class="btfw-chat-topbar-actions" id="btfw-chat-topbar-actions"></div>
-      `;
+      top.innerHTML = chatTpl.chatTopbarHtml();
       cw.prepend(top);
     }
 
@@ -938,7 +929,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-emotes";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Emotes / Emoji";
-      b.innerHTML = '<span data-btfw-icon-slot="chat-emotes" aria-hidden="true"><i class="fa fa-smile"></i></span>';
+      b.innerHTML = chatTpl.chatEmotesIconHtml();
       actions.appendChild(b);
     }
 
@@ -950,7 +941,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-gif";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "GIFs";
-      b.innerHTML = '<span data-btfw-icon-slot="chat-gif" aria-hidden="true"><i class="fa fa-file-video-o"></i></span>';
+      b.innerHTML = chatTpl.chatGifIconSlotHtml();
       actions.appendChild(b);
     }
 
@@ -965,7 +956,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-users-toggle";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Users";
-      b.innerHTML = '<span data-btfw-icon-slot="chat-users" aria-hidden="true"><i class="fa fa-users"></i></span>';
+      b.innerHTML = chatTpl.chatUsersIconHtml();
       actions.appendChild(b);
     }
 

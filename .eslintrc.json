@@ -47,7 +47,7 @@
       }
     },
     {
-      "files": ["modules/util-constants.js", "modules/util-dom.js", "modules/util-state.js"],
+      "files": ["modules/util-constants.js", "modules/util-dom.js", "modules/util-state.js", "modules/util-templates.js", "modules/util-chat-autoscroll.js"],
       "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module"
