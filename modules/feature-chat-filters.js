@@ -28,7 +28,8 @@ const customFilters = [
   { name: "tenor media", source: "(https?://media\\d*\\.tenor\\.com/(?!m/)[\\w-]+/[^\\s<]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "tenor short", source: "(https?://(?:www\\.)?tenor\\.com/[\\w-]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "TMDB", source: "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/tmdbcard\\]", flags: "g", replace: "<a class=\"tmdb-card chat-media-card\" href=\"https:\\6\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"tmdb-card__poster chat-media\" src=\"https://image.tmdb.org/t/p/w342\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"tmdb-card__content\"><div class=\"tmdb-card__title\">\\1 <span class=\"tmdb-card__year\">(\\2)</span></div><div class=\"tmdb-card__rating\">★ \\3</div><div class=\"tmdb-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
-  { name: "Letterboxd", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/letterboxdcard\\]", flags: "g", replace: "<a class=\"letterboxd-card chat-media-card\" href=\"https:\\6\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"letterboxd-card__poster chat-media\" src=\"\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></a>", active: true, filterlinks: false }
+  { name: "Letterboxd link", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([a-zA-Z0-9-]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<a class=\"letterboxd-card chat-media-card\" href=\"https://letterboxd.com/film/\\6/\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"letterboxd-card__poster chat-media\" src=\"https://\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
+  { name: "Letterboxd", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<div class=\"letterboxd-card chat-media-card\"><img class=\"letterboxd-card__poster chat-media\" src=\"https://\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></div>", active: true, filterlinks: false }
 ];
 
   function getjQuery() {
@@ -120,6 +121,13 @@ const customFilters = [
     );
   }
 
+  function unwrapLinksInsideLetterboxdTags(html) {
+    return String(html || "").replace(
+      /(\[letterboxdcard\][\s\S]*?\[\/letterboxdcard\])/gi,
+      (tag) => tag.replace(/<a[^>]*>([^<]*)<\/a>/gi, "$1")
+    );
+  }
+
   function renderMediaCardsInMessage(span) {
     if (!span) return;
     let html = span.innerHTML;
@@ -132,7 +140,10 @@ const customFilters = [
       html.includes("[tmdbcard]") ||
       html.includes("[/tmdbcard]");
     if (!hadLetterboxd && !hadTmdb) return;
-    if (hadLetterboxd) html = letterboxd.renderCardsInHtml(html);
+    if (hadLetterboxd) {
+      html = unwrapLinksInsideLetterboxdTags(html);
+      html = letterboxd.renderCardsInHtml(html);
+    }
     if (hadTmdb) html = tmdbCard.renderCardsInHtml(html);
     html = normalizeProtocolRelativeCardHrefs(html);
     if (html !== span.innerHTML) span.innerHTML = html;
