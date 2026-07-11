@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 
-const REPO = "intentionallyIncomplete/BillTube3-slim";
+const REPO = "intentionallyIncomplete/cytube-custom-overlay-theme";
 const version = JSON.parse(readFileSync("package.json", "utf8")).version;
 const tag = `v${version}`;
 

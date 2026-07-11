@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 
-const REPO = "intentionallyIncomplete/BillTube3-slim";
+const REPO = "intentionallyIncomplete/cytube-custom-overlay-theme";
 const CONFIG = "channel_config_settings.js";
 const commit = process.argv.includes("--commit");
 
