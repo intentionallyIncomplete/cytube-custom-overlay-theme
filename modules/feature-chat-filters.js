@@ -1,8 +1,10 @@
 /* BillTube Framework — feature:chat-filters (imports required CyTube chat filters) */
-BTFW.define("feature:chat-filters", ["util:letterboxd", "util:tenor", "util:tmdb-card"], async ({ init: btfwInit }) => {
+BTFW.define("feature:chat-filters", ["util:letterboxd", "util:tenor", "util:tmdb-card", "util:imdb-card", "util:media-resolve"], async ({ init: btfwInit }) => {
   const letterboxd = await btfwInit("util:letterboxd");
   const tenor = await btfwInit("util:tenor");
   const tmdbCard = await btfwInit("util:tmdb-card");
+  const imdbCard = await btfwInit("util:imdb-card");
+  const mediaResolve = await btfwInit("util:media-resolve");
 
 const customFilters = [
   { name: "monospace", source: "`(.+?)`", flags: "g", replace: "<code>\\1</code>", active: true, filterlinks: false },
@@ -27,7 +29,10 @@ const customFilters = [
   { name: "tenor", source: "(https?://c\\.tenor\\.com/[\\w-]+/[^\\s<]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "tenor media", source: "(https?://media\\d*\\.tenor\\.com/(?!m/)[\\w-]+/[^\\s<]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "tenor short", source: "(https?://(?:www\\.)?tenor\\.com/[\\w-]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
+  { name: "lensdump cdn", source: "(https?://b\\.l3n\\.co/[^\\s<]+\\.(?:gif|webp|png|jpe?g))", flags: "gi", replace: "<img class=\"lensdump chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
+  { name: "imgur direct", source: "(https?://i\\.imgur\\.com/[a-zA-Z0-9]+\\.(?:gif|webp|png|jpe?g|mp4)(?:\\?[^\\s<]*)?)", flags: "gi", replace: "<img class=\"imgur chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "TMDB", source: "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/tmdbcard\\]", flags: "g", replace: "<a class=\"tmdb-card chat-media-card\" href=\"https:\\6\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"tmdb-card__poster chat-media\" src=\"https://image.tmdb.org/t/p/w342\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"tmdb-card__content\"><div class=\"tmdb-card__title\">\\1 <span class=\"tmdb-card__year\">(\\2)</span></div><div class=\"tmdb-card__rating\">★ \\3</div><div class=\"tmdb-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
+  { name: "IMDB", source: "\\[imdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/imdbcard\\]", flags: "g", replace: "<a class=\"imdb-card chat-media-card\" href=\"https:\\6\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"imdb-card__poster chat-media\" src=\"https://image.tmdb.org/t/p/w342\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"imdb-card__content\"><div class=\"imdb-card__title\">\\1 <span class=\"imdb-card__year\">(\\2)</span></div><div class=\"imdb-card__rating\">★ \\3</div><div class=\"imdb-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
   { name: "Letterboxd slug", source: "\\[letterboxdcard\\]([a-zA-Z0-9-]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "[letterboxdcard]\\1[/letterboxdcard]", active: true, filterlinks: false },
   { name: "Letterboxd link", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([a-zA-Z0-9-]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<a class=\"letterboxd-card chat-media-card\" href=\"https://letterboxd.com/film/\\6/\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"letterboxd-card__poster chat-media\" src=\"https://\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
   { name: "Letterboxd", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<div class=\"letterboxd-card chat-media-card\"><img class=\"letterboxd-card__poster chat-media\" src=\"https://\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></div>", active: true, filterlinks: false }
@@ -65,8 +70,27 @@ const customFilters = [
     return /https?:\/\/(?:www\.)?themoviedb\.org\/(?:movie|tv)\/\d+/i.test(text);
   }
 
+  function hasImdbUrl(text) {
+    return /https?:\/\/(?:www\.)?imdb\.com\/(?:title\/tt\d+|name\/nm\d+)/i.test(text);
+  }
+
+  function hasImgurPageUrl(text) {
+    return /https?:\/\/(?:www\.)?imgur\.com\/(?:gallery\/|a\/)/i.test(text);
+  }
+
+  function hasLensdumpPageUrl(text) {
+    return /https?:\/\/(?:www\.)?lensdump\.com\/(?:i|a)\/[a-zA-Z0-9]+/i.test(text);
+  }
+
   function needsChatUrlExpansion(text) {
-    return hasLetterboxdUrl(text) || hasTenorViewUrl(text) || hasTmdbUrl(text);
+    return (
+      hasLetterboxdUrl(text) ||
+      hasTenorViewUrl(text) ||
+      hasTmdbUrl(text) ||
+      hasImdbUrl(text) ||
+      hasImgurPageUrl(text) ||
+      hasLensdumpPageUrl(text)
+    );
   }
 
   async function expandChatUrls(text) {
@@ -77,8 +101,14 @@ const customFilters = [
     if (hasTmdbUrl(out) && tmdbCard.isAvailable()) {
       out = await tmdbCard.expandUrlsInMessage(out);
     }
+    if (hasImdbUrl(out) && imdbCard.isAvailable()) {
+      out = await imdbCard.expandUrlsInMessage(out);
+    }
     if (hasTenorViewUrl(out) && tenor.isAvailable()) {
       out = await tenor.expandViewUrlsInMessage(out);
+    }
+    if ((hasImgurPageUrl(out) || hasLensdumpPageUrl(out)) && mediaResolve.isAvailable()) {
+      out = await mediaResolve.expandUrlsInMessage(out);
     }
     return out;
   }
@@ -117,7 +147,7 @@ const customFilters = [
 
   function normalizeProtocolRelativeCardHrefs(html) {
     return String(html || "").replace(
-      /(<a class="(?:letterboxd|tmdb)-card[^"]*" href=")\/\/([^"]+)"/g,
+      /(<a class="(?:letterboxd|tmdb|imdb)-card[^"]*" href=")\/\/([^"]+)"/g,
       '$1https://$2"'
     );
   }
@@ -140,7 +170,11 @@ const customFilters = [
       html.includes("tmdb-card") ||
       html.includes("[tmdbcard]") ||
       html.includes("[/tmdbcard]");
-    if (!hadLetterboxd && !hadTmdb) return;
+    const hadImdb =
+      html.includes("imdb-card") ||
+      html.includes("[imdbcard]") ||
+      html.includes("[/imdbcard]");
+    if (!hadLetterboxd && !hadTmdb && !hadImdb) return;
 
     if (hadLetterboxd) {
       span.dataset.btfwCardBusy = "1";
@@ -155,6 +189,7 @@ const customFilters = [
       }
     }
     if (hadTmdb) html = tmdbCard.renderCardsInHtml(html);
+    if (hadImdb) html = imdbCard.renderCardsInHtml(html);
     html = normalizeProtocolRelativeCardHrefs(html);
     if (html !== span.innerHTML) span.innerHTML = html;
   }

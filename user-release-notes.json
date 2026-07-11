@@ -1,5 +1,29 @@
 [
   {
+    "version": "1.20.0",
+    "date": "2026-07-11",
+    "summary": "Paste IMDB, Imgur, and Lensdump links in chat and see rich previews instead of bare URLs.",
+    "categories": {
+      "features": [
+        "IMDB links: movie and person pages show a poster card with title, year, rating, and summary — same style as Letterboxd and TMDB cards.",
+        "Imgur and Lensdump: gallery, album, and direct image links embed inline like GIFs from Klipy or Tenor."
+      ],
+      "improvements": [
+        "Channel mods: use Import Required BillTube Chat Filters in Channel Options to pick up the new link rules."
+      ],
+      "bugFixes": [
+        "Imgur gallery links no longer leave stray tracking text after the embedded image."
+      ]
+    },
+    "highlights": [
+      "IMDB title and name links expand into formatted poster cards in chat.",
+      "Imgur gallery and album links show the image inline.",
+      "Lensdump image and album links show the image inline.",
+      "Direct Imgur and Lensdump CDN links embed without extra clicks.",
+      "Mods: re-import BillTube chat filters once to enable the new rules."
+    ]
+  },
+  {
     "version": "1.19.3",
     "date": "2026-07-10",
     "summary": "Chat commands are trimmed to essentials, and username clicks resolve more reliably across the channel page.",
@@ -84,31 +108,6 @@
     "highlights": [
       "Royal theme icons: pick from a dedicated icon set in Theme Settings.",
       "Monkey Paw: a hidden mod easter egg in Theme Settings."
-    ]
-  },
-  {
-    "version": "1.13.0",
-    "date": "2026-06-26",
-    "summary": "Polls and MOTD are easier to use, and the channel page stays stable when you resize the window.",
-    "categories": {
-      "features": [
-        "Polls: create and vote on polls from a slide-out panel; open it from the Panels menu or the poll chip in chat.",
-        "MOTD: message-of-the-day lives in the same Panels menu with a quick chip in chat when a message is set."
-      ],
-      "improvements": [
-        "Panels menu: one floating button opens playlist, MOTD, polls, and other panels as labeled chips.",
-        "Chat bottom bar: emotes, GIFs, and other actions stay pinned and no longer jump when the window resizes."
-      ],
-      "bugFixes": [
-        "Layout: resizing the channel page no longer leaves the video, chat, or panels in a broken state."
-      ]
-    },
-    "highlights": [
-      "Polls: create and vote from a slide-out panel or the poll chip in chat.",
-      "MOTD: read the message of the day from the Panels menu or a chat chip.",
-      "Panels menu: one button for playlist, MOTD, polls, and more.",
-      "Chat toolbar stays put when you resize the window.",
-      "Resizing no longer breaks video, chat, or panels."
     ]
   }
 ]
