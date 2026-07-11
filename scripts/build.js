@@ -70,6 +70,8 @@ const bundles = [
       "modules/util-letterboxd.js",
       "modules/util-tenor.js",
       "modules/util-tmdb-card.js",
+      "modules/util-imdb-card.js",
+      "modules/util-media-resolve.js",
       "modules/feature-chat.js",
       "modules/feature-chat-tools.js",
       "modules/feature-chat-filters.js",

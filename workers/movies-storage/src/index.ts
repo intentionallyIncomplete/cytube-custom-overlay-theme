@@ -11,6 +11,8 @@
  *   GET  /api/giphy/search, /api/giphy/trending  → Giphy proxy (server-side API key)
  *   GET  /api/klipy/search, /api/klipy/trending, POST /api/klipy/share/{slug}  → KLIPY proxy
  *   GET  /api/letterboxd/film/{slug}  → Letterboxd film OG metadata scrape
+ *   GET  /api/tenor/resolve  → Tenor view URL → direct media URL
+ *   GET  /api/media/resolve  → Imgur/Lensdump page URL → direct media URL
  *   POST /api/suggestions
  */
 
@@ -571,6 +573,85 @@ async function handleTenorResolve(requestUrl: URL, corsOrigin: string | null): P
   return json({ url: mediaUrl, source: target }, {}, corsOrigin);
 }
 
+const MEDIA_RESOLVE_HOSTS = new Set([
+  "imgur.com",
+  "www.imgur.com",
+  "i.imgur.com",
+  "lensdump.com",
+  "www.lensdump.com",
+  "b.l3n.co",
+  "l3n.co",
+]);
+
+const DIRECT_MEDIA_HOSTS = new Set([
+  "i.imgur.com",
+  "b.l3n.co",
+  "l3n.co",
+]);
+
+function isDirectMediaUrl(parsed: URL): boolean {
+  const host = parsed.hostname.toLowerCase();
+  if (!DIRECT_MEDIA_HOSTS.has(host)) return false;
+  return /\.(gif|webp|png|jpe?g|mp4)$/i.test(parsed.pathname);
+}
+
+function normalizeResolvedMediaUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    if (host === "i.imgur.com" || host === "b.l3n.co" || host === "l3n.co") {
+      parsed.search = "";
+      parsed.hash = "";
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+async function handleMediaResolve(requestUrl: URL, corsOrigin: string | null): Promise<Response> {
+  const target = requestUrl.searchParams.get("url")?.trim() || "";
+  let parsed: URL;
+  try {
+    parsed = new URL(target);
+  } catch {
+    return errorResponse(400, "Invalid media URL", corsOrigin);
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  if (!MEDIA_RESOLVE_HOSTS.has(host)) {
+    return errorResponse(400, "Unsupported media URL host", corsOrigin);
+  }
+
+  if (isDirectMediaUrl(parsed)) {
+    return json({ url: normalizeResolvedMediaUrl(parsed.toString()), source: target }, {}, corsOrigin);
+  }
+
+  const response = await fetch(parsed.toString(), {
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "User-Agent": "BillTube3-slim/1.0 (+https://github.com/intentionallyIncomplete/BillTube3-slim)",
+    },
+  });
+
+  if (!response.ok) {
+    return errorResponse(502, `Media page fetch failed (${response.status})`, corsOrigin);
+  }
+
+  const html = await response.text();
+  const mediaUrl =
+    parseHtmlMetaContent(html, "og:image:secure_url") ||
+    parseHtmlMetaContent(html, "og:image") ||
+    parseHtmlMetaContent(html, "twitter:image") ||
+    "";
+
+  if (!/^https?:\/\//i.test(mediaUrl)) {
+    return errorResponse(404, "Media URL not found", corsOrigin);
+  }
+
+  return json({ url: normalizeResolvedMediaUrl(mediaUrl), source: target }, {}, corsOrigin);
+}
+
 async function handleLetterboxdFilm(slug: string, corsOrigin: string | null): Promise<Response> {
   const normalized = slug.trim().replace(/\/+$/, "");
   if (!normalized || !/^[a-z0-9-]+$/i.test(normalized)) {
@@ -820,6 +901,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
     if (request.method === "GET" && path === "/api/tenor/resolve") {
       return handleTenorResolve(url, corsOrigin);
+    }
+
+    if (request.method === "GET" && path === "/api/media/resolve") {
+      return handleMediaResolve(url, corsOrigin);
     }
 
     if (request.method === "GET" && path.startsWith("/api/letterboxd/film/")) {
