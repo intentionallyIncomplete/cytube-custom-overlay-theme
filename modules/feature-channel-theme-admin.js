@@ -183,7 +183,15 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
   function applyRuntimeBranding(theme){
     if (!theme || typeof theme !== "object") return;
     const branding = (theme.branding && typeof theme.branding === "object") ? theme.branding : (theme.branding = {});
-    let name = typeof branding.headerName === "string" ? branding.headerName.trim() : "";
+    const channelName = (
+      (typeof window !== "undefined" && window.CHANNEL?.name) ||
+      (typeof window !== "undefined" && window.CLIENT?.channel) ||
+      ""
+    ).trim();
+    let name = channelName;
+    if (!name) {
+      name = typeof branding.headerName === "string" ? branding.headerName.trim() : "";
+    }
     if (!name && typeof theme.headerName === "string") {
       name = theme.headerName.trim();
     }

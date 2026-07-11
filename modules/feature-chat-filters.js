@@ -27,8 +27,10 @@ const customFilters = [
   { name: "tenor", source: "(https?://c\\.tenor\\.com/[\\w-]+/[^\\s<]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "tenor media", source: "(https?://media\\d*\\.tenor\\.com/(?!m/)[\\w-]+/[^\\s<]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
   { name: "tenor short", source: "(https?://(?:www\\.)?tenor\\.com/[\\w-]+\\.(?:gif|webp))", flags: "gi", replace: "<img class=\"tenor chat-picture chat-media\" src=\"\\1\" />", active: true, filterlinks: true },
-  { name: "TMDB", source: "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^\\[]+)\\[\\/tmdbcard\\]", flags: "g", replace: "<div class=\"tmdb-card chat-media-card\"><img class=\"tmdb-card__poster chat-media\" src=\"https://image.tmdb.org/t/p/w342\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"tmdb-card__content\"><div class=\"tmdb-card__title\">\\1 <span class=\"tmdb-card__year\">(\\2)</span></div><div class=\"tmdb-card__rating\">★ \\3</div><div class=\"tmdb-card__overview\">\\4</div></div></div>", active: true, filterlinks: false },
-  { name: "Letterboxd", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^\\[]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<div class=\"letterboxd-card chat-media-card\"><img class=\"letterboxd-card__poster chat-media\" src=\"\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></div>", active: true, filterlinks: false }
+  { name: "TMDB", source: "\\[tmdbcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)(?:\\|([^\\[]+))?\\[\\/tmdbcard\\]", flags: "g", replace: "<a class=\"tmdb-card chat-media-card\" href=\"https:\\6\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"tmdb-card__poster chat-media\" src=\"https://image.tmdb.org/t/p/w342\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"tmdb-card__content\"><div class=\"tmdb-card__title\">\\1 <span class=\"tmdb-card__year\">(\\2)</span></div><div class=\"tmdb-card__rating\">★ \\3</div><div class=\"tmdb-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
+  { name: "Letterboxd slug", source: "\\[letterboxdcard\\]([a-zA-Z0-9-]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "[letterboxdcard]\\1[/letterboxdcard]", active: true, filterlinks: false },
+  { name: "Letterboxd link", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([a-zA-Z0-9-]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<a class=\"letterboxd-card chat-media-card\" href=\"https://letterboxd.com/film/\\6/\" target=\"_blank\" rel=\"noopener noreferrer\"><img class=\"letterboxd-card__poster chat-media\" src=\"https://\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></a>", active: true, filterlinks: false },
+  { name: "Letterboxd", source: "\\[letterboxdcard\\]([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\|([^|]+)\\[\\/letterboxdcard\\]", flags: "g", replace: "<div class=\"letterboxd-card chat-media-card\"><img class=\"letterboxd-card__poster chat-media\" src=\"https://\\5\" alt=\"\\1 poster\" onerror=\"this.style.display='none'\"><div class=\"letterboxd-card__content\"><div class=\"letterboxd-card__title\">\\1 <span class=\"letterboxd-card__year\">(\\2)</span></div><div class=\"letterboxd-card__rating\">★ \\3</div><div class=\"letterboxd-card__overview\">\\4</div></div></div>", active: true, filterlinks: false }
 ];
 
   function getjQuery() {
@@ -113,8 +115,22 @@ const customFilters = [
     }, true);
   }
 
-  function renderMediaCardsInMessage(span) {
-    if (!span) return;
+  function normalizeProtocolRelativeCardHrefs(html) {
+    return String(html || "").replace(
+      /(<a class="(?:letterboxd|tmdb)-card[^"]*" href=")\/\/([^"]+)"/g,
+      '$1https://$2"'
+    );
+  }
+
+  function unwrapLinksInsideLetterboxdTags(html) {
+    return String(html || "").replace(
+      /(\[letterboxdcard\][\s\S]*?\[\/letterboxdcard\])/gi,
+      (tag) => tag.replace(/<a[^>]*>([^<]*)<\/a>/gi, "$1")
+    );
+  }
+
+  async function renderMediaCardsInMessage(span) {
+    if (!span || span.dataset.btfwCardBusy === "1") return;
     let html = span.innerHTML;
     const hadLetterboxd =
       html.includes("letterboxd-card") ||
@@ -125,17 +141,29 @@ const customFilters = [
       html.includes("[tmdbcard]") ||
       html.includes("[/tmdbcard]");
     if (!hadLetterboxd && !hadTmdb) return;
-    if (hadLetterboxd) html = letterboxd.renderCardsInHtml(html);
+
+    if (hadLetterboxd) {
+      span.dataset.btfwCardBusy = "1";
+      try {
+        html = unwrapLinksInsideLetterboxdTags(html);
+        html = letterboxd.renderCardsInHtml(html);
+        span.innerHTML = html;
+        await letterboxd.expandSlugTagsInHtml(span);
+        html = span.innerHTML;
+      } finally {
+        delete span.dataset.btfwCardBusy;
+      }
+    }
     if (hadTmdb) html = tmdbCard.renderCardsInHtml(html);
+    html = normalizeProtocolRelativeCardHrefs(html);
     if (html !== span.innerHTML) span.innerHTML = html;
   }
 
   function processChatMessageDiv(div) {
     if (!div || div.nodeType !== 1) return;
-    div.querySelectorAll("span").forEach((span) => {
-      if (span.classList.contains("timestamp")) return;
+    div.querySelectorAll("span:not(.timestamp)").forEach((span) => {
       if (span.classList.contains("username") || span.querySelector(".username")) return;
-      renderMediaCardsInMessage(span);
+      void renderMediaCardsInMessage(span);
     });
   }
 

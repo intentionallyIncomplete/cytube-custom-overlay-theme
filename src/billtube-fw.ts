@@ -135,7 +135,7 @@ interface BootOverlayApi {
       const label = ov.querySelector(".btfw-boot-overlay__label");
       if (label) {
         label.innerHTML =
-          "<strong>BillTube theme</strong>Something went wrong loading the experience.";
+          "<strong>Quigly's Playground</strong>Something went wrong loading the experience.";
       }
       const err = ov.querySelector(".btfw-boot-overlay__error");
       if (err) err.textContent = message || "Please refresh to retry.";
