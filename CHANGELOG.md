@@ -1,3 +1,16 @@
+## [1.19.4](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.19.3...v1.19.4) (2026-07-11)
+
+
+### Bug Fixes
+
+* **build:** bump tsconfig to ES2019 for flatMap typecheck ([#159](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/159)) ([3a853bf](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/3a853bf4857794743e613627fb5b5203002c641b))
+* **release:** align repo URLs with cytube-custom-overlay-theme rename ([#160](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/160)) ([66ffd51](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/66ffd519062767fe5a4f427698ad1a139688ef10))
+
+
+### Performance Improvements
+
+* **modules:** dom caching, delegation, lazy-load ([#148](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/148)) ([#153](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/153)) ([d73a5a9](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/d73a5a9c4cbdfa98892b0636ae8f77410487a4ae))
+
 ## [1.19.3](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.19.2...v1.19.3) (2026-07-09)
 
 ## [1.19.2](https://github.com/intentionallyIncomplete/BillTube3-slim/compare/v1.19.1...v1.19.2) (2026-07-09)
