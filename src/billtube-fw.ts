@@ -6,7 +6,7 @@ import { BOOT_FOUNDATION, BOOT_LAYOUT, BOOT_CHAT, BOOT_DOM, BOOT_NAV, BOOT_SETTI
 
 patchWaitUntilDefinedForVjsPlugins();
 
-const FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@latest";
+const FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@latest";
 const DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
 
 interface VideoAudioState {

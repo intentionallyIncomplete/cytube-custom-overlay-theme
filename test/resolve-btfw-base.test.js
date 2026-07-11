@@ -10,10 +10,10 @@ const FALLBACK = "https://cdn.example/fallback";
 describe("resolveBtfwBaseFromScriptSrc", () => {
   it("resolves jsDelivr gh ref base", () => {
     const src =
-      "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.3.1/billtube-fw.js";
+      "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@v1.3.1/billtube-fw.js";
     assert.equal(
       resolveBtfwBaseFromScriptSrc(src, FALLBACK),
-      "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/BillTube3-slim@v1.3.1"
+      "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@v1.3.1"
     );
   });
 

@@ -33,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/intentionallyIncomplete/BillTube3-slim.git"
+    "url": "git+https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme.git"
   },
   "author": "Quigly",
   "license": "MIT",
@@ -62,7 +62,7 @@
     "typescript": "^6.0.3"
   },
   "release": {
-    "repositoryUrl": "https://github.com/intentionallyIncomplete/BillTube3-slim.git",
+    "repositoryUrl": "https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme.git",
     "branches": [
       "main"
     ],
