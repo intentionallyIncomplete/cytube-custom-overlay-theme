@@ -1,3 +1,10 @@
+## [1.21.2](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.21.1...v1.21.2) (2026-07-12)
+
+
+### Bug Fixes
+
+* **chat:** strip Imgur referer on inline embeds ([#164](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/164)) ([9e91472](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/9e91472232031cb8c5990ad1093ac622ff057792))
+
 ## [1.21.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.21.0...v1.21.1) (2026-07-11)
 
 
