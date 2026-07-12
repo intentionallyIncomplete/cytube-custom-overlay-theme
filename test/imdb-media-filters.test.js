@@ -42,6 +42,7 @@ const imdbFilter = {
 
 const CHAT_MEDIA_MAX_STYLE = ' style="max-width:300px;max-height:300px"';
 const CHAT_IMGUR_REFERRER_ATTR = ' referrerpolicy="no-referrer"';
+const IMGUR_IMAGE_HOST_RE = /(?:^|\/\/)(?:i\.)?imgur\.com\//i;
 
 const lensdumpCdnFilter = {
   source: "(https?://b\\.l3n\\.co/[^\\s<]+\\.(?:gif|webp|png|jpe?g))",
@@ -97,6 +98,12 @@ test("lensdump cdn filter embeds direct gif url", () => {
   const out = pcreStyleReplace(lensdumpCdnFilter, url);
   assert.match(out, /class="lensdump chat-picture chat-media"/);
   assert.match(out, /https:\/\/b\.l3n\.co\/jlH8Oe\.gif/);
+});
+
+test("IMGUR_IMAGE_HOST_RE matches i.imgur.com direct urls", () => {
+  assert.ok(IMGUR_IMAGE_HOST_RE.test("https://i.imgur.com/VQi5RXE.jpg"));
+  assert.ok(IMGUR_IMAGE_HOST_RE.test("https://imgur.com/abc123.jpg"));
+  assert.ok(!IMGUR_IMAGE_HOST_RE.test("https://example.com/i.imgur.com/x.jpg"));
 });
 
 test("imgur direct filter embeds i.imgur.com url", () => {

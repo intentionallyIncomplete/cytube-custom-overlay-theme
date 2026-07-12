@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.21.1",
+    "date": "2026-07-12",
+    "summary": "Imgur images in chat load again instead of showing broken placeholders.",
+    "categories": {
+      "bugFixes": [
+        "Imgur links: direct i.imgur.com images now display in chat. Imgur was blocking hotlinked images from CyTube; the theme now fixes that automatically when messages appear."
+      ]
+    },
+    "highlights": [
+      "Paste an Imgur image link in chat and see the picture load reliably.",
+      "Works for existing messages in the scrollback, not only new posts.",
+      "No extra steps for viewers — mods just need the channel on the latest theme build."
+    ]
+  },
+  {
     "version": "1.20.0",
     "date": "2026-07-11",
     "summary": "Paste IMDB, Imgur, and Lensdump links in chat and see rich previews instead of bare URLs.",
@@ -93,21 +108,6 @@
       "Dock panels to a side rail and slide them out when needed.",
       "Larger chat toolbar buttons are easier to tap on touch screens.",
       "Movie Request and Theme Settings work reliably on narrow viewports."
-    ]
-  },
-  {
-    "version": "1.14.0",
-    "date": "2026-06-27",
-    "summary": "Royal theme icons and a Monkey Paw easter egg for channel mods.",
-    "categories": {
-      "features": [
-        "Royal theme icons: a new icon set for the Royal theme, with a dedicated icon picker in Theme Settings.",
-        "Monkey Paw: a hidden channel mod easter egg — discover it in Theme Settings if you dare."
-      ]
-    },
-    "highlights": [
-      "Royal theme icons: pick from a dedicated icon set in Theme Settings.",
-      "Monkey Paw: a hidden mod easter egg in Theme Settings."
     ]
   }
 ]

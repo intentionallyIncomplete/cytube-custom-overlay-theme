@@ -7,7 +7,9 @@ BTFW.define("feature:chat-filters", ["util:letterboxd", "util:tenor", "util:tmdb
   const mediaResolve = await btfwInit("util:media-resolve");
 
 const CHAT_MEDIA_MAX_STYLE = ' style="max-width:300px;max-height:300px"';
+// CyTube sanitize-html only allows src/alt on <img>; referrerpolicy is stripped server-side.
 const CHAT_IMGUR_REFERRER_ATTR = ' referrerpolicy="no-referrer"';
+const IMGUR_IMAGE_HOST_RE = /(?:^|\/\/)(?:i\.)?imgur\.com\//i;
 
 const customFilters = [
   { name: "monospace", source: "`(.+?)`", flags: "g", replace: "<code>\\1</code>", active: true, filterlinks: false },
@@ -205,6 +207,49 @@ const customFilters = [
     });
   }
 
+  function isImgurImageSrc(src) {
+    return IMGUR_IMAGE_HOST_RE.test(String(src || ""));
+  }
+
+  function applyImgurReferrerPolicy(img) {
+    if (!img || img.nodeType !== 1 || img.dataset.btfwImgurRefFixed === "1") return;
+    const src = img.currentSrc || img.src || img.getAttribute("src") || "";
+    if (!isImgurImageSrc(src)) return;
+
+    img.dataset.btfwImgurRefFixed = "1";
+    img.referrerPolicy = "no-referrer";
+
+    if (!img.complete || img.naturalWidth === 0) {
+      const url = src;
+      img.removeAttribute("src");
+      img.src = url;
+    }
+  }
+
+  function patchImgurImages(root) {
+    if (!root || root.nodeType !== 1) return;
+    if (root.matches?.("img")) applyImgurReferrerPolicy(root);
+    root.querySelectorAll?.("img").forEach(applyImgurReferrerPolicy);
+  }
+
+  function wireImgurReferrerFix() {
+    const buf = document.getElementById("messagebuffer");
+    if (!buf || buf.dataset.btfwImgurRefWired === "1") return;
+    buf.dataset.btfwImgurRefWired = "1";
+
+    patchImgurImages(buf);
+
+    const mo = new MutationObserver((muts) => {
+      for (const m of muts) {
+        m.addedNodes.forEach((n) => {
+          if (n.nodeType !== 1) return;
+          patchImgurImages(n);
+        });
+      }
+    });
+    mo.observe(buf, { childList: true, subtree: true });
+  }
+
   function wireMediaCardRendering() {
     const buf = document.getElementById("messagebuffer");
     if (!buf || buf.dataset.btfwMediaCardRenderWired === "1") return;
@@ -272,6 +317,7 @@ const customFilters = [
     const $ = getjQuery();
     if (!$) {
       console.warn("[BTFW chat-filters] jQuery not available; cannot attach import button.");
+      wireImgurReferrerFix();
       wireMediaCardRendering();
       return;
     }
@@ -279,6 +325,7 @@ const customFilters = [
     const run = () => {
       addChatFilterButton($);
       wireChatUrlExpansion();
+      wireImgurReferrerFix();
       wireMediaCardRendering();
     };
     if (document.readyState === "loading") {
@@ -293,5 +340,7 @@ const customFilters = [
   return {
     importCustomChatFiltersToTextarea: ($) => importCustomChatFiltersToTextarea($ || getjQuery()),
     customFilters,
+    isImgurImageSrc,
+    applyImgurReferrerPolicy,
   };
 });
