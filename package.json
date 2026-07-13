@@ -20,6 +20,8 @@
     "check:bundles": "node scripts/check-bundle-sizes.js",
     "inject-cdn": "node scripts/inject-cdn-version.js",
     "purge-cdn": "node scripts/purge-cdn.js",
+    "verify:cdn": "node scripts/verify-cdn-deploy.js",
+    "prepare:release": "node scripts/prepare-release.js",
     "dev": "node scripts/dev.js",
     "watch": "node scripts/dev.js",
     "dev:server": "node scripts/dev-server.js",
@@ -122,7 +124,7 @@
       [
         "@semantic-release/exec",
         {
-          "prepareCmd": "npm run build && node scripts/inject-cdn-version.js"
+          "prepareCmd": "node scripts/prepare-release.js"
         }
       ],
       [

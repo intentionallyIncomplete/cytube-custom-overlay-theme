@@ -85,16 +85,74 @@ Boot always loads `dist/*.bundle.js` from the same origin/ref as `dist/billtube-
 
 ## Release pipeline
 
-On each semantic-release to `main`:
+Validation and publishing are split across two GitHub Actions workflows:
 
-1. Version bump in `package.json`
-2. `npm run build` — rebuild `dist/`
-3. `inject-cdn-version.js` — pin `channel_config_settings.js` to `@vX.Y.Z`
-4. Git commit includes `package.json`, `CHANGELOG.md`, `user-release-notes.json`, `modules/user-release-notes.generated.js`, `channel_config_settings.js`, `dist/billtube-fw.js`, all `dist/*.bundle.js`, and compiled `css/*.css`
-5. Git tag `vX.Y.Z` on that commit
-6. `npm run purge-cdn` — invalidate jsDelivr cache for fw, config, bundles, and CSS (release workflow; `purge-cdn.yml` on `main` when release commits touch `dist/` or `css/`)
+| Workflow | Trigger | Role |
+|----------|---------|------|
+| **CI** (`.github/workflows/ci.yml`) | Every push and PR | Lint, typecheck, test, build, bundle budgets; uploads `build-output` artifact |
+| **Release** (`.github/workflows/release.yml`) | After CI succeeds on `main` push | Reuses CI artifacts, runs semantic-release, purges CDN, verifies deploy |
 
-`dist/`, `css/`, and generated modules are **gitignored on `main`** between releases; only release tags carry built assets for jsDelivr.
+PRs only run CI. Merges to `main` run CI once; Release waits for that run and does **not** repeat lint/test/build.
+
+### Build outputs (what ships)
+
+| Output | Source | On jsDelivr |
+|--------|--------|-------------|
+| `dist/billtube-fw.js` | `src/billtube-fw.ts` via esbuild | Loader; derives `BASE` for all assets |
+| `dist/*.bundle.js` (6 files) | `modules/` via esbuild | Feature code |
+| `css/*.css` (8 files) | `scss/` via dart-sass | Theme styles |
+| `channel_config_settings.js` | Hand-edited + release pin | CyTube channel snippet |
+| `modules/user-release-notes.generated.js` | `user-release-notes.json` at build | Bundled into admin (release commit) |
+
+`dist/`, `css/`, and generated modules are **gitignored on `main`** between releases. Release tags include built assets for jsDelivr (`@vX.Y.Z`).
+
+### Release steps (automated)
+
+On each releasable push to `main` (after CI passes):
+
+1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, `check:bundles`; upload `dist/`, `css/`, `user-release-notes.generated.js`
+2. **Release** — download artifacts (`SKIP_BUILD=1`), `verify-dist`
+3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js`)
+4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `css/*.css`
+5. **Git tag** — `vX.Y.Z`
+6. **Purge** — `npm run purge-cdn` invalidates jsDelivr cache for every shipped path
+7. **Verify** — `npm run verify:cdn` fetches each asset from `@vX.Y.Z`, checks HTTP 200, content markers, and CDN pin in channel config. Release fails if verification fails.
+
+Local preflight (same checks as CI, without CDN verify):
+
+```bash
+npm run release:verify
+```
+
+### CDN version injection
+
+`scripts/inject-cdn-version.js` runs during `prepare:release` **after** semantic-release bumps `package.json` version:
+
+- Replaces `gh/intentionallyIncomplete/cytube-custom-overlay-theme@*` refs in `channel_config_settings.js` with `@vX.Y.Z`
+- Also supports `@__VERSION__` placeholder if present
+
+The pinned `CDN_BASE` in the release commit must match the git tag viewers load from jsDelivr.
+
+### Purge timing
+
+| When | What runs |
+|------|-----------|
+| New release published | `release.yml` → `purge-cdn` then `verify:cdn` |
+| Push to `main` touches `dist/` or `css/` | `.github/workflows/purge-cdn.yml` (e.g. release commit) |
+
+Purge uses `https://purge.jsdelivr.net/gh/...` for each path in `lib/cdn-deploy.js` → `CDN_ASSET_PATHS`.
+
+### Rollback
+
+jsDelivr git refs are immutable per tag. To roll back viewers:
+
+1. Open the last good tag on GitHub (e.g. `v1.21.2`)
+2. Copy `channel_config_settings.js` from that tag (or set `CDN_BASE` to `@v1.21.2`)
+3. Paste into CyTube → Channel Settings → Javascript → Save JS
+
+No purge is required when pinning an **older** tag — that ref still exists on GitHub. To ship a forward fix, merge to `main` and let semantic-release cut a new patch.
+
+If a bad release tag must be abandoned, revert the release commit on `main` and cut a new release; channels stay on the previous `@v` pin until updated.
 
 ### Commit types and version bumps
 
@@ -129,6 +187,8 @@ BillTube3-slim/
     ├── check-bundle-sizes.js
     ├── bundle-size-budget.json
     ├── inject-cdn-version.js
+    ├── prepare-release.js   # semantic-release prepare (build or reuse CI artifacts)
+    ├── verify-cdn-deploy.js # post-purge jsDelivr smoke test
     └── purge-cdn.js
 ```
 

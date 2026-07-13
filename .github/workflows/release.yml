@@ -1,18 +1,27 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - main
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     env:
       HUSKY: 0
+      SKIP_BUILD: 1
 
     steps:
       - name: Checkout Repository
@@ -20,6 +29,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -37,8 +47,15 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Release preflight
-        run: npm run release:verify
+      - name: Download CI build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify downloaded artifacts
+        run: npm run verify-dist
 
       - name: Run Semantic Release
         id: release
@@ -58,3 +75,7 @@ jobs:
       - name: Purge jsDelivr CDN cache
         if: steps.release.outputs.new_release_published == 'true'
         run: npm run purge-cdn
+
+      - name: Verify CDN deploy
+        if: steps.release.outputs.new_release_published == 'true'
+        run: npm run verify:cdn

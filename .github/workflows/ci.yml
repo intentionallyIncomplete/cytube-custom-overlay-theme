@@ -44,3 +44,14 @@ jobs:
 
       - name: Check bundle sizes
         run: npm run check:bundles
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            dist/
+            css/
+            modules/user-release-notes.generated.js
+          if-no-files-found: error
+          retention-days: 14
