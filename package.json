@@ -4,7 +4,7 @@
   "description": "Modular UI enhancement framework for CyTube",
   "type": "module",
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky",
     "lint:repo": "eslint modules lib src scripts test",
     "lint": "npm run lint:css && npm run lint:js",
     "lint:ci": "npm run lint",
@@ -26,10 +26,6 @@
     "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run"
-  },
-  "lint-staged": {
-    "*.{js,ts}": "eslint",
-    "*.scss": "stylelint --fix --allow-empty-input"
   },
   "repository": {
     "type": "git",
@@ -53,7 +49,7 @@
     "esbuild": "^0.20.0",
     "eslint": "^9.39.2",
     "globals": "^16.5.0",
-    "husky": "^8.0.3",
+    "husky": "^9.1.7",
     "lint-staged": "^15.2.0",
     "postcss-scss": "^4.0.9",
     "sass": "^1.101.0",

@@ -82,7 +82,7 @@ channel_config_settings.js   # CyTube channel snippet (CDN pin updated on releas
 user-release-notes.json      # Recent Updates copy for viewers
 ```
 
-Build, release, and jsDelivr pinning are documented in [BUILD.md](BUILD.md).
+Build, release, and jsDelivr pinning are documented in [BUILD.md](BUILD.md). Tooling config conventions: [docs/tooling.md](docs/tooling.md).
 
 ## License
 
