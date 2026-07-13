@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.22.0...v1.23.0) (2026-07-13)
+
+
+### Features
+
+* **ci:** simplify release pipeline with artifact reuse and CDN verify ([#189](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/189)) ([a797dc1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/a797dc1737090bf1047ab3064b888ed91a9c36d9)), closes [#166](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/166) [#167](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/167)
+
 # [1.22.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.21.2...v1.22.0) (2026-07-13)
 
 
