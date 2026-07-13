@@ -27,6 +27,8 @@ Do not add new `.eslintrc.*`, `.stylelintrc.*`, or inline `lint-staged` blocks i
 
 CI sets `HUSKY=0` during `npm ci` so install skips hook wiring; the workflow runs the same checks explicitly (`npm run lint:ci`, `typecheck`, `test`, `build`, `check:bundles`).
 
+Release workflow (`.github/workflows/release.yml`) runs after CI on `main`, downloads the `build-output` artifact, and sets `SKIP_BUILD=1` so semantic-release does not rebuild. Post-publish: `purge-cdn` then `verify:cdn`. See [BUILD.md](../BUILD.md#release-pipeline).
+
 ## Build outputs
 
 - Generated `dist/`, `css/`, and `modules/user-release-notes.generated.js` are gitignored on `main`.
