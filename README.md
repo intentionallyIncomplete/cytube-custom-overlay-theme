@@ -1,6 +1,6 @@
-# BillTube3-slim
+# Billtube3/Quiglytube-slim
 
-Modular UI enhancement framework for [CyTube](https://cytu.be) channels. BillTube replaces the default layout with a glass-style sidebar, theme tooling, movie requests, GIF search, polls, and other viewer-facing features—loaded as a small set of bundles from jsDelivr or a local dev server.
+Modular UI enhancement framework for [CyTube](https://cytu.be) channels. BillTube/Quiglytube replaces the default layout with a glass-style sidebar, theme tooling, movie requests, GIF search, polls, and other viewer-facing features—loaded as a small set of bundles from jsDelivr or a local dev server.
 
 ## What it does
 
