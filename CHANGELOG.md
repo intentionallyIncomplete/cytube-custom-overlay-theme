@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.23.1...v1.24.0) (2026-07-14)
+
+
+### Features
+
+* **e2e:** add fixture page and Playwright CI target ([#171](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/171)) ([#191](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/191)) ([08cfac7](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/08cfac793d36d09ebee89c4a873540025d6ba198))
+
 ## [1.23.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.23.0...v1.23.1) (2026-07-14)
 
 # [1.23.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.22.0...v1.23.0) (2026-07-13)
