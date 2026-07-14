@@ -557,6 +557,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
     if(!document.getElementById("btfw-grid")){
       const grid=document.createElement("div");
       grid.id="btfw-grid";
+      grid.setAttribute("data-testid", "btfw-grid");
 
       const left=document.createElement("div");
       left.id="btfw-leftpad";

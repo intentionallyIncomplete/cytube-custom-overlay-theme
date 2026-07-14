@@ -56,12 +56,12 @@
               <span id="usercount">1</span>
             </div>
             <div id="userlist"></div>
-            <div id="messagebuffer" class="linewrap"></div>
+            <div id="messagebuffer" class="linewrap" data-testid="cytube-messagebuffer"></div>
             <form action="javascript:void(0)">
-              <input id="chatline" type="text" maxlength="500">
+              <input id="chatline" type="text" maxlength="500" aria-label="Chat message">
             </form>
           </div>
-          <div id="videowrap" class="col-video">
+          <div id="videowrap" class="col-video" data-testid="cytube-videowrap">
             <p id="videowrap-header">
               <span id="currenttitle">Nothing Playing</span>
             </p>

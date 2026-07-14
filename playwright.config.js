@@ -13,13 +13,25 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? [["github"], ["list"]] : "list",
+  reporter: process.env.CI
+    ? [["github"], ["list"], ["html", { open: "never" }]]
+    : "list",
   timeout: 60_000,
-  use: {
-    ...devices["Desktop Chrome"],
-    baseURL,
-    trace: "on-first-retry"
+  expect: {
+    timeout: 10_000
   },
+  use: {
+    baseURL,
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure"
+  },
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] }
+    }
+  ],
   webServer: useExternalTarget
     ? undefined
     : {
