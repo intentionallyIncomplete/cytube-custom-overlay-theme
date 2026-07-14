@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { measureTitleOverflow } from "../lib/nowplaying-overflow.js";
+import { measureTitleOverflow } from "../src/lib/nowplaying-overflow.js";
 
 function mockElement({ clientWidth = 100, scrollWidth = 80, text = "Title" } = {}) {
   const classList = {

@@ -168,7 +168,7 @@ Semantic-release on merge to `main` will:
 
 | Path | When |
 |------|------|
-| `modules/**` | Source logic changed |
+| `src/modules/**` | Source logic changed |
 | `css/**` | Styles changed |
 | `dist/*.bundle.js` | After `npm run build` |
 | `dist/billtube-fw.js`, `src/billtube-fw.ts` | Loader/manifest changed |
@@ -220,7 +220,7 @@ Report commit hash and summary. Do **not** push unless the user asked.
 
 ```bash
 npm run build
-git add modules/ css/ dist/
+git add src/ css/ dist/
 git commit --no-verify -m "fix(sync): ..."   # or feat/perf per release table
 ```
 

@@ -4,7 +4,7 @@ import {
   getAutoScrollEnabled,
   isPinnedToBottom,
   shouldAutoScroll
-} from "../lib/chat-autoscroll.js";
+} from "../src/lib/chat-autoscroll.js";
 
 describe("chat-autoscroll", () => {
   it("defaults auto-scroll to enabled", () => {

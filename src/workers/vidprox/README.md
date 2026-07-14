@@ -5,7 +5,7 @@ Fallback proxy for BillTube audio boost/normalization when direct media URLs lac
 ## Deploy
 
 ```bash
-cd workers/vidprox
+cd src/workers/vidprox
 npm install
 npm run deploy
 ```

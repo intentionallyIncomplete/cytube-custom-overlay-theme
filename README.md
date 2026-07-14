@@ -33,7 +33,7 @@ npm install
 npm run dev
 ```
 
-`npm run dev` builds bundles, watches `modules/` and `css/`, serves assets on `http://127.0.0.1:3000`, and writes `dev/channel-settings.js` (gitignored).
+`npm run dev` builds bundles, watches `src/`, and serves assets on `http://127.0.0.1:3000`. It writes `dev/channel-settings.js` (gitignored).
 
 | Command | Purpose |
 |---------|---------|
@@ -58,7 +58,7 @@ Console should show: `[BTFW] BASE: http://127.0.0.1:3000`
 Movie search, suggestion storage, Giphy, and KLIPY traffic go through the Cloudflare **movies-storage** worker so API keys never ship in channel JavaScript.
 
 ```bash
-cd workers/movies-storage
+cd src/workers/movies-storage
 npm install
 npx wrangler secret put TMDB_API_KEY
 npx wrangler secret put GIPHY_API_KEY
@@ -66,16 +66,20 @@ npx wrangler secret put KLIPY_APP_KEY
 npm run deploy
 ```
 
-See [workers/movies-storage/README.md](workers/movies-storage/README.md) for routes and verification curls.
+See [src/workers/movies-storage/README.md](src/workers/movies-storage/README.md) for routes and verification curls.
 
 ## Project layout
 
 ```
-modules/          # Feature source (bundled into dist/)
-css/              # Stylesheets (same CDN ref as bundles)
-dist/             # Built *.bundle.js and dist/billtube-fw.js (release tags only; gitignored on main)
-channel_config_settings.js   # CyTube channel snippet (CDN pin updated on release)
-user-release-notes.json      # Recent Updates copy for viewers
+src/
+├── lib/            # Shared helpers (imported by modules + tests)
+├── modules/        # BTFW feature modules (bundled into dist/)
+├── config/         # Channel snippet source + user-release-notes.json
+├── workers/        # Cloudflare workers (movies-storage, vidprox)
+└── billtube-fw.ts  # Loader source → dist/billtube-fw.js
+css/                # Compiled styles (gitignored on main)
+dist/               # Built bundles (gitignored on main)
+channel_config_settings.js   # Build output for jsDelivr (gitignored on main)
 ```
 
 Build, release, and jsDelivr pinning are documented in [BUILD.md](BUILD.md). Tooling config conventions: [docs/tooling.md](docs/tooling.md).

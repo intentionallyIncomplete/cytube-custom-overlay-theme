@@ -1,7 +1,7 @@
-import { createBtfwRegistry } from "../lib/btfw-registry.js";
-import { resolveBtfwBase } from "../lib/resolve-btfw-base.js";
-import { patchWaitUntilDefinedForVjsPlugins } from "../lib/patch-vjs-plugin-wait.js";
-import { bootOverlayCardHtml } from "../lib/templates/boot-overlay.js";
+import { createBtfwRegistry } from "./lib/btfw-registry.js";
+import { resolveBtfwBase } from "./lib/resolve-btfw-base.js";
+import { patchWaitUntilDefinedForVjsPlugins } from "./lib/patch-vjs-plugin-wait.js";
+import { bootOverlayCardHtml } from "./lib/templates/boot-overlay.js";
 import { BOOT_FOUNDATION, BOOT_LAYOUT, BOOT_CHAT, BOOT_DOM, BOOT_NAV, BOOT_SETTINGS, BOOT_SYNC } from "./boot/manifest.js";
 
 patchWaitUntilDefinedForVjsPlugins();

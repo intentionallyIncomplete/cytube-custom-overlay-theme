@@ -5,7 +5,7 @@ import {
   buildCdnUrl,
   verifyAssetContent,
   verifyChannelConfigPin,
-} from "../lib/cdn-deploy.js";
+} from "../src/lib/cdn-deploy.js";
 
 describe("cdn-deploy", () => {
   it("buildCdnUrl uses gh ref path", () => {

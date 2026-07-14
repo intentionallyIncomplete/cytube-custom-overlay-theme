@@ -1,3 +1,5 @@
+import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
+
 BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
   const { stack: stackTpl } = templates;
@@ -77,15 +79,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   let populateTimer = null;
   let bootWired = false;
 
-  function hasPollContent(doc = document) {
-    if (!doc || typeof doc.querySelector !== "function") return false;
-    return !!(
-      doc.querySelector("#pollwrap .well.active") ||
-      doc.querySelector("#pollwrap .well.muted") ||
-      doc.querySelector("#pollwrap .poll-menu")
-    );
-  }
-
   function isMotdHtmlEmpty(html = "") {
     const raw = String(html || "").trim();
     if (!raw) return true;
@@ -111,11 +104,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     const direct = motdwrap.querySelector(":scope > #motd");
     if (direct) return direct;
     return motdwrap.querySelector("#motd") || doc.getElementById("motd");
-  }
-
-  function getDefaultPollOpen(stored, hasContent) {
-    if (stored !== null && stored !== undefined) return !!stored;
-    return !!hasContent;
   }
   
   // Define what should be grouped together

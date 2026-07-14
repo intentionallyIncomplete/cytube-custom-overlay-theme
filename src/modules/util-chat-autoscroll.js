@@ -1,3 +1,9 @@
+import {
+  getAutoScrollEnabled as getEnabledFromStored,
+  isPinnedToBottom as isPinned,
+  shouldAutoScroll as shouldScroll
+} from "../lib/chat-autoscroll.js";
+
 BTFW.define("util:chatAutoscroll", ["util:constants"], async ({ init }) => {
   const { LS_KEYS, EVENTS } = await init("util:constants");
   const PIN_THRESHOLD = 48;
@@ -11,9 +17,7 @@ BTFW.define("util:chatAutoscroll", ["util:constants"], async ({ init }) => {
   }
 
   function getAutoScrollEnabled() {
-    const stored = readStored();
-    if (stored === null) return true;
-    return stored === "1";
+    return getEnabledFromStored(readStored());
   }
 
   function getChatBuffer() {
@@ -22,13 +26,15 @@ BTFW.define("util:chatAutoscroll", ["util:constants"], async ({ init }) => {
 
   function isPinnedToBottom(buf = getChatBuffer()) {
     if (!buf) return true;
-    return buf.scrollHeight - buf.scrollTop - buf.clientHeight <= PIN_THRESHOLD;
+    return isPinned(buf.scrollTop, buf.scrollHeight, buf.clientHeight, PIN_THRESHOLD);
   }
 
   function shouldAutoScroll() {
-    if (getAutoScrollEnabled()) return true;
-    if (typeof window.SCROLLCHAT !== "undefined" && !window.SCROLLCHAT) return false;
-    return isPinnedToBottom();
+    return shouldScroll({
+      autoScrollEnabled: getAutoScrollEnabled(),
+      scrollChatFlag: typeof window.SCROLLCHAT !== "undefined" ? window.SCROLLCHAT : undefined,
+      pinnedToBottom: isPinnedToBottom()
+    });
   }
 
   function scrollChatIfAllowed() {

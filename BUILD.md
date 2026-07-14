@@ -101,8 +101,8 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 | `dist/billtube-fw.js` | `src/billtube-fw.ts` via esbuild | Loader; derives `BASE` for all assets |
 | `dist/*.bundle.js` (6 files) | `modules/` via esbuild | Feature code |
 | `css/*.css` (8 files) | `scss/` via dart-sass | Theme styles |
-| `channel_config_settings.js` | Hand-edited + release pin | CyTube channel snippet |
-| `modules/user-release-notes.generated.js` | `user-release-notes.json` at build | Bundled into admin (release commit) |
+| `channel_config_settings.js` | Build copy of `src/config/` (CDN pin applied at release) |
+| `src/config/user-release-notes.json` | End-user Recent Updates copy (bundled into admin) |
 
 `dist/`, `css/`, and generated modules are **gitignored on `main`** between releases. Release tags include built assets for jsDelivr (`@vX.Y.Z`).
 
@@ -173,13 +173,18 @@ Paste the updated **`channel_config_settings.js`** from the release commit into 
 
 ```
 BillTube3-slim/
-├── modules/              # Source (build input)
-├── user-release-notes.json  # End-user Recent Updates copy (bundled into admin)
+├── src/
+│   ├── lib/              # Shared helpers and templates
+│   ├── modules/          # BTFW features (build input for bundles)
+│   ├── config/           # channel_config_settings.js source, user-release-notes.json
+│   ├── workers/          # Cloudflare workers
+│   ├── boot/             # Boot manifest (TypeScript)
+│   └── billtube-fw.ts    # Loader source
 ├── dist/                 # Built loader + bundles (gitignored on main; on release tags)
 ├── scss/                 # Stylesheet source (SCSS) — edit here
 │   └── partials/         # Shared partials (_*.scss); not compiled directly
 ├── css/                  # Compiled CSS (gitignored on main; on release tags)
-├── channel_config_settings.js  # CyTube channel snippet (pinned on release)
+├── channel_config_settings.js  # Build output — CyTube snippet (pinned on release)
 └── scripts/
     ├── build.js          # JS bundles + dist/billtube-fw.js; calls build-css.js
     ├── build-css.js      # scss/*.scss → css/*.css (dart-sass)

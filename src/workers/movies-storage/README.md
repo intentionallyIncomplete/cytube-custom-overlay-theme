@@ -5,7 +5,7 @@ Cloudflare Worker for BillTube movie requests.
 ## Deploy
 
 ```bash
-cd workers/movies-storage
+cd src/workers/movies-storage
 npm install
 npx wrangler kv namespace create MOVIE_SUGGESTIONS   # first time only
 npx wrangler secret put TMDB_API_KEY

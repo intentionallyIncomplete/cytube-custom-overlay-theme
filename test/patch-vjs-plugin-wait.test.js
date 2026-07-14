@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { patchWaitUntilDefinedForVjsPlugins } from "../lib/patch-vjs-plugin-wait.js";
+import { patchWaitUntilDefinedForVjsPlugins } from "../src/lib/patch-vjs-plugin-wait.js";
 
 describe("patchWaitUntilDefinedForVjsPlugins", () => {
   /** @type {Record<string, unknown>} */

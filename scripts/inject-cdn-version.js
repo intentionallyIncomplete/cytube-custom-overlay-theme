@@ -1,15 +1,20 @@
 import { readFileSync, writeFileSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.join(__dirname, "..");
 const REPO = "intentionallyIncomplete/cytube-custom-overlay-theme";
-const CONFIG = "channel_config_settings.js";
+const CONFIG_SRC = path.join(rootDir, "src", "config", "channel_config_settings.js");
+const CONFIG_OUT = path.join(rootDir, "channel_config_settings.js");
 const commit = process.argv.includes("--commit");
 
-const version = JSON.parse(readFileSync("package.json", "utf8")).version;
+const version = JSON.parse(readFileSync(path.join(rootDir, "package.json"), "utf8")).version;
 const tag = `v${version}`;
 const cdnRef = `@${tag}`;
 
-let content = readFileSync(CONFIG, "utf8");
+let content = readFileSync(CONFIG_SRC, "utf8");
 const updated = content
   .replaceAll("@__VERSION__", cdnRef)
   .replace(
@@ -19,11 +24,12 @@ const updated = content
 
 if (content === updated) {
   console.log(`CDN already pinned to ${tag}`);
+  writeFileSync(CONFIG_OUT, updated, "utf8");
   process.exit(0);
 }
 
-writeFileSync(CONFIG, updated);
-console.log(`Pinned ${CONFIG} to ${tag}`);
+writeFileSync(CONFIG_OUT, updated, "utf8");
+console.log(`Pinned ${path.relative(rootDir, CONFIG_OUT)} to ${tag} (from src/config)`);
 
 if (!commit) {
   process.exit(0);

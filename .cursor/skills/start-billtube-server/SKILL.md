@@ -12,7 +12,7 @@ Starts the BillTube3-slim Node asset server so CyTube can load fw, bundles, and 
 `scripts/dev.js` orchestrates:
 
 1. Initial `npm run build` (bundles + `dist/billtube-fw.js`)
-2. File watch on `modules/`, `src/`, `lib/`, `css/`, `user-release-notes.json` → rebuild on change
+2. File watch on `src/` (modules, lib, config), `scss/` → rebuild on change
 3. Static server (`scripts/dev-server.js`) on **127.0.0.1:3000** with CORS
 4. Generates `dev/channel-settings.js` (localhost `CDN_BASE`, gitignored)
 

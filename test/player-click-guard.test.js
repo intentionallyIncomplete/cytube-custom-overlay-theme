@@ -40,7 +40,7 @@ describe("player click guard", () => {
 
     let factory;
     global.BTFW = { define: (_, __, f) => { factory = f; } };
-    await import("../modules/feature-player.js");
+    await import("../src/modules/feature-player.js");
     const api = await factory({});
     shouldAllowClick = api.shouldAllowClick;
   });

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   resolveBtfwBaseFromScriptSrc,
   resolveBtfwBase
-} from "../lib/resolve-btfw-base.js";
+} from "../src/lib/resolve-btfw-base.js";
 
 const FALLBACK = "https://cdn.example/fallback";
 

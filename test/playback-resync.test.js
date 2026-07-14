@@ -12,7 +12,7 @@ describe("playback resync", () => {
   before(async () => {
     let factory;
     global.BTFW = { define: (_, __, f) => { factory = f; } };
-    await import("../modules/feature-sync-guard.js");
+    await import("../src/modules/feature-sync-guard.js");
     api = await factory({});
   });
 

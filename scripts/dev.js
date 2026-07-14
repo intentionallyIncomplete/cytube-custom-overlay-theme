@@ -10,11 +10,10 @@ const rootDir = path.join(__dirname, "..");
 const PORT = Number(process.env.PORT || process.env.BTFW_DEV_PORT || 3000);
 
 const WATCH_PATHS = [
-  "modules",
+  "src/modules",
   "src",
-  "lib",
   "scss",
-  "user-release-notes.json"
+  "src/config/user-release-notes.json"
 ];
 
 function shouldIgnoreWatch(filename) {
@@ -100,7 +99,7 @@ watchAndRebuild();
 console.log("");
 console.log(`Dev assets:  http://127.0.0.1:${PORT}/`);
 console.log(`Channel JS:  http://127.0.0.1:${PORT}/dev/channel-settings.js`);
-console.log("Edit modules/, src/, scss/ — rebuild is automatic.");
+console.log("Edit src/, scss/ — rebuild is automatic.");
 console.log("Press Ctrl+C to stop.");
 
 function shutdown() {

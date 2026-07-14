@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import {
   chatTopbarHtml,
   chatUserlistPopoverHtml
-} from "../lib/templates/chat.js";
+} from "../src/lib/templates/chat.js";
 import {
   addMediaPanelHtml,
   stackGroupHeaderHtml
-} from "../lib/templates/stack.js";
-import { channelThemeAdminPanelHtml } from "../lib/templates/channel-theme-admin.js";
+} from "../src/lib/templates/stack.js";
+import { channelThemeAdminPanelHtml } from "../src/lib/templates/channel-theme-admin.js";
 
 test("chatTopbarHtml includes nowplaying slot", () => {
   assert.match(chatTopbarHtml(), /btfw-nowplaying-slot/);

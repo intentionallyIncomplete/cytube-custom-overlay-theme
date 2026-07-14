@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
 const PORT = Number(process.env.PORT || process.env.BTFW_DEV_PORT || 3000);
 const CDN_BASE = `http://127.0.0.1:${PORT}`;
-const SOURCE = path.join(rootDir, "channel_config_settings.js");
+const SOURCE = path.join(rootDir, "src", "config", "channel_config_settings.js");
 const OUT_DIR = path.join(rootDir, "dev");
 const OUT_FILE = path.join(OUT_DIR, "channel-settings.js");
 
@@ -19,7 +19,7 @@ const updated = source.replace(
 );
 
 if (updated === source) {
-  console.error("Could not rewrite CDN_BASE in channel_config_settings.js");
+  console.error("Could not rewrite CDN_BASE in src/config/channel_config_settings.js");
   process.exit(1);
 }
 

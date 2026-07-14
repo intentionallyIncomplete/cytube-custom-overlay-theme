@@ -11,7 +11,7 @@ import {
   sleep,
   verifyAssetContent,
   verifyChannelConfigPin,
-} from "../lib/cdn-deploy.js";
+} from "../src/lib/cdn-deploy.js";
 
 const DEFAULT_ATTEMPTS = 8;
 const DEFAULT_DELAY_MS = 5000;

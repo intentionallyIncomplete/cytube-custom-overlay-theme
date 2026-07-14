@@ -31,12 +31,14 @@ const sharedRules = {
 const esmModuleFiles = [
   "test/**/*.js",
   "scripts/**/*.js",
-  "lib/**/*.js",
-  "modules/util-constants.js",
-  "modules/util-dom.js",
-  "modules/util-state.js",
-  "modules/util-templates.js",
-  "modules/util-chat-autoscroll.js",
+  "src/lib/**/*.js",
+  "src/modules/util-constants.js",
+  "src/modules/util-dom.js",
+  "src/modules/util-state.js",
+  "src/modules/util-templates.js",
+  "src/modules/util-chat-autoscroll.js",
+  "src/modules/feature-nowplaying.js",
+  "src/modules/feature-stack.js",
 ];
 
 export default [
@@ -51,10 +53,11 @@ export default [
       "**/*.min.js",
       "css/**",
       "scss/**",
-      "workers/**",
+      "src/workers/**",
       ".cursor/**",
       "wiki/**",
       "scripts/.entries/**",
+      "channel_config_settings.js",
     ],
   },
   js.configs.recommended,
@@ -68,7 +71,7 @@ export default [
     rules: sharedRules,
   },
   {
-    files: ["modules/**/*.js"],
+    files: ["src/modules/**/*.js"],
     languageOptions: {
       globals: moduleGlobals,
     },
@@ -88,7 +91,7 @@ export default [
     },
   },
   {
-    files: ["modules/user-release-notes.generated.js"],
+    files: ["src/modules/user-release-notes.generated.js"],
     rules: {
       "no-unused-vars": "off",
     },

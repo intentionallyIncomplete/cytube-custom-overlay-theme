@@ -1149,7 +1149,7 @@ const scheduleNormalizeChatActions = (() => {
     if (_tsLoading) return;
     _tsLoading = true;
     try {
-      const url = BASE ? `${BASE}/modules/feature-theme-settings.js` : "/modules/feature-theme-settings.js";
+      const url = BASE ? `${BASE}/src/modules/feature-theme-settings.js` : "/src/modules/feature-theme-settings.js";
       await loadScript(url);
       document.dispatchEvent(new CustomEvent("btfw:openThemeSettings"));
       await new Promise(r => setTimeout(r, 40));

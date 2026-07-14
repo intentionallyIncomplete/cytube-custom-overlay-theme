@@ -3,7 +3,8 @@ scripts/bundles/
 css/
 dist/
 scripts/.entries/
-modules/user-release-notes.generated.js
+src/modules/user-release-notes.generated.js
+channel_config_settings.js
 billtube-fw.js
 *.map
 *.log

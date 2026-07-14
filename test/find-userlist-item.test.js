@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   findUserlistItem,
   normalizeUserIdentifier
-} from "../lib/find-userlist-item.js";
+} from "../src/lib/find-userlist-item.js";
 
 test("normalizeUserIdentifier strips trailing colon", () => {
   assert.equal(normalizeUserIdentifier("Alice:"), "Alice");

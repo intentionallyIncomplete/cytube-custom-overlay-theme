@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 
-import { CDN_ASSET_PATHS, CDN_REPO } from "../lib/cdn-deploy.js";
+import { CDN_ASSET_PATHS, CDN_REPO } from "../src/lib/cdn-deploy.js";
 
 const version = JSON.parse(readFileSync("package.json", "utf8")).version;
 const tag = `v${version}`;

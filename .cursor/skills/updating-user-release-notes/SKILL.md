@@ -9,7 +9,7 @@ End-user release notes for BillTube3-slim (Options → User Preferences → Gene
 
 **Audience:** CyTube channel viewers and mods — friendly, plain language; no framework jargon.
 
-**Primary output:** `user-release-notes.json` at repo root. On request, also emit a markdown summary (see [reference.md](reference.md)#markdown-export).
+**Primary output:** `src/config/user-release-notes.json`. On request, also emit a markdown summary (see [reference.md](reference.md)#markdown-export).
 
 ## Workflow
 
@@ -122,7 +122,7 @@ Do not commit unless asked.
 
 | File | Role |
 |------|------|
-| `user-release-notes.json` | Canonical end-user notes |
+| `src/config/user-release-notes.json` | Canonical end-user notes |
 | `CHANGELOG.md` | Maintainer input only |
 | `package.json` | Version |
 | `channel_config_settings.js` | CDN pin / channel snippet |

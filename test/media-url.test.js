@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import {
   encodeMediaUrlForQueue,
   encodeMediaUrlsInField
-} from "../lib/media-url.js";
+} from "../src/lib/media-url.js";
 
 describe("media-url", () => {
   it("test_encodeMediaUrlForQueue_encodes_path_spaces", () => {

@@ -31,11 +31,11 @@ Release workflow (`.github/workflows/release.yml`) runs after CI on `main`, down
 
 ## Build outputs
 
-- Generated `dist/`, `css/`, and `modules/user-release-notes.generated.js` are gitignored on `main`.
+- Generated `dist/`, `css/`, `channel_config_settings.js`, and `src/modules/user-release-notes.generated.js` are gitignored on `main`.
 - Release tags include built assets via `@semantic-release/git` for jsDelivr (`@vX.Y.Z`).
 - Bundle byte budgets: `scripts/bundle-size-budget.json` — see [bundle-sizes.md](bundle-sizes.md).
 
 ## Application code
 
-- `modules/`, `lib/`, `src/`, `scripts/`, `test/` — ESM (`import` / `export`)
+- `src/modules/`, `src/lib/`, `src/`, `scripts/`, `test/` — ESM (`import` / `export`)
 - CyTube channel modules loaded in-browser use the legacy `BTFW.define` script pattern unless noted in ESLint overrides

@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { createBtfwRegistry } from "../lib/btfw-registry.js";
+import { createBtfwRegistry } from "../src/lib/btfw-registry.js";
 
 const BASE = "https://cdn.example/billtube";
 
 async function loadIconPacks() {
   const { define, init } = createBtfwRegistry(BASE);
   globalThis.BTFW = { define, init: (name) => init(name) };
-  eval(readFileSync(new URL("../modules/util-theme-icon-packs.js", import.meta.url), "utf8"));
+  eval(readFileSync(new URL("../src/modules/util-theme-icon-packs.js", import.meta.url), "utf8"));
   return init("util:themeIconPacks");
 }
 

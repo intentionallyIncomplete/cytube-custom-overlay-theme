@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
+import { getDefaultPollOpen, hasPollContent } from "../src/lib/stack-poll-visibility.js";
 
 function mockDoc(selectors) {
   return {
