@@ -95,6 +95,7 @@ interface BootOverlayApi {
       if (overlay) return overlay;
       overlay = document.createElement("div");
       overlay.id = "btfw-boot-overlay";
+      overlay.setAttribute("data-testid", "btfw-boot-overlay");
       overlay.setAttribute("role", "status");
       overlay.setAttribute("aria-live", "polite");
       overlay.innerHTML = bootOverlayCardHtml();

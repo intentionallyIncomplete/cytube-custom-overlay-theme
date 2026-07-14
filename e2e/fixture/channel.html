@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BillTube E2E fixture channel</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #110802; color: #fbe3c9; }
+    .navbar { min-height: 48px; background: #190d05; padding: 8px 16px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 12px; }
+    #messagebuffer { min-height: 200px; border: 1px solid #333; padding: 8px; }
+    #videowrap { min-height: 240px; }
+    #ytapiplayer { min-height: 180px; background: #000; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .col-chat { flex: 1 1 360px; }
+    .col-video { flex: 2 1 520px; }
+  </style>
+  <script src="/e2e/fixture/cytube-stubs.js"></script>
+  <script>
+    window.BTFW_THEME_ADMIN = {
+      version: 6,
+      tint: "custom",
+      colors: {
+        background: "#110802",
+        surface: "#190d05",
+        panel: "#211b17",
+        text: "#fbe3c9",
+        chatText: "#e6caad",
+        accent: "#d97436"
+      },
+      typography: { preset: "nunito", customFamily: "" },
+      integrations: { enabled: false },
+      resources: { scripts: [], styles: [], modules: [] },
+      branding: { headerName: "E2E Fixture Channel" }
+    };
+  </script>
+</head>
+<body>
+  <div id="wrap">
+    <nav class="navbar navbar-fixed-top" id="navbar">
+      <div id="nav-collapsible">
+        <a href="#" id="showchansettings">Channel Settings</a>
+      </div>
+    </nav>
+    <section id="mainpage">
+      <div class="container">
+        <div id="motdrow" class="row">
+          <div id="motdwrap" class="well">
+            <button id="togglemotd" type="button" aria-label="Toggle MOTD"></button>
+            <div id="motd">E2E fixture MOTD</div>
+          </div>
+        </div>
+        <div id="main" class="row">
+          <div id="chatwrap" class="col-chat">
+            <div id="chatheader">
+              <span id="usercount">1</span>
+            </div>
+            <div id="userlist"></div>
+            <div id="messagebuffer" class="linewrap" data-testid="cytube-messagebuffer"></div>
+            <form action="javascript:void(0)">
+              <input id="chatline" type="text" maxlength="500" aria-label="Chat message">
+            </form>
+          </div>
+          <div id="videowrap" class="col-video" data-testid="cytube-videowrap">
+            <p id="videowrap-header">
+              <span id="currenttitle">Nothing Playing</span>
+            </p>
+            <div class="embed-responsive embed-responsive-16by9">
+              <div id="ytapiplayer" class="embed-responsive-item"></div>
+            </div>
+          </div>
+        </div>
+        <div id="controlsrow" class="row">
+          <div id="leftcontrols">
+            <button id="newpollbtn" type="button">New Poll</button>
+            <button id="emotelistbtn" type="button">Emote List</button>
+          </div>
+          <div id="rightcontrols">
+            <div id="plcontrol">
+              <button id="showmediaurl" type="button">Add URL</button>
+              <button id="mediarefresh" type="button">Refresh</button>
+            </div>
+          </div>
+        </div>
+        <div id="playlistrow" class="row">
+          <div id="leftpane">
+            <div id="pollwrap"></div>
+          </div>
+          <div id="rightpane">
+            <div id="addfromurl">
+              <input id="mediaurl" type="text" placeholder="Media URL">
+              <button id="queue_next" type="button">Queue next</button>
+            </div>
+            <ul id="queue" class="videolist"></ul>
+            <div id="plmeta">
+              <span id="plcount">0 items</span>
+              <span id="pllength">00:00:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="channeloptions" class="modal">
+    <div id="cs-jseditor"></div>
+    <div id="cs-csseditor"></div>
+    <div id="cs-motdeditor"></div>
+  </div>
+  <div id="useroptions" class="modal"></div>
+  <div id="emotelist" class="modal"></div>
+  <script src="/dist/billtube-fw.js"></script>
+</body>
+</html>

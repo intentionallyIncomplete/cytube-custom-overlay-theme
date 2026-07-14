@@ -12,3 +12,6 @@ billtube-fw.js
 .continue/
 .cursor/artifacts/
 dev/channel-settings.js
+test-results/
+playwright-report/
+playwright/.cache/

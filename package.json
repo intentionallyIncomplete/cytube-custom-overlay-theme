@@ -26,6 +26,9 @@
     "watch": "node scripts/dev.js",
     "dev:server": "node scripts/dev-server.js",
     "dev:channel": "node scripts/generate-dev-channel.js",
+    "e2e:server": "node scripts/e2e-server.js",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
     "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build && npm run check:bundles",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run"
@@ -53,6 +56,7 @@
     "eslint": "^9.39.2",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
+    "@playwright/test": "^1.55.0",
     "lint-staged": "^15.2.0",
     "postcss-scss": "^4.0.9",
     "sass": "^1.101.0",
