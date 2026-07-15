@@ -93,3 +93,11 @@ jobs:
             test-results/
           retention-days: 7
           if-no-files-found: ignore
+
+  # Single green signal for Release (#172): lint/typecheck/unit/build + Playwright.
+  ci-gate:
+    runs-on: ubuntu-latest
+    needs: [verify, e2e]
+    steps:
+      - name: CI gate passed
+        run: echo "verify and e2e succeeded"
