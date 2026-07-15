@@ -293,8 +293,12 @@ BTFW.define("feature:videoOverlay", [], async () => {
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "btfw-video-overlay";
+      overlay.setAttribute("data-testid", "btfw-video-overlay");
     }
     overlay.classList.add("btfw-video-overlay");
+    if (!overlay.getAttribute("data-testid")) {
+      overlay.setAttribute("data-testid", "btfw-video-overlay");
+    }
     mountOverlayToolbar(overlay);
 
     let bar = overlay.querySelector("#btfw-vo-bar");
