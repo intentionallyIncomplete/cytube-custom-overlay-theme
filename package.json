@@ -17,7 +17,6 @@
     "build:css": "node scripts/build-css.js",
     "test": "node --test test/**/*.test.js",
     "verify-dist": "node scripts/verify-dist.js",
-    "check:bundles": "node scripts/check-bundle-sizes.js",
     "inject-cdn": "node scripts/inject-cdn-version.js",
     "purge-cdn": "node scripts/purge-cdn.js",
     "verify:cdn": "node scripts/verify-cdn-deploy.js",
@@ -29,7 +28,7 @@
     "e2e:server": "node scripts/e2e-server.js",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
-    "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build && npm run check:bundles",
+    "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run"
   },

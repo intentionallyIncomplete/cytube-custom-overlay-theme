@@ -25,7 +25,7 @@ Do not add new `.eslintrc.*`, `.stylelintrc.*`, or inline `lint-staged` blocks i
 - **pre-commit** — `lint-staged`
 - **commit-msg** — `commitlint`
 
-CI sets `HUSKY=0` during `npm ci` so install skips hook wiring; the workflow runs the same checks explicitly (`npm run lint:ci`, `typecheck`, `test`, `build`, `check:bundles`).
+CI sets `HUSKY=0` during `npm ci` so install skips hook wiring; the workflow runs the same checks explicitly (`npm run lint:ci`, `typecheck`, `test`, `build`).
 
 Release workflow (`.github/workflows/release.yml`) runs after CI on `main`, downloads the `build-output` artifact, and sets `SKIP_BUILD=1` so semantic-release does not rebuild. Post-publish: `purge-cdn` then `verify:cdn`. See [BUILD.md](../BUILD.md#release-pipeline).
 
@@ -33,7 +33,6 @@ Release workflow (`.github/workflows/release.yml`) runs after CI on `main`, down
 
 - Generated `dist/`, `css/`, `channel_config_settings.js`, and `src/modules/user-release-notes.generated.js` are gitignored on `main`.
 - Release tags include built assets via `@semantic-release/git` for jsDelivr (`@vX.Y.Z`).
-- Bundle byte budgets: `scripts/bundle-size-budget.json` — see [bundle-sizes.md](bundle-sizes.md).
 
 ## Application code
 

@@ -28,9 +28,8 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 ```bash
 npm install
 npm run build          # esbuild: scss → css/, src + modules → dist/billtube-fw.js + dist/*.bundle.js
-npm run release:verify # lint, typecheck, test, build, bundle size check
+npm run release:verify # lint, typecheck, test, build
 npm run verify-dist    # fail if bundles missing
-npm run check:bundles  # compare dist/*.js to scripts/bundle-size-budget.json
 ```
 
 ### Local asset server (CyTube testing)
@@ -110,7 +109,7 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 
 On each releasable push to `main` (after CI passes):
 
-1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, `check:bundles`; upload `dist/`, `css/`, `user-release-notes.generated.js`
+1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`; upload `dist/`, `css/`, `user-release-notes.generated.js`
 2. **Release** — download artifacts (`SKIP_BUILD=1`), `verify-dist`
 3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js`)
 4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `css/*.css`
@@ -189,8 +188,6 @@ BillTube3-slim/
     ├── build.js          # JS bundles + dist/billtube-fw.js; calls build-css.js
     ├── build-css.js      # scss/*.scss → css/*.css (dart-sass)
     ├── verify-dist.js
-    ├── check-bundle-sizes.js
-    ├── bundle-size-budget.json
     ├── inject-cdn-version.js
     ├── prepare-release.js   # semantic-release prepare (build or reuse CI artifacts)
     ├── verify-cdn-deploy.js # post-purge jsDelivr smoke test
