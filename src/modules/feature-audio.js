@@ -71,11 +71,30 @@
 
     // Core utilities
 
-    _isTrusted(urlStr) {
+    _getCorsProxyOrigin() {
       try {
-        const host = new URL(urlStr).hostname.toLowerCase();
-        return host.endsWith('.workers.dev');
-      } catch { return false; }
+        return new URL(this.CORS_PROXY).origin.toLowerCase();
+      } catch {
+        try {
+          return new URL(DEFAULT_CORS_PROXY).origin.toLowerCase();
+        } catch {
+          return '';
+        }
+      }
+    },
+
+    // Only the CORS video proxy is safe for Web Audio. Other *.workers.dev CDNs
+    // (movie hosts, etc.) often lack ACAO, which makes MediaElementSource output silence.
+    _isTrusted(urlStr) {
+      if (!urlStr) return false;
+      if (String(urlStr).includes(this.CORS_PROXY)) return true;
+      try {
+        const origin = new URL(urlStr).origin.toLowerCase();
+        const proxyOrigin = this._getCorsProxyOrigin();
+        return Boolean(proxyOrigin && origin === proxyOrigin);
+      } catch {
+        return false;
+      }
     },
 
     _markInternalSrcSet() {
@@ -269,16 +288,72 @@
     cleanup() {
       this.disconnectChain();
 
-      if (this.audioContext && this.audioContext.state === 'running') {
-        this.audioContext.suspend().catch(() => {});
-      }
-
       const mediaEl = this._getMediaElement();
       if (mediaEl) {
         mediaEl.disableRemotePlayback = false;
       }
 
+      // MediaElementSource permanently reroutes element output. Leaving the
+      // source disconnected mutes playback until refresh — swap the tech
+      // element so native audio works again. Callers re-apply src + time.
+      if (mediaEl && (this.sourceNode || mediaSourceRegistry().get(mediaEl) || mediaEl.__btfwSourceNode)) {
+        this._swapVideoTechElement(mediaEl);
+        mediaSourceRegistry().delete(mediaEl);
+        try { delete mediaEl.__btfwSourceNode; } catch (_) {}
+      }
+
+      this.sourceNode = null;
+      this._sourceMediaElement = null;
+
+      if (this.audioContext && this.audioContext.state === 'running') {
+        this.audioContext.suspend().catch(() => {});
+      }
+
       this.stopWatchdog();
+    },
+
+    _restorePlayerSrc(src, { currentTime = 0, wasPlaying = false, clearCrossOrigin = false } = {}) {
+      if (!this.player || !src) return Promise.resolve(false);
+
+      try { this.player.pause(); } catch {}
+      if (clearCrossOrigin) {
+        try { this.player.crossOrigin(null); } catch {}
+      }
+
+      this._markInternalSrcSet();
+      this.player.src({ src, type: 'video/mp4' });
+      try { this.player.load(); } catch {}
+
+      return new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          try { this.player.off('canplay', onReady); } catch {}
+          try { this.player.off('loadeddata', onReady); } catch {}
+          try { this.player.currentTime(currentTime); } catch {}
+          const playPromise = wasPlaying ? this.player.play() : Promise.resolve();
+          Promise.resolve(playPromise).catch(() => {}).finally(() => resolve(true));
+        };
+
+        const onReady = () => finish();
+        try { this.player.one('canplay', onReady); } catch {
+          try { this.player.on('canplay', onReady); } catch {}
+        }
+        try { this.player.one('loadeddata', onReady); } catch {}
+
+        if (typeof this.player.ready === 'function') {
+          this.player.ready(() => {
+            try {
+              if (typeof this.player.readyState === 'function' && this.player.readyState() >= 2) {
+                finish();
+              }
+            } catch {}
+          });
+        }
+
+        setTimeout(finish, 5000);
+      });
     },
 
     // Watchdog
@@ -388,7 +463,7 @@
 
     async _forceProxyPreservingState(currentSrc) {
       // Preserve playstate/time and re-set proxied URL
-      if (!this.player) return;
+      if (!this.player) return false;
       const t = this.player.currentTime();
       const wasPlaying = !this.player.paused();
 
@@ -402,19 +477,40 @@
       this.player.src({ src: this.proxiedSrc, type: 'video/mp4' });
       try { this.player.load(); } catch {}
 
-      const resume = () => {
-        try { this.player.currentTime(t); } catch {}
-        this.isProxied = true;
-        if (wasPlaying) {
-          this.player.play().catch(() => {});
-        }
-      };
+      return new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          try { this.player.off('canplay', onReady); } catch {}
+          try { this.player.off('loadeddata', onReady); } catch {}
+          try { this.player.currentTime(t); } catch {}
+          this.isProxied = true;
+          if (wasPlaying) {
+            this.player.play().catch(() => {});
+          }
+          resolve(true);
+        };
 
-      if (typeof this.player.ready === 'function') {
-        this.player.ready(resume);
-      } else {
-        setTimeout(resume, 300);
-      }
+        const onReady = () => finish();
+
+        try { this.player.one('canplay', onReady); } catch {
+          try { this.player.on('canplay', onReady); } catch {}
+        }
+        try { this.player.one('loadeddata', onReady); } catch {}
+
+        if (typeof this.player.ready === 'function') {
+          this.player.ready(() => {
+            try {
+              if (typeof this.player.readyState === 'function' && this.player.readyState() >= 2) {
+                finish();
+              }
+            } catch {}
+          });
+        }
+
+        setTimeout(finish, 5000);
+      });
     },
 
     // Proxy/application helpers
@@ -465,8 +561,9 @@
         console.warn('[BTFW_AUDIO] Invalid URL:', e);
       }
 
-      // Fallback: force proxy
-      return this._forceProxyPreservingState(currentSrc), true;
+      // Fallback: force proxy and wait until the proxied media is ready
+      await this._forceProxyPreservingState(currentSrc);
+      return true;
     },
 
     async rebuildAudioChain() {
@@ -588,31 +685,26 @@
         const ok = await this.rebuildAudioChain();
         if (!this._shouldForceProxy()) this.stopWatchdog();
         return ok;
-      } else {
-        this.cleanup();
-
-        // If we forced proxy only because of boost, we can return to original
-        if (this.originalSrc && this.isProxied) {
-          const currentTime = this.player.currentTime();
-          const wasPlaying = !this.player.paused();
-
-          try { this.player.pause(); } catch {}
-          try { this.player.crossOrigin(null); } catch {}
-
-          this._markInternalSrcSet();
-          this.player.src({ src: this.originalSrc, type: 'video/mp4' });
-          try { this.player.load(); } catch {}
-
-          this.player.ready(() => {
-            try { this.player.currentTime(currentTime); } catch {}
-            this.isProxied = false;
-            if (wasPlaying) {
-              this.player.play().catch(() => {});
-            }
-          });
-        }
-        return true;
       }
+
+      const currentTime = this.player?.currentTime?.() || 0;
+      const wasPlaying = this.player ? !this.player.paused() : false;
+      const restoreOriginal = Boolean(this.originalSrc && this.isProxied);
+      const targetSrc = restoreOriginal
+        ? this.originalSrc
+        : (this.player?.currentSrc?.() || null);
+
+      this.cleanup();
+
+      if (targetSrc) {
+        await this._restorePlayerSrc(targetSrc, {
+          currentTime,
+          wasPlaying,
+          clearCrossOrigin: restoreOriginal
+        });
+        if (restoreOriginal) this.isProxied = false;
+      }
+      return true;
     },
 
     async enableNormalization() {
@@ -645,30 +737,26 @@
         const ok = await this.rebuildAudioChain();
         if (!this._shouldForceProxy()) this.stopWatchdog();
         return ok;
-      } else {
-        this.cleanup();
-
-        if (this.originalSrc && this.isProxied) {
-          const currentTime = this.player.currentTime();
-          const wasPlaying = !this.player.paused();
-
-          try { this.player.pause(); } catch {}
-          try { this.player.crossOrigin(null); } catch {}
-
-          this._markInternalSrcSet();
-          this.player.src({ src: this.originalSrc, type: 'video/mp4' });
-          try { this.player.load(); } catch {}
-
-          this.player.ready(() => {
-            try { this.player.currentTime(currentTime); } catch {}
-            this.isProxied = false;
-            if (wasPlaying) {
-              this.player.play().catch(() => {});
-            }
-          });
-        }
-        return true;
       }
+
+      const currentTime = this.player?.currentTime?.() || 0;
+      const wasPlaying = this.player ? !this.player.paused() : false;
+      const restoreOriginal = Boolean(this.originalSrc && this.isProxied);
+      const targetSrc = restoreOriginal
+        ? this.originalSrc
+        : (this.player?.currentSrc?.() || null);
+
+      this.cleanup();
+
+      if (targetSrc) {
+        await this._restorePlayerSrc(targetSrc, {
+          currentTime,
+          wasPlaying,
+          clearCrossOrigin: restoreOriginal
+        });
+        if (restoreOriginal) this.isProxied = false;
+      }
+      return true;
     },
 
     async enableMono() {
@@ -684,30 +772,26 @@
         const ok = await this.rebuildAudioChain();
         if (!this._shouldForceProxy()) this.stopWatchdog();
         return ok;
-      } else {
-        this.cleanup();
-
-        if (this.originalSrc && this.isProxied) {
-          const currentTime = this.player.currentTime();
-          const wasPlaying = !this.player.paused();
-
-          try { this.player.pause(); } catch {}
-          try { this.player.crossOrigin(null); } catch {}
-
-          this._markInternalSrcSet();
-          this.player.src({ src: this.originalSrc, type: 'video/mp4' });
-          try { this.player.load(); } catch {}
-
-          this.player.ready(() => {
-            try { this.player.currentTime(currentTime); } catch {}
-            this.isProxied = false;
-            if (wasPlaying) {
-              this.player.play().catch(() => {});
-            }
-          });
-        }
-        return true;
       }
+
+      const currentTime = this.player?.currentTime?.() || 0;
+      const wasPlaying = this.player ? !this.player.paused() : false;
+      const restoreOriginal = Boolean(this.originalSrc && this.isProxied);
+      const targetSrc = restoreOriginal
+        ? this.originalSrc
+        : (this.player?.currentSrc?.() || null);
+
+      this.cleanup();
+
+      if (targetSrc) {
+        await this._restorePlayerSrc(targetSrc, {
+          currentTime,
+          wasPlaying,
+          clearCrossOrigin: restoreOriginal
+        });
+        if (restoreOriginal) this.isProxied = false;
+      }
+      return true;
     }
   };
 })();
