@@ -538,6 +538,9 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
       stage = document.createElement("div");
       stage.id = "btfw-video-stage";
       stage.className = "btfw-video-stage";
+      stage.setAttribute("data-testid", "btfw-video-stage");
+    } else if (!stage.getAttribute("data-testid")) {
+      stage.setAttribute("data-testid", "btfw-video-stage");
     }
     if (stage.parentElement !== left) {
       left.insertBefore(stage, left.firstChild);
@@ -564,6 +567,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
 
       const right=document.createElement("aside");
       right.id="btfw-chatcol";
+      right.setAttribute("data-testid", "btfw-chatcol");
 
       if(v) left.appendChild(v);
       if(q) left.appendChild(q);
@@ -584,10 +588,16 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
     } else {
       const left=document.getElementById("btfw-leftpad");
       const right=document.getElementById("btfw-chatcol");
+      if (right && !right.getAttribute("data-testid")) {
+        right.setAttribute("data-testid", "btfw-chatcol");
+      }
       const v=document.getElementById("videowrap");
       const c=document.getElementById("chatwrap");
       const q=document.getElementById("playlistrow")||document.getElementById("playlistwrap")||document.getElementById("queuecontainer");
       const grid=document.getElementById("btfw-grid");
+      if (grid && !grid.getAttribute("data-testid")) {
+        grid.setAttribute("data-testid", "btfw-grid");
+      }
 
       ensureNavHost(grid);
 

@@ -859,8 +859,11 @@ const scheduleNormalizeChatActions = (() => {
     if (!top) {
       top = document.createElement("div");
       top.className = "btfw-chat-topbar";
+      top.setAttribute("data-testid", "btfw-chat-topbar");
       top.innerHTML = chatTpl.chatTopbarHtml();
       cw.prepend(top);
+    } else if (!top.getAttribute("data-testid")) {
+      top.setAttribute("data-testid", "btfw-chat-topbar");
     }
 
     let left = top.querySelector(".btfw-chat-topbar-left");
@@ -891,7 +894,10 @@ const scheduleNormalizeChatActions = (() => {
     if (!bottom) {
       bottom = document.createElement("div");
       bottom.className = "btfw-chat-bottombar";
+      bottom.setAttribute("data-testid", "btfw-chat-bottombar");
       cw.appendChild(bottom);
+    } else if (!bottom.getAttribute("data-testid")) {
+      bottom.setAttribute("data-testid", "btfw-chat-bottombar");
     }
 
     const legacyComposer = bottom.querySelector(".btfw-chat-composer");

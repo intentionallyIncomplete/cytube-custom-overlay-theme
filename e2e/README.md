@@ -9,6 +9,17 @@ Stable Playwright target for overlay regression tests ([#171](https://github.com
 | Fixture (default) | `npm run test:e2e` | Static CyTube-like page + local asset server |
 | Full stack (local) | `E2E_BASE_URL=http://localhost:8080/r/<channel> npm run test:e2e` | CyTube Docker from `sync` + BillTube dev server |
 
+## Smoke suite ([#170](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/170))
+
+`e2e/smoke/overlay-smoke.spec.js` covers:
+
+- App boot (grid ready, boot overlay dismissed)
+- Overlay load (video stage, video overlay, chat column)
+- Chat / player rendering (chat chrome, message buffer, player shell)
+- Failure path (core bundle abort → boot error status)
+
+`e2e/helpers/boot.js` shared `gotoFixtureAndBoot()` waits on `data-testid` hooks — no console-string coupling.
+
 ## Fixture server (CI + local default)
 
 1. `npm run build`
