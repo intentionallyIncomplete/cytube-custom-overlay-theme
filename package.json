@@ -28,7 +28,7 @@
     "e2e:server": "node scripts/e2e-server.js",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
-    "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build",
+    "release:verify": "npm run lint:ci && npm run typecheck && npm test && npm run build && npm run test:e2e",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run"
   },

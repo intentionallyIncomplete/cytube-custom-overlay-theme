@@ -24,6 +24,38 @@ jobs:
       SKIP_BUILD: 1
 
     steps:
+      - name: Assert CI gate jobs succeeded
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = context.payload.workflow_run.id;
+            const required = ["verify", "e2e", "ci-gate"];
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRun,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId,
+                per_page: 100
+              }
+            );
+            const failures = [];
+            for (const name of required) {
+              const job = jobs.find((j) => j.name === name);
+              if (!job) {
+                failures.push(`${name}: missing`);
+                continue;
+              }
+              if (job.conclusion !== "success") {
+                failures.push(`${name}: ${job.conclusion || job.status}`);
+              }
+            }
+            if (failures.length) {
+              core.setFailed(
+                `Release blocked — required CI jobs did not succeed:\n${failures.join("\n")}`
+              );
+            }
+
       - name: Checkout Repository
         uses: actions/checkout@v6
         with:

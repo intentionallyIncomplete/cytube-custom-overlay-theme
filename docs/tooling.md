@@ -25,9 +25,9 @@ Do not add new `.eslintrc.*`, `.stylelintrc.*`, or inline `lint-staged` blocks i
 - **pre-commit** — `lint-staged`
 - **commit-msg** — `commitlint`
 
-CI sets `HUSKY=0` during `npm ci` so install skips hook wiring; the workflow runs the same checks explicitly (`npm run lint:ci`, `typecheck`, `test`, `build`).
+CI sets `HUSKY=0` during `npm ci` so install skips hook wiring; the workflow runs the same checks explicitly (`npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E).
 
-Release workflow (`.github/workflows/release.yml`) runs after CI on `main`, downloads the `build-output` artifact, and sets `SKIP_BUILD=1` so semantic-release does not rebuild. Post-publish: `purge-cdn` then `verify:cdn`. See [BUILD.md](../BUILD.md#release-pipeline).
+Release workflow (`.github/workflows/release.yml`) runs after CI on `main` only when `verify`, `e2e`, and `ci-gate` succeed; it downloads the `build-output` artifact and sets `SKIP_BUILD=1` so semantic-release does not rebuild. Post-publish: `purge-cdn` then `verify:cdn`. See [BUILD.md](../BUILD.md#release-pipeline).
 
 ## Build outputs
 

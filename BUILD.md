@@ -28,7 +28,7 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 ```bash
 npm install
 npm run build          # esbuild: scss → css/, src + modules → dist/billtube-fw.js + dist/*.bundle.js
-npm run release:verify # lint, typecheck, test, build
+npm run release:verify # lint, typecheck, test, build, Playwright E2E
 npm run verify-dist    # fail if bundles missing
 ```
 
@@ -88,10 +88,10 @@ Validation and publishing are split across two GitHub Actions workflows:
 
 | Workflow | Trigger | Role |
 |----------|---------|------|
-| **CI** (`.github/workflows/ci.yml`) | Every push and PR | Lint, typecheck, test, build, bundle budgets; uploads `build-output` artifact |
-| **Release** (`.github/workflows/release.yml`) | After CI succeeds on `main` push | Reuses CI artifacts, runs semantic-release, purges CDN, verifies deploy |
+| **CI** (`.github/workflows/ci.yml`) | Every push and PR | Lint, typecheck, unit tests, build, Playwright E2E (`ci-gate`); uploads `build-output` artifact |
+| **Release** (`.github/workflows/release.yml`) | After CI succeeds on `main` push | Asserts `verify` + `e2e` + `ci-gate`, reuses CI artifacts, runs semantic-release, purges CDN, verifies deploy |
 
-PRs only run CI. Merges to `main` run CI once; Release waits for that run and does **not** repeat lint/test/build.
+PRs only run CI. Merges to `main` run CI once; Release waits for that run and does **not** proceed unless lint, typecheck, unit tests, build, and Playwright smoke tests all succeed.
 
 ### Build outputs (what ships)
 
@@ -109,17 +109,18 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 
 On each releasable push to `main` (after CI passes):
 
-1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`; upload `dist/`, `css/`, `user-release-notes.generated.js`
-2. **Release** — download artifacts (`SKIP_BUILD=1`), `verify-dist`
+1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E; upload `dist/`, `css/`, `user-release-notes.generated.js`
+2. **Release** — assert CI jobs (`verify`, `e2e`, `ci-gate`), download artifacts (`SKIP_BUILD=1`), `verify-dist`
 3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js`)
 4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `css/*.css`
 5. **Git tag** — `vX.Y.Z`
 6. **Purge** — `npm run purge-cdn` invalidates jsDelivr cache for every shipped path
 7. **Verify** — `npm run verify:cdn` fetches each asset from `@vX.Y.Z`, checks HTTP 200, content markers, and CDN pin in channel config. Release fails if verification fails.
 
-Local preflight (same checks as CI, without CDN verify):
+Local preflight (same checks as CI verify + E2E, without CDN verify):
 
 ```bash
+npm run test:e2e:install   # once, if Chromium is missing
 npm run release:verify
 ```
 
