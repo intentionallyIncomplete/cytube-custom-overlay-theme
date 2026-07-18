@@ -1,2 +1,0 @@
-#!/usr/bin/env sh
-# CDN purge runs in CI (release.yml, purge-cdn.yml), not on local commits.
