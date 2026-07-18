@@ -84,7 +84,7 @@ dist/               # Built bundles (gitignored on main)
 channel_config_settings.js   # Build output for jsDelivr (gitignored on main)
 ```
 
-Build, release, and jsDelivr pinning are documented in [BUILD.md](BUILD.md). Tooling config conventions: [docs/tooling.md](docs/tooling.md).
+Build, release, and jsDelivr pinning are documented in [BUILD.md](BUILD.md).
 
 ## License
 

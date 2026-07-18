@@ -10,8 +10,24 @@ billtube-fw.js
 *.log
 .DS_Store
 .continue/
-.cursor/artifacts/
-dev/channel-settings.js
+.env
+.env.*
+
+# Maintainer / local-only (not needed for CDN or CI)
+.cursor/
+wiki/
+docs/
+dev/
+.husky/
+commitlint.config.js
+lint-staged.config.js
+scripts/dev.js
+scripts/dev-server.js
+scripts/generate-dev-channel.js
+**/worker-configuration.d.ts
+coverage/
+
+# Playwright local artifacts (suite + config stay tracked for CI)
 test-results/
 playwright-report/
 playwright/.cache/
