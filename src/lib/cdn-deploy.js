@@ -1,5 +1,7 @@
 /** @typedef {{ ok: true } | { ok: false, reason: string }} VerifyResult */
 
+import { CSS_ASSET_PATHS } from "./style-paths.js";
+
 export const CDN_REPO = "intentionallyIncomplete/cytube-custom-overlay-theme";
 
 /** Paths shipped on jsDelivr for each release tag. */
@@ -12,14 +14,7 @@ export const CDN_ASSET_PATHS = [
   "dist/playlist.bundle.js",
   "dist/admin.bundle.js",
   "dist/features.bundle.js",
-  "css/tokens.css",
-  "css/base.css",
-  "css/navbar.css",
-  "css/chat.css",
-  "css/overlays.css",
-  "css/player.css",
-  "css/mobile.css",
-  "css/boot-overlay.css",
+  ...CSS_ASSET_PATHS,
 ];
 
 /**

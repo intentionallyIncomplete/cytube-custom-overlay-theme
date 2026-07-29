@@ -11,7 +11,8 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "isolatedModules": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "src/**/*.js"],
   "exclude": ["dist", "node_modules", "test", "src/workers"]

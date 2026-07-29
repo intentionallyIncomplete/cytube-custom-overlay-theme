@@ -77,12 +77,17 @@ src/
 ├── lib/            # Shared helpers (imported by modules + tests)
 ├── modules/        # BTFW feature modules (bundled into dist/)
 ├── config/         # Channel snippet source + user-release-notes.json
+├── styles/         # Authored SCSS (source of truth)
 ├── workers/        # Cloudflare workers (movies-storage, vidprox)
 └── billtube-fw.ts  # Loader source → dist/billtube-fw.js
-css/                # Compiled styles (gitignored on main)
-dist/               # Built bundles (gitignored on main)
+dist/               # Built JS bundles + dist/css/ (gitignored on main)
+assets/             # Authored branding SVGs (pending rehome → src/assets)
+test/ + e2e/        # Unit (node:test) + Playwright smoke
+scripts/            # Build / verify / release tooling
 channel_config_settings.js   # Build output for jsDelivr (gitignored on main)
 ```
+
+Root folder ownership (source / generated / tests / tooling), keep/move/merge decisions, and the post-epic target tree are documented in [ROOT_OWNERSHIP.md](ROOT_OWNERSHIP.md) (issue #207 / epic #206).
 
 Build, release, and jsDelivr pinning are documented in [BUILD.md](BUILD.md).
 
