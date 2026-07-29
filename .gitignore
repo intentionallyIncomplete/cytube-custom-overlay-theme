@@ -1,7 +1,8 @@
 node_modules/
 scripts/bundles/
-css/
 dist/
+# Legacy root css/ (pre-#208); keep ignored if a local leftover appears
+css/
 scripts/.entries/
 src/modules/user-release-notes.generated.js
 channel_config_settings.js

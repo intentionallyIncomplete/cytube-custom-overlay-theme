@@ -28,7 +28,7 @@ Stable Playwright target for overlay regression tests ([#171](https://github.com
 `playwright.config.js` starts `scripts/e2e-server.js` on `127.0.0.1:3099` unless `E2E_BASE_URL` is set.
 
 - Fixture page: `http://127.0.0.1:3099/e2e/fixture/channel.html`
-- Serves built `dist/` and `css/` from the repo root
+- Serves built `dist/` (including `dist/css/`) from the repo root
 - `e2e/fixture/cytube-stubs.js` mocks `socket`, `CHANNEL`, `PLAYER`, `videojs`, and jQuery
 
 Manual server only:

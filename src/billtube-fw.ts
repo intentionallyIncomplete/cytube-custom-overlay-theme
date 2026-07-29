@@ -248,14 +248,14 @@ interface BootOverlayApi {
   console.log("[BTFW] BASE:", BASE);
 
   Promise.all([
-    preload(BASE + "/css/tokens.css"),
-    preload(BASE + "/css/base.css"),
-    preload(BASE + "/css/navbar.css"),
-    preload(BASE + "/css/chat.css"),
-    preload(BASE + "/css/overlays.css"),
-    preload(BASE + "/css/player.css"),
-    preload(BASE + "/css/mobile.css"),
-    preload(BASE + "/css/boot-overlay.css")
+    preload(BASE + "/dist/css/tokens.css"),
+    preload(BASE + "/dist/css/base.css"),
+    preload(BASE + "/dist/css/navbar.css"),
+    preload(BASE + "/dist/css/chat.css"),
+    preload(BASE + "/dist/css/overlays.css"),
+    preload(BASE + "/dist/css/player.css"),
+    preload(BASE + "/dist/css/mobile.css"),
+    preload(BASE + "/dist/css/boot-overlay.css")
   ])
     .then(function () {
       const scripts = [

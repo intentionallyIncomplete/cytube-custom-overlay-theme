@@ -5,25 +5,28 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as sass from "sass";
 
+import {
+  CSS_OUTPUT_DIR,
+  REQUIRED_CSS,
+  STYLE_SOURCE_DIR,
+} from "../src/lib/style-paths.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
-const scssDir = path.join(rootDir, "scss");
-const cssDir = path.join(rootDir, "css");
 
-const REQUIRED_CSS = [
-  "tokens.css",
-  "base.css",
-  "navbar.css",
-  "chat.css",
-  "overlays.css",
-  "player.css",
-  "mobile.css",
-  "boot-overlay.css"
-];
+export {
+  CSS_ASSET_PATHS,
+  CSS_OUTPUT_DIR,
+  REQUIRED_CSS,
+  STYLE_SOURCE_DIR,
+} from "../src/lib/style-paths.js";
+
+const scssDir = path.join(rootDir, STYLE_SOURCE_DIR);
+const cssDir = path.join(rootDir, CSS_OUTPUT_DIR);
 
 export function buildCss() {
   if (!fs.existsSync(scssDir)) {
-    console.warn("⚠ scss/ directory missing; skipping CSS build");
+    console.warn(`⚠ ${STYLE_SOURCE_DIR}/ directory missing; skipping CSS build`);
     return false;
   }
 
@@ -44,17 +47,19 @@ export function buildCss() {
       loadPaths: [scssDir]
     });
     fs.writeFileSync(outputPath, result.css, "utf8");
-    console.log(`✓ Built css/${path.basename(outputPath)}`);
+    console.log(`✓ Built ${CSS_OUTPUT_DIR}/${path.basename(outputPath)}`);
   }
 
   return true;
 }
 
 export function verifyCss() {
-  const missing = REQUIRED_CSS.filter((name) => !fs.existsSync(path.join(cssDir, name)));
+  const missing = REQUIRED_CSS.filter(
+    (name) => !fs.existsSync(path.join(cssDir, name))
+  );
   if (missing.length) {
     console.error("Missing compiled CSS (run npm run build:css):");
-    missing.forEach((f) => console.error(`  - css/${f}`));
+    missing.forEach((f) => console.error(`  - ${CSS_OUTPUT_DIR}/${f}`));
     return false;
   }
   console.log("✓ All compiled CSS files present");

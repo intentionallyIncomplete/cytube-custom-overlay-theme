@@ -12,7 +12,7 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 | `@latest` | `main` branch tip (moves every push) |
 | `@<commit-sha>` | Exact commit (only valid if that commit contains built `dist/`) |
 
-**Rule:** CyTube `CDN_BASE`, `dist/billtube-fw.js`, and all `dist/*.bundle.js` / `css/*` must use the **same** ref. The loader derives its asset base from its own script URL.
+**Rule:** CyTube `CDN_BASE`, `dist/billtube-fw.js`, and all `dist/*.bundle.js` / `dist/css/*` must use the **same** ref. The loader derives its asset base from its own script URL.
 
 ## Bundle strategy
 
@@ -27,7 +27,7 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 
 ```bash
 npm install
-npm run build          # esbuild: scss → css/, src + modules → dist/billtube-fw.js + dist/*.bundle.js
+npm run build          # esbuild: src/styles → dist/css/, src + modules → dist/billtube-fw.js + dist/*.bundle.js
 npm run release:verify # lint, typecheck, test, build, Playwright E2E
 npm run verify-dist    # fail if bundles missing
 ```
@@ -63,24 +63,24 @@ Boot always loads `dist/*.bundle.js` from the same origin/ref as `dist/billtube-
 
 ## CSS / SCSS
 
-**Source of truth:** `scss/`. **Ship target:** compiled `css/*.css` on jsDelivr (plain CSS only — no SCSS at runtime).
+**Source of truth:** `src/styles/`. **Ship target:** compiled `dist/css/*.css` on jsDelivr (plain CSS only — no SCSS at runtime).
 
 | Layer | Path | Role |
 |-------|------|------|
-| Entry bundles | `scss/*.scss` (no `_` prefix) | One compiled file each → `css/<name>.css` |
-| Partials | `scss/partials/_*.scss` | Shared layout, theme, tokens; pulled in via `@use` |
-| Theme tokens | `scss/partials/_variables.scss` | SCSS variables compiled to `:root` CSS custom properties |
-| Token bundle | `scss/tokens.scss` | Surfaces + root tokens → `css/tokens.css` (loaded first at boot) |
+| Entry bundles | `src/styles/*.scss` (no `_` prefix) | One compiled file each → `dist/css/<name>.css` |
+| Partials | `src/styles/partials/_*.scss` | Shared layout, theme, tokens; pulled in via `@use` |
+| Theme tokens | `src/styles/partials/_variables.scss` | SCSS variables compiled to `:root` CSS custom properties |
+| Token bundle | `src/styles/tokens.scss` | Surfaces + root tokens → `dist/css/tokens.css` (loaded first at boot) |
 
 **Edit workflow**
 
-1. Change styles in `scss/` only — do not hand-edit `css/` (overwritten by build).
-2. `npm run build:css` — compile all entry SCSS → `css/`.
+1. Change styles in `src/styles/` only — do not hand-edit `dist/css/` (overwritten by build).
+2. `npm run build:css` — compile all entry SCSS → `dist/css/`.
 3. `npm run build` — CSS + JS bundles (what CI and release run).
 
-`dist/billtube-fw.js` preloads `css/tokens.css`, `css/base.css`, and the feature sheets from the same `BASE` ref as bundles. CyTube channels never load `.scss`.
+`dist/billtube-fw.js` preloads `dist/css/tokens.css`, `dist/css/base.css`, and the feature sheets from the same `BASE` ref as bundles. CyTube channels never load `.scss`.
 
-**Lint:** `npm run lint:css` (stylelint on `scss/**/*.scss`).
+**Lint:** `npm run lint:css` (stylelint on `src/styles/**/*.scss`).
 
 ## Release pipeline
 
@@ -99,20 +99,20 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 |--------|--------|-------------|
 | `dist/billtube-fw.js` | `src/billtube-fw.ts` via esbuild | Loader; derives `BASE` for all assets |
 | `dist/*.bundle.js` (6 files) | `modules/` via esbuild | Feature code |
-| `css/*.css` (8 files) | `scss/` via dart-sass | Theme styles |
+| `dist/css/*.css` (8 files) | `src/styles/` via dart-sass | Theme styles |
 | `channel_config_settings.js` | Build copy of `src/config/` (CDN pin applied at release) |
 | `src/config/user-release-notes.json` | End-user Recent Updates copy (bundled into admin) |
 
-`dist/`, `css/`, and generated modules are **gitignored on `main`** between releases. Release tags include built assets for jsDelivr (`@vX.Y.Z`).
+`dist/` (including `dist/css/`) and generated modules are **gitignored on `main`** between releases. Release tags include built assets for jsDelivr (`@vX.Y.Z`).
 
 ### Release steps (automated)
 
 On each releasable push to `main` (after CI passes):
 
-1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E; upload `dist/`, `css/`, `user-release-notes.generated.js`
+1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E; upload `dist/`, `user-release-notes.generated.js`
 2. **Release** — assert CI jobs (`verify`, `e2e`, `ci-gate`), download artifacts (`SKIP_BUILD=1`), `verify-dist`
 3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js`)
-4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `css/*.css`
+4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `dist/css/*.css`
 5. **Git tag** — `vX.Y.Z`
 6. **Purge** — `npm run purge-cdn` invalidates jsDelivr cache for every shipped path
 7. **Verify** — `npm run verify:cdn` fetches each asset from `@vX.Y.Z`, checks HTTP 200, content markers, and CDN pin in channel config. Release fails if verification fails.
@@ -138,7 +138,7 @@ The pinned `CDN_BASE` in the release commit must match the git tag viewers load 
 | When | What runs |
 |------|-----------|
 | New release published | `release.yml` → `purge-cdn` then `verify:cdn` |
-| Push to `main` touches `dist/` or `css/` | `.github/workflows/purge-cdn.yml` (e.g. release commit) |
+| Push to `main` touches `dist/` | `.github/workflows/purge-cdn.yml` (e.g. release commit) |
 
 Purge uses `https://purge.jsdelivr.net/gh/...` for each path in `lib/cdn-deploy.js` → `CDN_ASSET_PATHS`.
 
@@ -177,17 +177,17 @@ BillTube3-slim/
 │   ├── lib/              # Shared helpers and templates
 │   ├── modules/          # BTFW features (build input for bundles)
 │   ├── config/           # channel_config_settings.js source, user-release-notes.json
+│   ├── styles/           # Stylesheet source (SCSS) — edit here
+│   │   └── partials/     # Shared partials (_*.scss); not compiled directly
 │   ├── workers/          # Cloudflare workers
 │   ├── boot/             # Boot manifest (TypeScript)
 │   └── billtube-fw.ts    # Loader source
-├── dist/                 # Built loader + bundles (gitignored on main; on release tags)
-├── scss/                 # Stylesheet source (SCSS) — edit here
-│   └── partials/         # Shared partials (_*.scss); not compiled directly
-├── css/                  # Compiled CSS (gitignored on main; on release tags)
+├── dist/                 # Built loader + bundles + css/ (gitignored on main; on release tags)
+│   └── css/              # Compiled CSS from src/styles/
 ├── channel_config_settings.js  # Build output — CyTube snippet (pinned on release)
 └── scripts/
     ├── build.js          # JS bundles + dist/billtube-fw.js; calls build-css.js
-    ├── build-css.js      # scss/*.scss → css/*.css (dart-sass)
+    ├── build-css.js      # src/styles/*.scss → dist/css/*.css (dart-sass)
     ├── verify-dist.js
     ├── inject-cdn-version.js
     ├── prepare-release.js   # semantic-release prepare (build or reuse CI artifacts)

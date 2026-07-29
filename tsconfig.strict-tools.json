@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["node"]
+  },
+  "include": [
+    "scripts/root-ownership.ts",
+    "test/**/*.vitest.ts",
+    "vitest.config.ts",
+    "src/lib/style-paths.js",
+    "src/lib/cdn-deploy.js"
+  ],
+  "exclude": ["dist", "node_modules", "src/workers"]
+}

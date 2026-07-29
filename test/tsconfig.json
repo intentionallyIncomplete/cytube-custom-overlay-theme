@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.strict-tools.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "./**/*.vitest.ts",
+    "../scripts/root-ownership.ts",
+    "../src/lib/style-paths.js",
+    "../src/lib/cdn-deploy.js",
+    "../vitest.config.ts"
+  ]
+}
