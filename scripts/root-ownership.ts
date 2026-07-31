@@ -126,7 +126,7 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     followUpIssue: null,
     purpose: "Application source: boot, modules, lib, config, workers, styles, assets.",
     notes:
-      "Authored styles live under src/styles/ (#208). Authored static assets live under src/assets/ (#209).",
+      "Authored styles live under src/styles/ (#208). Authored static assets live under src/assets/ (#209). Authored channel config + release notes live under src/config/ (#211).",
   },
   {
     path: "tests",
@@ -139,6 +139,82 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
       "Consolidated from root test/ + e2e/ (#210). Layout: tests/unit/, tests/e2e/, tests/fixtures/, tests/test-results/.",
   },
 ] as const;
+
+/**
+ * Notable root *files* (not directories) with ownership + keep justification.
+ * Complements {@link ROOT_DIRECTORY_CATALOG} for issue #211.
+ */
+export interface NotableRootFileEntry {
+  readonly path: string;
+  readonly ownership: OwnershipLabel;
+  readonly decision: LayoutDecision;
+  /** Authored source path when this file is generated; null when hand-authored at root. */
+  readonly sourcePath: string | null;
+  readonly followUpIssue: number | null;
+  readonly purpose: string;
+  /** Why this root path is allowed (especially for generated runtime). */
+  readonly justification: string;
+}
+
+export const NOTABLE_ROOT_FILES: readonly NotableRootFileEntry[] = [
+  {
+    path: "channel_config_settings.js",
+    ownership: "generated",
+    decision: "keep",
+    sourcePath: "src/config/channel_config_settings.js",
+    followUpIssue: null,
+    purpose:
+      "CyTube External JS / jsDelivr entry that boots BillTube with a pinned CDN_BASE.",
+    justification:
+      "Must stay at repo root so existing operator URLs (cdn.jsdelivr.net/gh/.../@vX.Y.Z/channel_config_settings.js) keep working. Authored only under src/config/; root is emitted by build (unpinned template) and pinned by inject-cdn-version during release.",
+  },
+] as const;
+
+export function findNotableRootFile(
+  path: string
+): NotableRootFileEntry | undefined {
+  return NOTABLE_ROOT_FILES.find((entry) => entry.path === path);
+}
+
+/**
+ * Validates notable-root-file invariants for issue #211.
+ */
+export function validateNotableRootFileInvariants(): string[] {
+  const errors: string[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of NOTABLE_ROOT_FILES) {
+    if (seen.has(entry.path)) {
+      errors.push(`Duplicate notable root file: ${entry.path}`);
+    }
+    seen.add(entry.path);
+
+    if (!isOwnershipLabel(entry.ownership)) {
+      errors.push(`${entry.path}: invalid ownership label`);
+    }
+    if (!isLayoutDecision(entry.decision)) {
+      errors.push(`${entry.path}: invalid layout decision`);
+    }
+    if (entry.purpose.trim().length === 0) {
+      errors.push(`${entry.path}: missing purpose`);
+    }
+    if (entry.justification.trim().length === 0) {
+      errors.push(`${entry.path}: missing justification`);
+    }
+    if (entry.ownership === "generated" && entry.sourcePath === null) {
+      errors.push(`${entry.path}: generated files require a sourcePath`);
+    }
+    if (
+      entry.ownership === "generated" &&
+      entry.sourcePath !== null &&
+      entry.sourcePath.trim().length === 0
+    ) {
+      errors.push(`${entry.path}: sourcePath must not be empty`);
+    }
+  }
+
+  return errors;
+}
 
 const OWNERSHIP_LABELS: readonly OwnershipLabel[] = [
   "source",
@@ -249,6 +325,13 @@ export function validateCatalogInvariants(): string[] {
   }
 
   return errors;
+}
+
+/**
+ * Validates catalog + notable-root-file invariants used by issues #207 / #211.
+ */
+export function validateAllOwnershipInvariants(): string[] {
+  return [...validateCatalogInvariants(), ...validateNotableRootFileInvariants()];
 }
 
 /**

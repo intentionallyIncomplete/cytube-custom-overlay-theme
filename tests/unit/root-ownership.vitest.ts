@@ -6,11 +6,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   findCatalogEntry,
+  findNotableRootFile,
   findUnclassifiedDirectories,
   getActionableEntries,
   IGNORED_FOR_LAYOUT_CONTRACT,
   ROOT_DIRECTORY_CATALOG,
   TARGET_ROOT_LAYOUT,
+  validateAllOwnershipInvariants,
   validateCatalogInvariants,
   type LayoutDecision,
   type OwnershipLabel,
@@ -28,6 +30,7 @@ function listRootDirectories(): string[] {
 describe("root ownership catalog (issue #207)", () => {
   it("passes catalog invariants for every entry", () => {
     expect(validateCatalogInvariants()).toEqual([]);
+    expect(validateAllOwnershipInvariants()).toEqual([]);
   });
 
   it("classifies every directory currently present at the repo root", () => {
@@ -61,20 +64,28 @@ describe("root ownership catalog (issue #207)", () => {
     }
   });
 
-  it("maps remaining follow-up work to issues #211–#212", () => {
+  it("maps remaining follow-up work to issue #212", () => {
     const followUps = ROOT_DIRECTORY_CATALOG.filter(
       (entry) => entry.followUpIssue !== null
     );
-    expect(followUps.length).toBeGreaterThan(0);
+    expect(followUps).toHaveLength(1);
+    expect(followUps[0]).toMatchObject({
+      path: "scripts",
+      followUpIssue: 212,
+    });
 
-    for (const entry of followUps) {
-      expect(entry.followUpIssue).toBeGreaterThanOrEqual(211);
-      expect(entry.followUpIssue).toBeLessThanOrEqual(212);
-      expect(entry.destination.length).toBeGreaterThan(0);
-    }
-
-    // #210 merges completed: no move/merge actionable catalog entries remain
+    // #208–#211 directory moves/merges completed
     expect(getActionableEntries()).toEqual([]);
+  });
+
+  it("documents justified root channel_config_settings.js as generated keep", () => {
+    expect(findNotableRootFile("channel_config_settings.js")).toMatchObject({
+      ownership: "generated",
+      decision: "keep",
+      sourcePath: "src/config/channel_config_settings.js",
+      followUpIssue: null,
+    });
+    expect(findCatalogEntry("src")?.notes).toContain("src/config/");
   });
 
   it("keeps src and dist as stable ownership anchors", () => {

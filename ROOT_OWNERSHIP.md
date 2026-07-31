@@ -27,7 +27,7 @@ Guarded by Vitest: `npm run test:vitest`.
 | `dist/` | generated | keep | `dist/` (includes `dist/css/`) | #208 done |
 | `node_modules/` | deps | keep | `node_modules/` | — |
 | `scripts/` | tooling | keep (tighten) | `scripts/` | #212 |
-| `src/` | source | keep | `src/` (styles + assets) | #208/#209 done |
+| `src/` | source | keep | `src/` (styles + assets + config) | #208/#209/#211 done |
 | `tests/` | tests | keep | `tests/` (`unit/` + `e2e/` + `fixtures/` + `test-results/`) | #210 done |
 
 ### Completed relocations
@@ -49,7 +49,6 @@ Leftover root `scss/` / `css/` / `assets/` / `test/` / `e2e/` / `test-results/` 
 |------|---------------|------------|
 | `dev/` | Only exists for local channel snippets | Keep as gitignored local-ephemera |
 | `scripts/` | Mix of shared release tooling and (gitignored) dev helpers | #212: keep shared scripts only |
-| `channel_config_settings.js` (root file) | Generated runtime pin at repo root | #211: ownership behind `src/config/` |
 
 ## Target root layout (after epic #206)
 
@@ -68,11 +67,22 @@ Local-only (gitignored, not part of the public layout contract): `.cursor/`, `de
 
 ## Notable root files (ownership, not directories)
 
-| File | Ownership | Decision | Follow-up |
-|------|-----------|----------|-----------|
-| `channel_config_settings.js` | generated | move ownership / minimize root runtime | #211 |
-| `package.json`, `tsconfig*.json`, `playwright.config.js`, `stylelint.config.js`, `vitest.config.ts` | tooling | keep at root | — |
-| `README.md`, `BUILD.md`, `CHANGELOG.md`, `ROOT_OWNERSHIP.md` | tooling/docs | keep at root (`docs/` is gitignored) | — |
+Encoded as `NOTABLE_ROOT_FILES` in [`scripts/root-ownership.ts`](scripts/root-ownership.ts).
+
+| File | Ownership | Authored? | Decision | Justification |
+|------|-----------|-----------|----------|---------------|
+| `channel_config_settings.js` | generated | **No** — source is `src/config/channel_config_settings.js` | **keep** at root (#211 done) | Required jsDelivr + CyTube External JS URL shape; build copies template (`@__VERSION__`), release pins `@vX.Y.Z` |
+| `package.json`, `tsconfig*.json`, `playwright.config.js`, `stylelint.config.js`, `vitest.config.ts` | tooling | Yes | keep at root | — |
+| `README.md`, `BUILD.md`, `CHANGELOG.md`, `ROOT_OWNERSHIP.md` | tooling/docs | Yes | keep at root (`docs/` is gitignored) | — |
+
+### Authored vs generated (config)
+
+| Path | Role |
+|------|------|
+| `src/config/channel_config_settings.js` | **Authored** CyTube snippet template (`CDN_BASE` uses `@__VERSION__`) |
+| `src/config/user-release-notes.json` | **Authored** Recent Updates copy (bundled into `dist/admin.bundle.js`) |
+| `channel_config_settings.js` (root) | **Generated** runtime pin for operators / CDN (do not hand-edit) |
+| `dev/channel-settings.js` | **Generated** local-only snippet (`npm run dev`); never ships |
 
 ## Acceptance (#207)
 
@@ -81,7 +91,7 @@ Local-only (gitignored, not part of the public layout contract): `.cursor/`, `de
 - [x] Ambiguous one-offs have a proposed destination + owning follow-up issue
 - [x] Target root layout is documented here and encoded in `TARGET_ROOT_LAYOUT`
 
-## Progress (#208 / #209 / #210)
+## Progress (#208 / #209 / #210 / #211)
 
 - [x] Authored styles live under `src/styles/`
 - [x] Generated CSS ships only under `dist/css/`
@@ -90,5 +100,7 @@ Local-only (gitignored, not part of the public layout contract): `.cursor/`, `de
 - [x] Unit + e2e tests live under `tests/` (`unit/`, `e2e/`, `fixtures/`)
 - [x] Playwright artifacts (including `.last-run.json`) live under `tests/test-results/`
 - [x] Playwright / Node / Vitest / CI / docs paths updated for the unified tree
+- [x] Config source lives under `src/config/`; root `channel_config_settings.js` kept with explicit jsDelivr/CyTube justification
+- [x] Build/release pin path is reproducible from source-owned config
 
-Remaining physical moves: #211–#212.
+Remaining physical moves: #212.

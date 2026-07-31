@@ -11,6 +11,11 @@ import {
   isDevBuild,
   MODULE_BUNDLE_BANNER
 } from "./build-options.js";
+import {
+  CHANNEL_CONFIG_ROOT_PATH,
+  CHANNEL_CONFIG_SOURCE_PATH,
+  verifyChannelConfigSource
+} from "../src/lib/channel-config.js";
 
 const buildFlags = {
   js: !process.argv.includes("--css-only"),
@@ -27,21 +32,26 @@ if (!fs.existsSync(distDir)) {
 }
 
 const configDir = path.join(rootDir, "src", "config");
-const channelConfigSrc = path.join(configDir, "channel_config_settings.js");
-const channelConfigOut = path.join(rootDir, "channel_config_settings.js");
+const channelConfigSrc = path.join(rootDir, CHANNEL_CONFIG_SOURCE_PATH);
+const channelConfigOut = path.join(rootDir, CHANNEL_CONFIG_ROOT_PATH);
 
 function copyChannelConfig() {
   if (!fs.existsSync(channelConfigSrc)) {
-    console.warn("⚠ src/config/channel_config_settings.js missing");
-    return;
+    throw new Error(`Missing ${CHANNEL_CONFIG_SOURCE_PATH}`);
   }
   const body = fs.readFileSync(channelConfigSrc, "utf8");
-  const existing = fs.existsSync(channelConfigOut) ? fs.readFileSync(channelConfigOut, "utf8") : null;
+  const sourceCheck = verifyChannelConfigSource(body);
+  if (!sourceCheck.ok) {
+    throw new Error(sourceCheck.reason);
+  }
+  const existing = fs.existsSync(channelConfigOut)
+    ? fs.readFileSync(channelConfigOut, "utf8")
+    : null;
   if (existing === body) {
     return;
   }
   fs.writeFileSync(channelConfigOut, body, "utf8");
-  console.log("✓ Copied channel_config_settings.js");
+  console.log(`✓ Copied ${CHANNEL_CONFIG_ROOT_PATH} from ${CHANNEL_CONFIG_SOURCE_PATH}`);
 }
 
 function generateUserReleaseNotes() {
