@@ -29,8 +29,7 @@ const sharedRules = {
 };
 
 const esmModuleFiles = [
-  "test/**/*.js",
-  "e2e/**/*.js",
+  "tests/**/*.js",
   "playwright.config.js",
   "scripts/**/*.js",
   "src/lib/**/*.js",

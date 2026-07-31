@@ -82,7 +82,7 @@ src/
 ├── workers/        # Cloudflare workers (movies-storage, vidprox)
 └── billtube-fw.ts  # Loader source → dist/billtube-fw.js
 dist/               # Built JS bundles + dist/css/ (gitignored on main)
-test/ + e2e/        # Unit (node:test) + Playwright smoke
+tests/              # unit/ + e2e/ + fixtures/ + test-results/ (Playwright)
 scripts/            # Build / verify / release tooling
 channel_config_settings.js   # Build output for jsDelivr (gitignored on main)
 ```

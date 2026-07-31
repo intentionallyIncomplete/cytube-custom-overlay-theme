@@ -39,6 +39,11 @@ export const IGNORED_FOR_LAYOUT_CONTRACT: ReadonlySet<string> = new Set([
   "css",
   "scss",
   "assets",
+  // Relocated legacy test roots (pre-#210); leftovers must not fail audits
+  "test",
+  "e2e",
+  // Relocated Playwright artifacts (now under tests/test-results/)
+  "test-results",
   // Local Windows / tooling leftovers (never part of the public tree)
   "Microsoft",
 ]);
@@ -95,15 +100,6 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
       "Gitignored on main; tracked on release tags. Style ship artifacts live under dist/css/ (#208).",
   },
   {
-    path: "e2e",
-    ownership: "tests",
-    decision: "merge",
-    destination: "tests/e2e/",
-    followUpIssue: 210,
-    purpose: "Playwright smoke suite, fixtures, and boot helpers.",
-    notes: "Consolidate with unit tests under a single tests/ tree.",
-  },
-  {
     path: "node_modules",
     ownership: "deps",
     decision: "keep",
@@ -133,22 +129,14 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
       "Authored styles live under src/styles/ (#208). Authored static assets live under src/assets/ (#209).",
   },
   {
-    path: "test",
+    path: "tests",
     ownership: "tests",
-    decision: "merge",
-    destination: "tests/unit/",
-    followUpIssue: 210,
-    purpose: "Node unit tests (node:test) for lib and feature helpers.",
-    notes: "Merge with e2e/ into tests/; keep runner separation via subfolders.",
-  },
-  {
-    path: "test-results",
-    ownership: "local-ephemera",
     decision: "keep",
-    destination: "test-results/",
+    destination: "tests/",
     followUpIssue: null,
-    purpose: "Playwright local run artifacts.",
-    notes: "Gitignored; never committed.",
+    purpose: "Unified automated tests: unit/, e2e/, fixtures/, and test-results/.",
+    notes:
+      "Consolidated from root test/ + e2e/ (#210). Layout: tests/unit/, tests/e2e/, tests/fixtures/, tests/test-results/.",
   },
 ] as const;
 

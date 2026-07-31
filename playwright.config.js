@@ -2,13 +2,14 @@ import { defineConfig, devices } from "@playwright/test";
 
 const host = process.env.E2E_HOST || "127.0.0.1";
 const port = Number(process.env.E2E_PORT || 3099);
-const fixturePath = "/e2e/fixture/channel.html";
+const fixturePath = "/tests/fixtures/channel.html";
 const defaultBaseUrl = `http://${host}:${port}`;
 const baseURL = process.env.E2E_BASE_URL || defaultBaseUrl;
 const useExternalTarget = Boolean(process.env.E2E_BASE_URL);
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: "./tests/e2e",
+  outputDir: "tests/test-results",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
