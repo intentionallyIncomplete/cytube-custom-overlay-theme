@@ -67,3 +67,5 @@ E2E_BASE_URL=http://localhost:8080/r/billtube-dev npm run test:e2e
 | `E2E_HOST` | `127.0.0.1` | Fixture server bind address |
 | `E2E_PORT` | `3099` | Fixture server port |
 | `E2E_FIXTURE_PATH` | `/tests/fixtures/channel.html` | Path appended to `baseURL` in smoke tests |
+
+Playwright writes run artifacts (screenshots, traces, `.last-run.json`) to `tests/test-results/` via `outputDir` in `playwright.config.js`.

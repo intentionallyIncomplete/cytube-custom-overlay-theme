@@ -28,8 +28,7 @@ Guarded by Vitest: `npm run test:vitest`.
 | `node_modules/` | deps | keep | `node_modules/` | — |
 | `scripts/` | tooling | keep (tighten) | `scripts/` | #212 |
 | `src/` | source | keep | `src/` (styles + assets) | #208/#209 done |
-| `test-results/` | local-ephemera | keep | `test-results/` | — |
-| `tests/` | tests | keep | `tests/` (`unit/` + `e2e/` + `fixtures/`) | #210 done |
+| `tests/` | tests | keep | `tests/` (`unit/` + `e2e/` + `fixtures/` + `test-results/`) | #210 done |
 
 ### Completed relocations
 
@@ -40,8 +39,9 @@ Guarded by Vitest: `npm run test:vitest`.
 | `assets/` | source | `src/assets/` | #209 |
 | `test/` | tests | `tests/unit/` | #210 |
 | `e2e/` | tests | `tests/e2e/` + `tests/fixtures/` | #210 |
+| `test-results/` | local-ephemera | `tests/test-results/` | #210 |
 
-Leftover root `scss/` / `css/` / `assets/` / `test/` / `e2e/` dirs (if any) are ignored by the ownership audit contract.
+Leftover root `scss/` / `css/` / `assets/` / `test/` / `e2e/` / `test-results/` dirs (if any) are ignored by the ownership audit contract.
 
 ## One-off / ambiguous folders
 
@@ -60,11 +60,11 @@ cytube-custom-overlay-theme/
 ├── dist/             # generated — JS bundles + css/
 ├── scripts/          # tooling — shared build/verify/release only
 ├── src/              # source — app, styles, assets, config, workers
-├── tests/            # tests — unit/ + e2e/ + fixtures/
+├── tests/            # tests — unit/ + e2e/ + fixtures/ + test-results/
 └── [root configs]    # package.json, tsconfig*, Playwright, lint, README, BUILD.md
 ```
 
-Local-only (gitignored, not part of the public layout contract): `.cursor/`, `dev/`, `node_modules/`, `test-results/`, `coverage/`, Playwright report caches.
+Local-only (gitignored, not part of the public layout contract): `.cursor/`, `dev/`, `node_modules/`, `tests/test-results/`, `coverage/`, Playwright report caches.
 
 ## Notable root files (ownership, not directories)
 
@@ -88,6 +88,7 @@ Local-only (gitignored, not part of the public layout contract): `.cursor/`, `de
 - [x] Authored static assets live under `src/assets/` (ship in-tree; not generated)
 - [x] Build, CDN, CI, and docs paths updated for styles + assets
 - [x] Unit + e2e tests live under `tests/` (`unit/`, `e2e/`, `fixtures/`)
+- [x] Playwright artifacts (including `.last-run.json`) live under `tests/test-results/`
 - [x] Playwright / Node / Vitest / CI / docs paths updated for the unified tree
 
 Remaining physical moves: #211–#212.

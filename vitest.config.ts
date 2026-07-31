@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.vitest.ts"],
-    exclude: [...configDefaults.exclude, "tests/e2e/**", "test-results/**"],
+    exclude: [...configDefaults.exclude, "tests/e2e/**", "tests/test-results/**"],
   },
 });

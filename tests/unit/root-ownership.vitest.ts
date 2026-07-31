@@ -94,6 +94,7 @@ describe("root ownership catalog (issue #207)", () => {
     expect(findCatalogEntry("tests")?.notes).toContain("unit/");
     expect(findCatalogEntry("tests")?.notes).toContain("e2e/");
     expect(findCatalogEntry("tests")?.notes).toContain("fixtures");
+    expect(findCatalogEntry("tests")?.notes).toContain("test-results");
   });
 
   it("treats relocated style, asset, and test roots as layout-contract ignores", () => {
@@ -102,11 +103,13 @@ describe("root ownership catalog (issue #207)", () => {
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("assets")).toBe(true);
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("test")).toBe(true);
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("e2e")).toBe(true);
+    expect(IGNORED_FOR_LAYOUT_CONTRACT.has("test-results")).toBe(true);
     expect(findCatalogEntry("scss")).toBeUndefined();
     expect(findCatalogEntry("css")).toBeUndefined();
     expect(findCatalogEntry("assets")).toBeUndefined();
     expect(findCatalogEntry("test")).toBeUndefined();
     expect(findCatalogEntry("e2e")).toBeUndefined();
+    expect(findCatalogEntry("test-results")).toBeUndefined();
     expect(findCatalogEntry("dist")?.notes).toContain("dist/css/");
     expect(findCatalogEntry("src")?.notes).toContain("src/styles/");
     expect(findCatalogEntry("src")?.notes).toContain("src/assets/");
@@ -133,6 +136,7 @@ describe("root ownership catalog (issue #207)", () => {
         "assets",
         "test",
         "e2e",
+        "test-results",
         "mystery-folder",
       ])
     ).toEqual(["mystery-folder"]);
