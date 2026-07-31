@@ -48,7 +48,6 @@ jobs:
           name: build-output
           path: |
             dist/
-            modules/user-release-notes.generated.js
           if-no-files-found: error
           retention-days: 14
 

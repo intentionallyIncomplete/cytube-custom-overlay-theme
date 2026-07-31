@@ -100,8 +100,10 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 | `dist/billtube-fw.js` | `src/billtube-fw.ts` via esbuild | Loader; derives `BASE` for all assets |
 | `dist/*.bundle.js` (6 files) | `modules/` via esbuild | Feature code |
 | `dist/css/*.css` (8 files) | `src/styles/` via dart-sass | Theme styles |
-| `channel_config_settings.js` | Build copy of `src/config/` (CDN pin applied at release) |
+| `channel_config_settings.js` | Build copy of `src/config/channel_config_settings.js` (authored template with `@__VERSION__`); CDN pin `@vX.Y.Z` applied at release |
 | `src/config/user-release-notes.json` | End-user Recent Updates copy (bundled into admin) |
+
+**Authored vs generated:** Edit only under `src/config/`. The root `channel_config_settings.js` is generated for jsDelivr / CyTube External JS and must stay at repo root so existing CDN URLs keep working (see #211 / `ROOT_OWNERSHIP.md`). Local CyTube testing should use `dev/channel-settings.js` (`npm run dev`), not hand-edited root pins.
 
 `dist/` (including `dist/css/`) and generated modules are **gitignored on `main`** between releases. Release tags include built assets for jsDelivr (`@vX.Y.Z`).
 
@@ -109,9 +111,9 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 
 On each releasable push to `main` (after CI passes):
 
-1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E; upload `dist/`, `user-release-notes.generated.js`
+1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E; upload `dist/`
 2. **Release** — assert CI jobs (`verify`, `e2e`, `ci-gate`), download artifacts (`SKIP_BUILD=1`), `verify-dist`
-3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js`)
+3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js` which reads `src/config/channel_config_settings.js` and writes the root pin)
 4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `dist/css/*.css`
 5. **Git tag** — `vX.Y.Z`
 6. **Purge** — `npm run purge-cdn` invalidates jsDelivr cache for every shipped path
@@ -128,8 +130,10 @@ npm run release:verify
 
 `scripts/inject-cdn-version.js` runs during `prepare:release` **after** semantic-release bumps `package.json` version:
 
-- Replaces `gh/intentionallyIncomplete/cytube-custom-overlay-theme@*` refs in `channel_config_settings.js` with `@vX.Y.Z`
-- Also supports `@__VERSION__` placeholder if present
+- Reads **authored** `src/config/channel_config_settings.js` (never mutates source)
+- Writes **generated** root `channel_config_settings.js`
+- Replaces `@__VERSION__` and any `gh/...@*` CDN refs with `@vX.Y.Z`
+- Fails if the source is missing the placeholder or the output still contains `@__VERSION__`
 
 The pinned `CDN_BASE` in the release commit must match the git tag viewers load from jsDelivr.
 

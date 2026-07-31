@@ -76,7 +76,7 @@ See [src/workers/movies-storage/README.md](src/workers/movies-storage/README.md)
 src/
 ├── lib/            # Shared helpers (imported by modules + tests)
 ├── modules/        # BTFW feature modules (bundled into dist/)
-├── config/         # Channel snippet source + user-release-notes.json
+├── config/         # Authored channel snippet + user-release-notes.json
 ├── styles/         # Authored SCSS (source of truth)
 ├── assets/         # Authored branding SVGs (KLIPY, theme icons, monkey paw)
 ├── workers/        # Cloudflare workers (movies-storage, vidprox)
@@ -84,7 +84,7 @@ src/
 dist/               # Built JS bundles + dist/css/ (gitignored on main)
 tests/              # unit/ + e2e/ + fixtures/ + test-results/ (Playwright)
 scripts/            # Build / verify / release tooling
-channel_config_settings.js   # Build output for jsDelivr (gitignored on main)
+channel_config_settings.js   # Generated CyTube/jsDelivr pin (from src/config/; do not hand-edit)
 ```
 
 Root folder ownership (source / generated / tests / tooling), keep/move/merge decisions, and the post-epic target tree are documented in [ROOT_OWNERSHIP.md](ROOT_OWNERSHIP.md) (issue #207 / epic #206).

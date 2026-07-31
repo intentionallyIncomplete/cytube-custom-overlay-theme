@@ -18,6 +18,7 @@
     "vitest.config.ts",
     "src/lib/style-paths.js",
     "src/lib/cdn-deploy.js",
+    "src/lib/channel-config.js",
     "src/lib/asset-paths.ts"
   ],
   "exclude": ["dist", "node_modules", "src/workers"]
