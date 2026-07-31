@@ -64,17 +64,21 @@ describe("root ownership catalog (issue #207)", () => {
     }
   });
 
-  it("maps remaining follow-up work to issue #212", () => {
+  it("has no remaining layout follow-up issues after #212", () => {
     const followUps = ROOT_DIRECTORY_CATALOG.filter(
       (entry) => entry.followUpIssue !== null
     );
-    expect(followUps).toHaveLength(1);
-    expect(followUps[0]).toMatchObject({
-      path: "scripts",
-      followUpIssue: 212,
-    });
+    expect(followUps).toEqual([]);
 
-    // #208–#211 directory moves/merges completed
+    expect(findCatalogEntry("scripts")).toMatchObject({
+      ownership: "tooling",
+      decision: "keep",
+      destination: "scripts/",
+      followUpIssue: null,
+    });
+    expect(findCatalogEntry("scripts")?.notes).toContain("scripts/README.md");
+
+    // #208–#212 directory moves / scripts tighten completed
     expect(getActionableEntries()).toEqual([]);
   });
 

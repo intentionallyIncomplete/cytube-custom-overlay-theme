@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+/**
+ * semantic-release prepare orchestrator.
+ * With SKIP_BUILD=1 (CI release job): verify existing dist artifacts, then inject CDN pin.
+ * Otherwise: full `npm run build`, then inject CDN pin.
+ * Kept as a script (not an npm one-liner) for cross-platform SKIP_BUILD branching.
+ */
 
 import { execSync } from "child_process";
 

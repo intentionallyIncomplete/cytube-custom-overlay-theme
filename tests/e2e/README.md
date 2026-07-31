@@ -45,8 +45,8 @@ Override port/host with `E2E_PORT` / `E2E_HOST`.
 Use when tests need real Socket.IO / playback behavior.
 
 1. From `sync`: `docker compose up -d --build` (see `sync/.cursor/skills/start-cytube-docker/`)
-2. From this repo: `npm run dev` (asset server on `:3000`)
-3. CyTube channel → Javascript tab → paste `dev/channel-settings.js` → Save JS
+2. From this repo: `npm run build` and serve assets on `:3000` (or a maintainer-local `scripts/dev.js` — see `scripts/README.md`)
+3. CyTube channel → Javascript tab → paste a local channel snippet pointing at that server → Save JS
 4. Run Playwright against the live channel:
 
 ```bash

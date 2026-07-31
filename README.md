@@ -32,28 +32,30 @@ BillTube is not a standalone app. It runs inside a CyTube channel as Custom Java
 git clone https://github.com/intentionallyIncomplete/BillTube3-slim.git
 cd cytube-custom-overlay-theme
 npm install
-npm run dev
+npm run build
 ```
 
-`npm run dev` builds bundles, watches `src/`, and serves assets on `http://127.0.0.1:3000`. It writes `dev/channel-settings.js` (gitignored).
+`npm run build` writes production bundles to `dist/` and copies the channel config template to the repo root.
 
 | Command | Purpose |
 |---------|---------|
 | `npm run build` | Production bundles → `dist/` |
 | `npm run test` | Unit tests |
 | `npm run verify-dist` | Check required bundles exist |
-| `npm run dev:server` | Static server only (port 3000) |
-| `npm run dev:channel` | Regenerate local channel snippet |
+| `npm run test:e2e` | Playwright suite (starts `scripts/e2e-server.js`) |
+
+Maintainer-local watch/serve helpers (`scripts/dev.js`, `dev-server.js`, `generate-dev-channel.js`) are gitignored and not in public clones — see [scripts/README.md](scripts/README.md).
 
 ### Wire CyTube to localhost
 
-1. Start the local server: `npm run dev`
-2. Start local CyTube (see `sync/docker/README.md` in the CyTube repo)
-3. Channel Settings → **Javascript** → paste `dev/channel-settings.js` → Save
+1. Build assets: `npm run build`
+2. Serve `dist/` (and related paths) from a local static server on `http://127.0.0.1:3000`, or use a maintainer-local `scripts/dev.js` if you have one
+3. Start local CyTube (see `sync/docker/README.md` in the CyTube repo)
+4. Channel Settings → **Javascript** → paste a local channel snippet that points `BASE` at your server → Save
 
 Use the **Javascript** tab, not External Javascript—CyTube requires `https://` for external URLs. Local CyTube on `http://localhost:8080` avoids mixed-content blocks.
 
-Console should show: `[BTFW] BASE: http://127.0.0.1:3000`
+Console should show something like: `[BTFW] BASE: http://127.0.0.1:3000`
 
 ## Backend worker (movies & GIFs)
 
@@ -83,7 +85,7 @@ src/
 └── billtube-fw.ts  # Loader source → dist/billtube-fw.js
 dist/               # Built JS bundles + dist/css/ (gitignored on main)
 tests/              # unit/ + e2e/ + fixtures/ + test-results/ (Playwright)
-scripts/            # Build / verify / release tooling
+scripts/            # Shared build / verify / release tooling (see scripts/README.md)
 channel_config_settings.js   # Generated CyTube/jsDelivr pin (from src/config/; do not hand-edit)
 ```
 
