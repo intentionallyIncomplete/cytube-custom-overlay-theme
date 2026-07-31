@@ -8,6 +8,7 @@
     "../scripts/root-ownership.ts",
     "../src/lib/style-paths.js",
     "../src/lib/cdn-deploy.js",
+    "../src/lib/asset-paths.ts",
     "../vitest.config.ts"
   ]
 }

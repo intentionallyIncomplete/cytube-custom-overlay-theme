@@ -60,15 +60,15 @@ BTFW.define("util:themeIconPacks", [], async () => {
     continental: {
       name: "Continental Royal",
       icons: {
-        "nav-theme": "{base}/assets/themes/continental/crown.svg",
-        "nav-movie-request": "{base}/assets/themes/continental/castle.svg",
-        "perf-rocket": "{base}/assets/themes/continental/ship.svg",
-        "chat-emotes": "{base}/assets/themes/continental/jewel.svg",
-        "chat-gif": "{base}/assets/themes/continental/ship.svg",
-        "stack-add-media": "{base}/assets/themes/continental/castle.svg",
-        "stack-new-poll": "{base}/assets/themes/continental/crown.svg",
-        "stack-edit-motd": "{base}/assets/themes/continental/crown.svg",
-        "chat-commands-help": "{base}/assets/themes/continental/jewel.svg"
+        "nav-theme": "{base}/src/assets/themes/continental/crown.svg",
+        "nav-movie-request": "{base}/src/assets/themes/continental/castle.svg",
+        "perf-rocket": "{base}/src/assets/themes/continental/ship.svg",
+        "chat-emotes": "{base}/src/assets/themes/continental/jewel.svg",
+        "chat-gif": "{base}/src/assets/themes/continental/ship.svg",
+        "stack-add-media": "{base}/src/assets/themes/continental/castle.svg",
+        "stack-new-poll": "{base}/src/assets/themes/continental/crown.svg",
+        "stack-edit-motd": "{base}/src/assets/themes/continental/crown.svg",
+        "chat-commands-help": "{base}/src/assets/themes/continental/jewel.svg"
       }
     }
   };

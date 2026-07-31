@@ -2,7 +2,7 @@
 BTFW.define("feature:monkeyPaw", [], async () => {
   const STYLE_ID = "btfw-monkey-paw-styles";
   const OVERLAY_ID = "btfw-monkey-paw-overlay";
-  const PAW_SVG_PATH = "/assets/monkey-paw/paw.svg";
+  const PAW_SVG_PATH = "/src/assets/monkey-paw/paw.svg";
 
   const CURLS = {
     "f-pinky": { root: "rotate(85deg)", tip: "rotate(70deg)" },

@@ -78,10 +78,10 @@ src/
 ├── modules/        # BTFW feature modules (bundled into dist/)
 ├── config/         # Channel snippet source + user-release-notes.json
 ├── styles/         # Authored SCSS (source of truth)
+├── assets/         # Authored branding SVGs (KLIPY, theme icons, monkey paw)
 ├── workers/        # Cloudflare workers (movies-storage, vidprox)
 └── billtube-fw.ts  # Loader source → dist/billtube-fw.js
 dist/               # Built JS bundles + dist/css/ (gitignored on main)
-assets/             # Authored branding SVGs (pending rehome → src/assets)
 test/ + e2e/        # Unit (node:test) + Playwright smoke
 scripts/            # Build / verify / release tooling
 channel_config_settings.js   # Build output for jsDelivr (gitignored on main)

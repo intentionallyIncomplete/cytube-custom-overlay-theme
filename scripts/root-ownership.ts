@@ -31,12 +31,16 @@ export interface RootDirectoryEntry {
  */
 /**
  * VCS plumbing and relocated legacy root dirs that may still appear on disk
- * (e.g. leftover `css/` from pre-#208 builds) without failing the audit.
+ * (e.g. leftover `css/` / `scss/` / `assets/` from pre-epic builds) without
+ * failing the audit.
  */
 export const IGNORED_FOR_LAYOUT_CONTRACT: ReadonlySet<string> = new Set([
   ".git",
   "css",
   "scss",
+  "assets",
+  // Local Windows / tooling leftovers (never part of the public tree)
+  "Microsoft",
 ]);
 
 /**
@@ -70,15 +74,6 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     followUpIssue: null,
     purpose: "Git hooks (prepare/husky).",
     notes: "Gitignored from the public tree (#200); still a root tooling folder locally.",
-  },
-  {
-    path: "assets",
-    ownership: "source",
-    decision: "move",
-    destination: "src/assets/",
-    followUpIssue: 209,
-    purpose: "Authored branding SVGs (KLIPY, theme icons, monkey paw).",
-    notes: "Source-owned imagery currently at root; epic rehomes under src/assets.",
   },
   {
     path: "dev",
@@ -133,9 +128,9 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     decision: "keep",
     destination: "src/",
     followUpIssue: null,
-    purpose: "Application source: boot, modules, lib, config, workers, styles.",
+    purpose: "Application source: boot, modules, lib, config, workers, styles, assets.",
     notes:
-      "Authored styles live under src/styles/ (#208). Assets still pending #209.",
+      "Authored styles live under src/styles/ (#208). Authored static assets live under src/assets/ (#209).",
   },
   {
     path: "test",
