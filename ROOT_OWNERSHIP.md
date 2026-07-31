@@ -25,12 +25,11 @@ Guarded by Vitest: `npm run test:vitest`.
 | `.husky/` | tooling | keep | `.husky/` | — |
 | `dev/` | local-ephemera | keep | `dev/` | — |
 | `dist/` | generated | keep | `dist/` (includes `dist/css/`) | #208 done |
-| `e2e/` | tests | **merge** | `tests/e2e/` | #210 |
 | `node_modules/` | deps | keep | `node_modules/` | — |
 | `scripts/` | tooling | keep (tighten) | `scripts/` | #212 |
 | `src/` | source | keep | `src/` (styles + assets) | #208/#209 done |
-| `test/` | tests | **merge** | `tests/unit/` | #210 |
 | `test-results/` | local-ephemera | keep | `test-results/` | — |
+| `tests/` | tests | keep | `tests/` (`unit/` + `e2e/` + `fixtures/`) | #210 done |
 
 ### Completed relocations
 
@@ -39,14 +38,15 @@ Guarded by Vitest: `npm run test:vitest`.
 | `scss/` | source | `src/styles/` | #208 |
 | `css/` | generated | `dist/css/` | #208 |
 | `assets/` | source | `src/assets/` | #209 |
+| `test/` | tests | `tests/unit/` | #210 |
+| `e2e/` | tests | `tests/e2e/` + `tests/fixtures/` | #210 |
 
-Leftover root `scss/` / `css/` / `assets/` dirs (if any) are ignored by the ownership audit contract.
+Leftover root `scss/` / `css/` / `assets/` / `test/` / `e2e/` dirs (if any) are ignored by the ownership audit contract.
 
 ## One-off / ambiguous folders
 
 | Path | Why ambiguous | Resolution |
 |------|---------------|------------|
-| `test/` + `e2e/` | Two test roots split by runner | #210: → `tests/unit/` + `tests/e2e/` |
 | `dev/` | Only exists for local channel snippets | Keep as gitignored local-ephemera |
 | `scripts/` | Mix of shared release tooling and (gitignored) dev helpers | #212: keep shared scripts only |
 | `channel_config_settings.js` (root file) | Generated runtime pin at repo root | #211: ownership behind `src/config/` |
@@ -60,7 +60,7 @@ cytube-custom-overlay-theme/
 ├── dist/             # generated — JS bundles + css/
 ├── scripts/          # tooling — shared build/verify/release only
 ├── src/              # source — app, styles, assets, config, workers
-├── tests/            # tests — unit/ + e2e/
+├── tests/            # tests — unit/ + e2e/ + fixtures/
 └── [root configs]    # package.json, tsconfig*, Playwright, lint, README, BUILD.md
 ```
 
@@ -81,11 +81,13 @@ Local-only (gitignored, not part of the public layout contract): `.cursor/`, `de
 - [x] Ambiguous one-offs have a proposed destination + owning follow-up issue
 - [x] Target root layout is documented here and encoded in `TARGET_ROOT_LAYOUT`
 
-## Progress (#208 / #209)
+## Progress (#208 / #209 / #210)
 
 - [x] Authored styles live under `src/styles/`
 - [x] Generated CSS ships only under `dist/css/`
 - [x] Authored static assets live under `src/assets/` (ship in-tree; not generated)
 - [x] Build, CDN, CI, and docs paths updated for styles + assets
+- [x] Unit + e2e tests live under `tests/` (`unit/`, `e2e/`, `fixtures/`)
+- [x] Playwright / Node / Vitest / CI / docs paths updated for the unified tree
 
-Remaining physical moves: #210–#212.
+Remaining physical moves: #211–#212.

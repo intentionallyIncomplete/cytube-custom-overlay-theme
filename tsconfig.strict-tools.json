@@ -14,7 +14,7 @@
   },
   "include": [
     "scripts/root-ownership.ts",
-    "test/**/*.vitest.ts",
+    "tests/unit/**/*.vitest.ts",
     "vitest.config.ts",
     "src/lib/style-paths.js",
     "src/lib/cdn-deploy.js",

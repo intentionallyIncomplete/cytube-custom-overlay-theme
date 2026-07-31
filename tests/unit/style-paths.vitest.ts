@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { CDN_ASSET_PATHS } from "../src/lib/cdn-deploy.js";
+import { CDN_ASSET_PATHS } from "../../src/lib/cdn-deploy.js";
 import {
   CSS_ASSET_PATHS,
   CSS_OUTPUT_DIR,
   REQUIRED_CSS,
   STYLE_SOURCE_DIR,
-} from "../src/lib/style-paths.js";
+} from "../../src/lib/style-paths.js";
 
 describe("style paths (issue #208)", () => {
   it("keeps authored styles under src/styles", () => {

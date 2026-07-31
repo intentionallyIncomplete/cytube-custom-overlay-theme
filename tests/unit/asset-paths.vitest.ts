@@ -13,9 +13,9 @@ import {
   MONKEY_PAW_SVG_PATH,
   assetRepoPath,
   isLegacyAssetPath,
-} from "../src/lib/asset-paths";
+} from "../../src/lib/asset-paths";
 
-const REPO_ROOT: string = join(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO_ROOT: string = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 describe("asset paths (issue #209)", () => {
   it("keeps authored static assets under src/assets", () => {

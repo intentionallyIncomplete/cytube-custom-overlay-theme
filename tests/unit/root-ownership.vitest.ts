@@ -14,9 +14,9 @@ import {
   validateCatalogInvariants,
   type LayoutDecision,
   type OwnershipLabel,
-} from "../scripts/root-ownership";
+} from "../../scripts/root-ownership";
 
-const REPO_ROOT: string = join(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO_ROOT: string = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function listRootDirectories(): string[] {
   return readdirSync(REPO_ROOT, { withFileTypes: true })
@@ -61,16 +61,20 @@ describe("root ownership catalog (issue #207)", () => {
     }
   });
 
-  it("maps actionable folders to follow-up issues #208–#212", () => {
-    const actionable = getActionableEntries();
-    expect(actionable.length).toBeGreaterThan(0);
+  it("maps remaining follow-up work to issues #211–#212", () => {
+    const followUps = ROOT_DIRECTORY_CATALOG.filter(
+      (entry) => entry.followUpIssue !== null
+    );
+    expect(followUps.length).toBeGreaterThan(0);
 
-    for (const entry of actionable) {
-      expect(entry.followUpIssue).not.toBeNull();
-      expect(entry.followUpIssue).toBeGreaterThanOrEqual(208);
+    for (const entry of followUps) {
+      expect(entry.followUpIssue).toBeGreaterThanOrEqual(211);
       expect(entry.followUpIssue).toBeLessThanOrEqual(212);
       expect(entry.destination.length).toBeGreaterThan(0);
     }
+
+    // #210 merges completed: no move/merge actionable catalog entries remain
+    expect(getActionableEntries()).toEqual([]);
   });
 
   it("keeps src and dist as stable ownership anchors", () => {
@@ -80,28 +84,29 @@ describe("root ownership catalog (issue #207)", () => {
     expect(findCatalogEntry("dist")?.ownership).toBe("generated");
   });
 
-  it("plans test consolidations toward the epic target layout", () => {
-    expect(findCatalogEntry("test")).toMatchObject({
+  it("keeps unified tests/ as the tests ownership anchor", () => {
+    expect(findCatalogEntry("tests")).toMatchObject({
       ownership: "tests",
-      decision: "merge",
-      destination: "tests/unit/",
-      followUpIssue: 210,
+      decision: "keep",
+      destination: "tests/",
+      followUpIssue: null,
     });
-    expect(findCatalogEntry("e2e")).toMatchObject({
-      ownership: "tests",
-      decision: "merge",
-      destination: "tests/e2e/",
-      followUpIssue: 210,
-    });
+    expect(findCatalogEntry("tests")?.notes).toContain("unit/");
+    expect(findCatalogEntry("tests")?.notes).toContain("e2e/");
+    expect(findCatalogEntry("tests")?.notes).toContain("fixtures");
   });
 
-  it("treats relocated style and asset roots as layout-contract ignores", () => {
+  it("treats relocated style, asset, and test roots as layout-contract ignores", () => {
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("scss")).toBe(true);
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("css")).toBe(true);
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("assets")).toBe(true);
+    expect(IGNORED_FOR_LAYOUT_CONTRACT.has("test")).toBe(true);
+    expect(IGNORED_FOR_LAYOUT_CONTRACT.has("e2e")).toBe(true);
     expect(findCatalogEntry("scss")).toBeUndefined();
     expect(findCatalogEntry("css")).toBeUndefined();
     expect(findCatalogEntry("assets")).toBeUndefined();
+    expect(findCatalogEntry("test")).toBeUndefined();
+    expect(findCatalogEntry("e2e")).toBeUndefined();
     expect(findCatalogEntry("dist")?.notes).toContain("dist/css/");
     expect(findCatalogEntry("src")?.notes).toContain("src/styles/");
     expect(findCatalogEntry("src")?.notes).toContain("src/assets/");
@@ -118,7 +123,7 @@ describe("root ownership catalog (issue #207)", () => {
     ]);
   });
 
-  it("ignores .git and relocated style/asset roots when scanning for gaps", () => {
+  it("ignores .git and relocated style/asset/test roots when scanning for gaps", () => {
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has(".git")).toBe(true);
     expect(
       findUnclassifiedDirectories([
@@ -126,6 +131,8 @@ describe("root ownership catalog (issue #207)", () => {
         "css",
         "scss",
         "assets",
+        "test",
+        "e2e",
         "mystery-folder",
       ])
     ).toEqual(["mystery-folder"]);

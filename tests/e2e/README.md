@@ -11,14 +11,14 @@ Stable Playwright target for overlay regression tests ([#171](https://github.com
 
 ## Smoke suite ([#170](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/170))
 
-`e2e/smoke/overlay-smoke.spec.js` covers:
+`tests/e2e/smoke/overlay-smoke.spec.js` covers:
 
 - App boot (grid ready, boot overlay dismissed)
 - Overlay load (video stage, video overlay, chat column)
 - Chat / player rendering (chat chrome, message buffer, player shell)
 - Failure path (core bundle abort → boot error status)
 
-`e2e/helpers/boot.js` shared `gotoFixtureAndBoot()` waits on `data-testid` hooks — no console-string coupling.
+`tests/e2e/helpers/boot.js` shared `gotoFixtureAndBoot()` waits on `data-testid` hooks — no console-string coupling.
 
 ## Fixture server (CI + local default)
 
@@ -27,9 +27,9 @@ Stable Playwright target for overlay regression tests ([#171](https://github.com
 
 `playwright.config.js` starts `scripts/e2e-server.js` on `127.0.0.1:3099` unless `E2E_BASE_URL` is set.
 
-- Fixture page: `http://127.0.0.1:3099/e2e/fixture/channel.html`
+- Fixture page: `http://127.0.0.1:3099/tests/fixtures/channel.html`
 - Serves built `dist/` (including `dist/css/`) from the repo root
-- `e2e/fixture/cytube-stubs.js` mocks `socket`, `CHANNEL`, `PLAYER`, `videojs`, and jQuery
+- `tests/fixtures/cytube-stubs.js` mocks `socket`, `CHANNEL`, `PLAYER`, `videojs`, and jQuery
 
 Manual server only:
 
@@ -66,4 +66,4 @@ E2E_BASE_URL=http://localhost:8080/r/billtube-dev npm run test:e2e
 | `E2E_BASE_URL` | _(unset)_ | External CyTube URL; skips fixture web server |
 | `E2E_HOST` | `127.0.0.1` | Fixture server bind address |
 | `E2E_PORT` | `3099` | Fixture server port |
-| `E2E_FIXTURE_PATH` | `/e2e/fixture/channel.html` | Path appended to `baseURL` in smoke tests |
+| `E2E_FIXTURE_PATH` | `/tests/fixtures/channel.html` | Path appended to `baseURL` in smoke tests |
