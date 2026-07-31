@@ -86,7 +86,7 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     decision: "keep",
     destination: "dev/",
     followUpIssue: null,
-    purpose: "Generated local channel-settings snippet for npm run dev.",
+    purpose: "Generated local channel-settings snippet for maintainer-local helpers.",
     notes: "Gitignored; never ships to CDN.",
   },
   {
@@ -113,10 +113,10 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     ownership: "tooling",
     decision: "keep",
     destination: "scripts/",
-    followUpIssue: 212,
+    followUpIssue: null,
     purpose: "Shared build, verify, release, and CDN automation.",
     notes:
-      "Keep at root as tooling. #212 tightens to shared scripts only (dev helpers already gitignored).",
+      "Keep at root as tooling. #212: shared scripts only; see scripts/README.md. Local-only dev helpers remain gitignored (#200).",
   },
   {
     path: "src",
@@ -307,12 +307,9 @@ export function validateCatalogInvariants(): string[] {
       errors.push(`${entry.path}: missing purpose`);
     }
     if (entry.decision === "keep" && entry.followUpIssue !== null) {
-      // keep with a follow-up is allowed only for tighten-in-place (#212 on scripts)
-      if (entry.path !== "scripts") {
-        errors.push(
-          `${entry.path}: keep decision should not set followUpIssue (got #${String(entry.followUpIssue)})`
-        );
-      }
+      errors.push(
+        `${entry.path}: keep decision should not set followUpIssue (got #${String(entry.followUpIssue)})`
+      );
     }
     if (
       (entry.decision === "move" || entry.decision === "merge") &&

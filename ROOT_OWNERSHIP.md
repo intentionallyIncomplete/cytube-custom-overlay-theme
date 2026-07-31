@@ -26,7 +26,7 @@ Guarded by Vitest: `npm run test:vitest`.
 | `dev/` | local-ephemera | keep | `dev/` | — |
 | `dist/` | generated | keep | `dist/` (includes `dist/css/`) | #208 done |
 | `node_modules/` | deps | keep | `node_modules/` | — |
-| `scripts/` | tooling | keep (tighten) | `scripts/` | #212 |
+| `scripts/` | tooling | keep | `scripts/` | #212 done |
 | `src/` | source | keep | `src/` (styles + assets + config) | #208/#209/#211 done |
 | `tests/` | tests | keep | `tests/` (`unit/` + `e2e/` + `fixtures/` + `test-results/`) | #210 done |
 
@@ -48,7 +48,7 @@ Leftover root `scss/` / `css/` / `assets/` / `test/` / `e2e/` / `test-results/` 
 | Path | Why ambiguous | Resolution |
 |------|---------------|------------|
 | `dev/` | Only exists for local channel snippets | Keep as gitignored local-ephemera |
-| `scripts/` | Mix of shared release tooling and (gitignored) dev helpers | #212: keep shared scripts only |
+| `scripts/` | Mix of shared release tooling and (gitignored) local helpers | #212 done: shared scripts only; see `scripts/README.md` |
 
 ## Target root layout (after epic #206)
 
@@ -82,7 +82,7 @@ Encoded as `NOTABLE_ROOT_FILES` in [`scripts/root-ownership.ts`](scripts/root-ow
 | `src/config/channel_config_settings.js` | **Authored** CyTube snippet template (`CDN_BASE` uses `@__VERSION__`) |
 | `src/config/user-release-notes.json` | **Authored** Recent Updates copy (bundled into `dist/admin.bundle.js`) |
 | `channel_config_settings.js` (root) | **Generated** runtime pin for operators / CDN (do not hand-edit) |
-| `dev/channel-settings.js` | **Generated** local-only snippet (`npm run dev`); never ships |
+| `dev/channel-settings.js` | **Generated** local-only snippet (maintainer `scripts/dev.js`); never ships |
 
 ## Acceptance (#207)
 
@@ -91,7 +91,7 @@ Encoded as `NOTABLE_ROOT_FILES` in [`scripts/root-ownership.ts`](scripts/root-ow
 - [x] Ambiguous one-offs have a proposed destination + owning follow-up issue
 - [x] Target root layout is documented here and encoded in `TARGET_ROOT_LAYOUT`
 
-## Progress (#208 / #209 / #210 / #211)
+## Progress (#208 / #209 / #210 / #211 / #212)
 
 - [x] Authored styles live under `src/styles/`
 - [x] Generated CSS ships only under `dist/css/`
@@ -102,5 +102,6 @@ Encoded as `NOTABLE_ROOT_FILES` in [`scripts/root-ownership.ts`](scripts/root-ow
 - [x] Playwright / Node / Vitest / CI / docs paths updated for the unified tree
 - [x] Config source lives under `src/config/`; root `channel_config_settings.js` kept with explicit jsDelivr/CyTube justification
 - [x] Build/release pin path is reproducible from source-owned config
+- [x] `scripts/` retains shared build/verify/release tooling only; documented in `scripts/README.md`
 
-Remaining physical moves: #212.
+Epic #206 layout work is complete when this file and the README tree stay aligned with the target layout above.
