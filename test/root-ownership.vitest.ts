@@ -80,13 +80,7 @@ describe("root ownership catalog (issue #207)", () => {
     expect(findCatalogEntry("dist")?.ownership).toBe("generated");
   });
 
-  it("plans asset/test consolidations toward the epic target layout", () => {
-    expect(findCatalogEntry("assets")).toMatchObject({
-      ownership: "source",
-      decision: "move",
-      destination: "src/assets/",
-      followUpIssue: 209,
-    });
+  it("plans test consolidations toward the epic target layout", () => {
     expect(findCatalogEntry("test")).toMatchObject({
       ownership: "tests",
       decision: "merge",
@@ -101,13 +95,16 @@ describe("root ownership catalog (issue #207)", () => {
     });
   });
 
-  it("treats relocated style roots as layout-contract ignores (issue #208)", () => {
+  it("treats relocated style and asset roots as layout-contract ignores", () => {
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("scss")).toBe(true);
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has("css")).toBe(true);
+    expect(IGNORED_FOR_LAYOUT_CONTRACT.has("assets")).toBe(true);
     expect(findCatalogEntry("scss")).toBeUndefined();
     expect(findCatalogEntry("css")).toBeUndefined();
+    expect(findCatalogEntry("assets")).toBeUndefined();
     expect(findCatalogEntry("dist")?.notes).toContain("dist/css/");
     expect(findCatalogEntry("src")?.notes).toContain("src/styles/");
+    expect(findCatalogEntry("src")?.notes).toContain("src/assets/");
   });
 
   it("documents a minimal post-epic root layout", () => {
@@ -121,10 +118,16 @@ describe("root ownership catalog (issue #207)", () => {
     ]);
   });
 
-  it("ignores .git and relocated style roots when scanning for gaps", () => {
+  it("ignores .git and relocated style/asset roots when scanning for gaps", () => {
     expect(IGNORED_FOR_LAYOUT_CONTRACT.has(".git")).toBe(true);
     expect(
-      findUnclassifiedDirectories([".git", "css", "scss", "mystery-folder"])
+      findUnclassifiedDirectories([
+        ".git",
+        "css",
+        "scss",
+        "assets",
+        "mystery-folder",
+      ])
     ).toEqual(["mystery-folder"]);
     expect(findCatalogEntry("node_modules")?.ownership).toBe("deps");
   });

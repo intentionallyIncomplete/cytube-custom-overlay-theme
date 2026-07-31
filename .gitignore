@@ -20,6 +20,8 @@ wiki/
 docs/
 dev/
 .husky/
+Microsoft/
+skills-lock.json
 commitlint.config.js
 lint-staged.config.js
 scripts/dev.js

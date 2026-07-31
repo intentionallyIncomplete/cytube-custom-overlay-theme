@@ -23,30 +23,29 @@ Guarded by Vitest: `npm run test:vitest`.
 | `.cursor/` | local-ephemera | keep | `.cursor/` | — |
 | `.github/` | tooling | keep | `.github/` | — |
 | `.husky/` | tooling | keep | `.husky/` | — |
-| `assets/` | source | **move** | `src/assets/` | #209 |
 | `dev/` | local-ephemera | keep | `dev/` | — |
 | `dist/` | generated | keep | `dist/` (includes `dist/css/`) | #208 done |
 | `e2e/` | tests | **merge** | `tests/e2e/` | #210 |
 | `node_modules/` | deps | keep | `node_modules/` | — |
 | `scripts/` | tooling | keep (tighten) | `scripts/` | #212 |
-| `src/` | source | keep | `src/` (includes `src/styles/`) | #208 done |
+| `src/` | source | keep | `src/` (styles + assets) | #208/#209 done |
 | `test/` | tests | **merge** | `tests/unit/` | #210 |
 | `test-results/` | local-ephemera | keep | `test-results/` | — |
 
-### Completed relocations (#208)
+### Completed relocations
 
-| Former path | Ownership | Now |
-|-------------|-----------|-----|
-| `scss/` | source | `src/styles/` |
-| `css/` | generated | `dist/css/` |
+| Former path | Ownership | Now | Issue |
+|-------------|-----------|-----|-------|
+| `scss/` | source | `src/styles/` | #208 |
+| `css/` | generated | `dist/css/` | #208 |
+| `assets/` | source | `src/assets/` | #209 |
 
-Leftover root `scss/` / `css/` dirs (if any) are ignored by the ownership audit contract.
+Leftover root `scss/` / `css/` / `assets/` dirs (if any) are ignored by the ownership audit contract.
 
 ## One-off / ambiguous folders
 
 | Path | Why ambiguous | Resolution |
 |------|---------------|------------|
-| `assets/` | Source branding at root, parallel to `src/` | #209: → `src/assets/` |
 | `test/` + `e2e/` | Two test roots split by runner | #210: → `tests/unit/` + `tests/e2e/` |
 | `dev/` | Only exists for local channel snippets | Keep as gitignored local-ephemera |
 | `scripts/` | Mix of shared release tooling and (gitignored) dev helpers | #212: keep shared scripts only |
@@ -82,10 +81,11 @@ Local-only (gitignored, not part of the public layout contract): `.cursor/`, `de
 - [x] Ambiguous one-offs have a proposed destination + owning follow-up issue
 - [x] Target root layout is documented here and encoded in `TARGET_ROOT_LAYOUT`
 
-## Progress (#208)
+## Progress (#208 / #209)
 
 - [x] Authored styles live under `src/styles/`
 - [x] Generated CSS ships only under `dist/css/`
-- [x] Build, CDN, CI, and docs paths updated
+- [x] Authored static assets live under `src/assets/` (ship in-tree; not generated)
+- [x] Build, CDN, CI, and docs paths updated for styles + assets
 
-Remaining physical moves: #209–#212.
+Remaining physical moves: #210–#212.

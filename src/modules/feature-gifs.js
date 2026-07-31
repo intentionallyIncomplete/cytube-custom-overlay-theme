@@ -45,9 +45,9 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
   }
 
   const KLIPY_POWERED_BY_URL = assetUrl(
-    "assets/klipy/search-interface-branding/SVG Files/Powered by KLIPY  - white.svg"
+    "src/assets/klipy/search-interface-branding/SVG Files/Powered by KLIPY  - white.svg"
   );
-  const KLIPY_WATERMARK_URL = assetUrl("assets/klipy/card-branding/KLIPY Light with logo.svg");
+  const KLIPY_WATERMARK_URL = assetUrl("src/assets/klipy/card-branding/KLIPY Light with logo.svg");
 
   function getCustomerId() {
     try {

@@ -16,8 +16,8 @@ describe("theme icon packs", () => {
   it("resolves continental tint with base placeholder", async () => {
     const iconPacks = await loadIconPacks();
     const map = iconPacks.resolveIconMap({ tint: "continental" }, { baseUrl: BASE });
-    assert.equal(map["nav-theme"], `${BASE}/assets/themes/continental/crown.svg`);
-    assert.equal(map["nav-movie-request"], `${BASE}/assets/themes/continental/castle.svg`);
+    assert.equal(map["nav-theme"], `${BASE}/src/assets/themes/continental/crown.svg`);
+    assert.equal(map["nav-movie-request"], `${BASE}/src/assets/themes/continental/castle.svg`);
   });
 
   it("merges explicit iconPack and per-slot overrides", async () => {
