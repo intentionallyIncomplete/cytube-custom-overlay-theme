@@ -1131,38 +1131,22 @@ const scheduleNormalizeChatActions = (() => {
     ensureScrollManagement();
   }
 
-  function loadScript(src){
-    return new Promise((res,rej)=>{
-      const s=document.createElement("script");
-      s.src = src; s.async=true; s.defer=true;
-      s.onload = ()=> res(true);
-      s.onerror= ()=> rej(new Error("Failed to load "+src));
-      document.head.appendChild(s);
-    });
-  }
   let _tsLoading = false;
   async function openThemeSettings(){
     let modal = $("#btfw-theme-modal");
     if (modal && modal.dataset.btfwModalState === "open") return;
 
-    document.dispatchEvent(new CustomEvent("btfw:openThemeSettings"));
-    modal = $("#btfw-theme-modal");
-    if (modal) { motion.openModal(modal); return; }
-    await new Promise(r => setTimeout(r, 40));
-    modal = $("#btfw-theme-modal");
-    if (modal) { motion.openModal(modal); return; }
-
     if (_tsLoading) return;
     _tsLoading = true;
     try {
-      const url = BASE ? `${BASE}/src/modules/feature-theme-settings.js` : "/src/modules/feature-theme-settings.js";
-      await loadScript(url);
+      const api = await BTFW.init("feature:themeSettings");
+      if (api && typeof api.open === "function") {
+        api.open();
+        return;
+      }
       document.dispatchEvent(new CustomEvent("btfw:openThemeSettings"));
-      await new Promise(r => setTimeout(r, 40));
-      modal = $("#btfw-theme-modal");
-      if (modal) motion.openModal(modal);
     } catch(e){
-      console.warn("[chat] Theme Settings lazy-load failed:", e.message||e);
+      console.warn("[chat] Theme Settings open failed:", e && e.message ? e.message : e);
     } finally {
       _tsLoading = false;
     }

@@ -6,6 +6,8 @@ import {
   canLoadAdminBundle,
   readAdminBundleGateContext
 } from "./lib/can-load-admin-bundle.js";
+import { wireDeferredFeatureOpen } from "./lib/defer-feature-open.js";
+import { EVENTS } from "./lib/btfw-constants.js";
 import {
   BOOT_FOUNDATION,
   BOOT_LAYOUT,
@@ -332,6 +334,36 @@ interface BootOverlayApi {
     }
   }
 
+  function wireDeferredOpens(): void {
+    const initFeature = function (
+      moduleName: string
+    ): Promise<{ open?: () => void } | null | undefined> {
+      return window.BTFW.init(moduleName) as Promise<
+        { open?: () => void } | null | undefined
+      >;
+    };
+
+    wireDeferredFeatureOpen({
+      moduleName: "feature:gifs",
+      init: initFeature,
+      openEvent: "btfw:openGifs",
+      clickSelector: "#btfw-btn-gif, .btfw-btn-gif, #giphybtn, #gifbtn",
+      onError: function (error: unknown): void {
+        console.warn("[BTFW] deferred GIF open failed:", error);
+      }
+    });
+
+    wireDeferredFeatureOpen({
+      moduleName: "feature:themeSettings",
+      init: initFeature,
+      openEvent: EVENTS.openThemeSettings,
+      clickSelector: "#btfw-theme-btn-chat, #btfw-theme-btn-nav, .btfw-theme-open",
+      onError: function (error: unknown): void {
+        console.warn("[BTFW] deferred Theme Settings open failed:", error);
+      }
+    });
+  }
+
   Promise.all([
     preload(BASE + "/dist/css/tokens.css"),
     preload(BASE + "/dist/css/base.css"),
@@ -390,6 +422,7 @@ interface BootOverlayApi {
     })
     .then(function () {
       watchForLateAdminAccess();
+      wireDeferredOpens();
       return window.BTFW.init("feature:layout").then(function (layout) {
         const layoutApi = layout as { commitLayout?: () => Promise<void> } | null;
         return layoutApi && layoutApi.commitLayout

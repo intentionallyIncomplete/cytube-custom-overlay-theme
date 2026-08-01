@@ -30,7 +30,6 @@ export const BOOT_CHAT = [
   "feature:chat-avatars",
   "feature:chat-timestamps",
   "feature:chat-ignore",
-  "feature:gifs",
   "feature:poll-overlay",
   "feature:notify",
   "feature:notification-sounds",
@@ -51,10 +50,23 @@ export const BOOT_SYNC = [
   "feature:local-subs"
 ] as const;
 
-/** Viewer settings that ship outside admin.bundle.js. */
+/**
+ * Viewer modules that always init at boot.
+ * Theme settings / GIFs are deferred until first open (#197).
+ * util:themePresets stays eager so appearance + chat typography rehydrate.
+ */
 export const BOOT_SETTINGS_VIEWER = [
   "feature:emoji-loader",
-  "feature:themeSettings"
+  "util:themePresets"
+] as const;
+
+/**
+ * Deferred until first user open (still shipped in features.bundle.js).
+ * Wired via {@link wireDeferredFeatureOpen} in billtube-fw.
+ */
+export const BOOT_SETTINGS_DEFERRED = [
+  "feature:themeSettings",
+  "feature:gifs"
 ] as const;
 
 /**
@@ -66,9 +78,10 @@ export const BOOT_SETTINGS_ADMIN = [
   "feature:channelThemeAdmin"
 ] as const;
 
-/** @deprecated Prefer BOOT_SETTINGS_VIEWER + BOOT_SETTINGS_ADMIN. */
+/** @deprecated Prefer BOOT_SETTINGS_VIEWER + BOOT_SETTINGS_ADMIN (+ deferred opens). */
 export const BOOT_SETTINGS = [
   ...BOOT_SETTINGS_VIEWER,
+  "feature:themeSettings",
   ...BOOT_SETTINGS_ADMIN
 ] as const;
 

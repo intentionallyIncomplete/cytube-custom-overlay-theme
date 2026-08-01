@@ -5,10 +5,11 @@ BTFW.define("feature:playlistPerformance", [], function() {
   let originalDisplay = new Map();
   let currentVisibleCount = Infinity;
   let scrollHandler = null;
+  let revealObserver = null;
+  let revealSentinel = null;
 
   const INITIAL_BATCH = 120;
   const BATCH_SIZE = 80;
-  const SCROLL_THRESHOLD = 300;
   const PERF_ICON_HTML = '<span data-btfw-icon-slot="perf-rocket" aria-hidden="true"><i class="fa fa-rocket"></i></span>';
 
   function getQueue() {
@@ -75,11 +76,75 @@ BTFW.define("feature:playlistPerformance", [], function() {
     ensurePollButtonsForVisibleItems(children);
   }
 
-  function detachScrollWatcher(queue) {
+  function detachRevealWatcher(queue) {
     if (queue && scrollHandler) {
       queue.removeEventListener('scroll', scrollHandler);
     }
     scrollHandler = null;
+
+    if (revealObserver) {
+      revealObserver.disconnect();
+      revealObserver = null;
+    }
+    if (revealSentinel && revealSentinel.parentNode) {
+      revealSentinel.remove();
+    }
+    revealSentinel = null;
+  }
+
+  function ensureRevealSentinel(queue) {
+    if (!queue) return null;
+    if (revealSentinel && revealSentinel.isConnected) {
+      return revealSentinel;
+    }
+    const sentinel = document.createElement('div');
+    sentinel.id = 'btfw-playlist-reveal-sentinel';
+    sentinel.setAttribute('aria-hidden', 'true');
+    sentinel.style.cssText = 'height:1px;width:100%;pointer-events:none;';
+    const indicator = $('#btfw-playlist-performance-indicator');
+    if (indicator && indicator.parentNode === queue) {
+      queue.insertBefore(sentinel, indicator);
+    } else {
+      queue.appendChild(sentinel);
+    }
+    revealSentinel = sentinel;
+    return sentinel;
+  }
+
+  function attachRevealWatcher(queue) {
+    detachRevealWatcher(queue);
+    if (!queue || typeof IntersectionObserver !== 'function') {
+      // Fallback for very old browsers: near-bottom scroll reveal
+      scrollHandler = () => {
+        if (!isOptimized) return;
+        if (queue.scrollTop + queue.clientHeight >= queue.scrollHeight - 300) {
+          revealNextBatch();
+        }
+      };
+      queue.addEventListener('scroll', scrollHandler, { passive: true });
+      return;
+    }
+
+    const sentinel = ensureRevealSentinel(queue);
+    if (!sentinel) return;
+
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        if (!isOptimized) return;
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            revealNextBatch();
+            break;
+          }
+        }
+      },
+      {
+        root: queue,
+        rootMargin: '0px 0px 300px 0px',
+        threshold: 0
+      }
+    );
+    revealObserver.observe(sentinel);
   }
 
   function updatePerformanceIndicator(totalCount) {
@@ -136,17 +201,8 @@ BTFW.define("feature:playlistPerformance", [], function() {
     addPerformanceIndicator(children.length);
     updatePerformanceIndicator(children.length);
 
-    // Attach scroll watcher for progressive reveal
-    detachScrollWatcher(queue);
-    scrollHandler = () => {
-      if (!isOptimized) return;
-
-      if (queue.scrollTop + queue.clientHeight >= queue.scrollHeight - SCROLL_THRESHOLD) {
-        revealNextBatch();
-      }
-    };
-
-    queue.addEventListener('scroll', scrollHandler, { passive: true });
+    // Progressive reveal via IntersectionObserver sentinel (#197)
+    attachRevealWatcher(queue);
   }
 
   function restorePlaylist() {
@@ -163,7 +219,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
     isOptimized = false;
 
     if (queue) {
-      detachScrollWatcher(queue);
+      detachRevealWatcher(queue);
     }
 
     removePerformanceIndicator();
@@ -234,6 +290,11 @@ BTFW.define("feature:playlistPerformance", [], function() {
 
     applyVisibility(children);
     updatePerformanceIndicator(children.length);
+
+    // Keep sentinel just before the indicator so IO can fire for the next batch
+    if (revealObserver && isOptimized && currentVisibleCount < children.length) {
+      ensureRevealSentinel(queue);
+    }
   }
 
   // Auto-optimize when scrolling to current item
