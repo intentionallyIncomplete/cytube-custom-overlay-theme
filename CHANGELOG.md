@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.25.7...v1.26.0) (2026-08-01)
+
+
+### Features
+
+* **boot:** gate admin.bundle.js behind CyTube admin permission ([#218](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/218)) ([b0f6f6e](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/b0f6f6e280b1dff6c462aa205bb04018da1866dc)), closes [#197](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/197)
+
 ## [1.25.7](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.25.6...v1.25.7) (2026-07-31)
 
 ## [1.25.6](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.25.5...v1.25.6) (2026-07-31)
