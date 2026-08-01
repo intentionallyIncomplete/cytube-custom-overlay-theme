@@ -9,7 +9,6 @@ BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom"
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const MESSAGE_SELECTOR = SELECTORS.chatMsg;
-  const BASE = (window.BTFW && BTFW.BASE ? BTFW.BASE.replace(/\/+$/,'') : "");
 
   const CHAT_PLACEHOLDER = "Type your message here…";
 
