@@ -20,8 +20,8 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 - **chat.bundle.js** — Chat features
 - **player.bundle.js** — Player, video, audio boost, subs, movie info
 - **playlist.bundle.js** — Playlist and now-playing
-- **admin.bundle.js** — Theme admin and settings
-- **features.bundle.js** — Remaining features
+- **admin.bundle.js** — Channel theme admin + MOTD editor only (fetched when CyTube grants channel-admin permission; see #197)
+- **features.bundle.js** — Remaining features + viewer theme settings / theme runtime (GIF + Theme Settings *init* deferred until first open)
 
 ## Local development
 

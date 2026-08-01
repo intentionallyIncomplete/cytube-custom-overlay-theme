@@ -29,8 +29,30 @@ if (!/util:motion/.test(coreBundle)) {
   process.exit(1);
 }
 
+const featuresBundle = fs.readFileSync(path.join(rootDir, "dist/features.bundle.js"), "utf8");
+if (!/feature:themeSettings/.test(featuresBundle)) {
+  console.error(
+    "features.bundle.js does not define feature:themeSettings (viewer themes must not live in gated admin.bundle)"
+  );
+  process.exit(1);
+}
+
+const adminBundle = fs.readFileSync(path.join(rootDir, "dist/admin.bundle.js"), "utf8");
+if (!/feature:channelThemeAdmin/.test(adminBundle)) {
+  console.error("admin.bundle.js does not define feature:channelThemeAdmin");
+  process.exit(1);
+}
+if (/feature:themeSettings/.test(adminBundle)) {
+  console.error(
+    "admin.bundle.js still defines feature:themeSettings — move viewer settings to features.bundle (#197)"
+  );
+  process.exit(1);
+}
+
 console.log("✓ All production bundles present");
 console.log("✓ core.bundle.js includes util:motion");
+console.log("✓ features.bundle.js includes feature:themeSettings");
+console.log("✓ admin.bundle.js is admin-only (channelThemeAdmin, no themeSettings)");
 
 if (!verifyCss()) {
   process.exit(1);

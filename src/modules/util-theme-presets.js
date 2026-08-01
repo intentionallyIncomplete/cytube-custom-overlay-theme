@@ -1,4 +1,6 @@
 /* BTFW — util:themePresets (per-user named theme presets in localStorage) */
+import { applyStoredChatTypography } from "../lib/apply-chat-typography.js";
+
 BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
 
@@ -191,6 +193,11 @@ BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
         applyActivePreset();
       } catch (error) {
         console.warn("[theme-presets] Failed to apply user theme preset", error);
+      }
+      try {
+        applyStoredChatTypography(document);
+      } catch (error) {
+        console.warn("[theme-presets] Failed to apply chat typography", error);
       }
     };
     apply();

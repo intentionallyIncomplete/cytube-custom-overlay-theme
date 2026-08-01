@@ -13,7 +13,7 @@ Home decision (epic [#206](https://github.com/intentionallyIncomplete/cytube-cus
 | `build.js` | Production JS build (esbuild bundles + loader), channel config copy, release-notes codegen; runs CSS build and `verify-dist` | `npm run build`, `npm run build:js` |
 | `build-css.js` | Compile `src/styles/*.scss` → `dist/css/`; exports `buildCss` / `verifyCss` for other scripts | `npm run build:css`; imported by `build.js`, `verify-dist.js` |
 | `build-options.js` | Shared esbuild options + bundle banner (library module, not a CLI) | Imported by `build.js` |
-| `verify-dist.js` | Assert required `dist/` JS + CSS artifacts exist | `npm run verify-dist`; CI release; spawned by `build.js` / `prepare-release.js` |
+| `verify-dist.js` | Assert required `dist/` JS + CSS artifacts exist; guards admin/features split (#197) | `npm run verify-dist`; CI release; spawned by `build.js` / `prepare-release.js` |
 | `inject-cdn-version.js` | Pin root `channel_config_settings.js` to `v${version}` (optional `--commit`) | `npm run inject-cdn`; called by `prepare-release.js` |
 | `prepare-release.js` | Release orchestrator: build or reuse CI artifacts (`SKIP_BUILD`), then inject CDN pin | `npm run prepare:release`; semantic-release `prepareCmd` |
 | `purge-cdn.js` | Purge jsDelivr cache for every shipped CDN path | `npm run purge-cdn`; release / purge workflows |

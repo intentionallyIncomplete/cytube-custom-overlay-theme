@@ -38,6 +38,8 @@ const esmModuleFiles = [
   "src/modules/util-state.js",
   "src/modules/util-templates.js",
   "src/modules/util-chat-autoscroll.js",
+  "src/modules/util-theme-presets.js",
+  "src/modules/feature-theme-settings.js",
   "src/modules/feature-nowplaying.js",
   "src/modules/feature-stack.js",
 ];
@@ -120,6 +122,8 @@ export default [
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "no-unused-vars": "off",
+      // TypeScript owns undefined-name checking (DOM libs include ParentNode, etc.)
+      "no-undef": "off",
     },
   },
 ];

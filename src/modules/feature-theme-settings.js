@@ -1,5 +1,10 @@
 /* global BTFW_USER_RELEASE_NOTES */
 /* BTFW — feature:themeSettings */
+import {
+  applyChatTextPx as applyChatTextPxShared,
+  applyEmoteSize as applyEmoteSizeShared
+} from "../lib/apply-chat-typography.js";
+
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const themePresets = await init("util:themePresets");
@@ -251,15 +256,10 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
   // apply CSS variables immediately (used by chat/emote sizing)
   function applyChatTextPx(px){
-    const wrap = $("#chatwrap");
-    if (!wrap) return;
-    const clamped = Math.min(Math.max(Number(px) || 14, 10), 20);
-    wrap.style.setProperty("--btfw-chat-text", `${clamped}px`);
+    applyChatTextPxShared(px, document);
   }
   function applyEmoteSize(size){
-    const px = size==="small"?100 : size==="big"?170 : 130; // medium default
-    document.documentElement.style.setProperty("--btfw-emote-size", `${px}px`);
-    document.dispatchEvent(new CustomEvent(EVENTS.chatEmoteSizeChanged, { detail:{ size, px } }));
+    applyEmoteSizeShared(size, document);
   }
 
   function persistImageHoverMagnify(modal) {

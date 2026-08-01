@@ -522,7 +522,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
   }
 
   document.addEventListener('btfw:openGifs', ()=> {
-    try { openGifModal(); } catch(e){}
+    try { open(); } catch(e){}
   });
 
   function open(){
