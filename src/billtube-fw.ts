@@ -2,12 +2,36 @@ import { createBtfwRegistry } from "./lib/btfw-registry.js";
 import { resolveBtfwBase } from "./lib/resolve-btfw-base.js";
 import { patchWaitUntilDefinedForVjsPlugins } from "./lib/patch-vjs-plugin-wait.js";
 import { bootOverlayCardHtml } from "./lib/templates/boot-overlay.js";
-import { BOOT_FOUNDATION, BOOT_LAYOUT, BOOT_CHAT, BOOT_DOM, BOOT_NAV, BOOT_SETTINGS, BOOT_SYNC } from "./boot/manifest.js";
+import {
+  canLoadAdminBundle,
+  readAdminBundleGateContext
+} from "./lib/can-load-admin-bundle.js";
+import {
+  BOOT_FOUNDATION,
+  BOOT_LAYOUT,
+  BOOT_CHAT,
+  BOOT_DOM,
+  BOOT_NAV,
+  BOOT_SETTINGS_ADMIN,
+  BOOT_SETTINGS_VIEWER,
+  BOOT_SYNC
+} from "./boot/manifest.js";
 
 patchWaitUntilDefinedForVjsPlugins();
 
 const FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@latest";
 const DEV_CDN = resolveBtfwBase(document, FALLBACK_CDN);
+
+/** Bundles every viewer always fetches. */
+const ALWAYS_SCRIPTS = [
+  "dist/core.bundle.js",
+  "dist/chat.bundle.js",
+  "dist/player.bundle.js",
+  "dist/playlist.bundle.js",
+  "dist/features.bundle.js"
+] as const;
+
+const ADMIN_SCRIPT = "dist/admin.bundle.js";
 
 interface VideoAudioState {
   muted: boolean;
@@ -247,6 +271,67 @@ interface BootOverlayApi {
 
   console.log("[BTFW] BASE:", BASE);
 
+  let adminBundleLoaded = false;
+  let adminBundleLoadPromise: Promise<void> | null = null;
+
+  function shouldLoadAdminBundle(): boolean {
+    return canLoadAdminBundle(readAdminBundleGateContext(window));
+  }
+
+  function loadAdminBundle(): Promise<void> {
+    if (adminBundleLoaded) {
+      return Promise.resolve();
+    }
+    if (adminBundleLoadPromise) {
+      return adminBundleLoadPromise;
+    }
+    adminBundleLoadPromise = load(BASE + "/" + ADMIN_SCRIPT).then(function () {
+      adminBundleLoaded = true;
+    });
+    return adminBundleLoadPromise;
+  }
+
+  function initModuleGroup(group: readonly string[]): Promise<unknown[]> {
+    return Promise.all(
+      group.map(function (name) {
+        return window.BTFW.init(name);
+      })
+    );
+  }
+
+  async function initAdminModules(): Promise<void> {
+    await initModuleGroup(BOOT_SETTINGS_ADMIN);
+  }
+
+  /**
+   * If the user gains channel-admin permissions after boot (login), fetch and init admin.
+   */
+  function watchForLateAdminAccess(): void {
+    const tryLoad = function (): void {
+      if (adminBundleLoaded || !shouldLoadAdminBundle()) {
+        return;
+      }
+      void loadAdminBundle()
+        .then(function () {
+          return initAdminModules();
+        })
+        .catch(function (err: unknown) {
+          console.warn("[BTFW] late admin.bundle load failed:", err);
+        });
+    };
+
+    try {
+      const sock = window.socket;
+      if (sock && typeof sock.on === "function") {
+        sock.on("login", tryLoad);
+        sock.on("rank", tryLoad);
+        sock.on("setUserRank", tryLoad);
+      }
+    } catch {
+      /* CyTube socket may be unavailable during early boot */
+    }
+  }
+
   Promise.all([
     preload(BASE + "/dist/css/tokens.css"),
     preload(BASE + "/dist/css/base.css"),
@@ -258,47 +343,53 @@ interface BootOverlayApi {
     preload(BASE + "/dist/css/boot-overlay.css")
   ])
     .then(function () {
-      const scripts = [
-        "dist/core.bundle.js",
-        "dist/chat.bundle.js",
-        "dist/player.bundle.js",
-        "dist/playlist.bundle.js",
-        "dist/admin.bundle.js",
-        "dist/features.bundle.js"
-      ];
+      const scripts: string[] = ALWAYS_SCRIPTS.slice();
+      if (shouldLoadAdminBundle()) {
+        scripts.push(ADMIN_SCRIPT);
+      } else {
+        console.log("[BTFW] Skipping admin.bundle.js (no channel-admin permission)");
+      }
       return Promise.all(
         scripts.map(function (file) {
           return load(BASE + "/" + file);
         })
-      );
+      ).then(function () {
+        if (scripts.includes(ADMIN_SCRIPT)) {
+          adminBundleLoaded = true;
+        }
+      });
     })
     .then(function () {
       return window.BTFW.init("util:state");
     })
     .then(function () {
-      return Promise.all(
-        BOOT_FOUNDATION.map(function (name) {
-          return window.BTFW.init(name);
-        })
-      );
+      return initModuleGroup(BOOT_FOUNDATION);
     })
     .then(function () {
-      return Promise.all(
-        BOOT_LAYOUT.map(function (name) {
-          return window.BTFW.init(name);
-        })
-      );
+      return initModuleGroup(BOOT_LAYOUT);
     })
     .then(function () {
-      const groups = [BOOT_DOM, BOOT_CHAT, BOOT_NAV, BOOT_SYNC, BOOT_SETTINGS];
+      const groups: readonly (readonly string[])[] = [
+        BOOT_DOM,
+        BOOT_CHAT,
+        BOOT_NAV,
+        BOOT_SYNC,
+        BOOT_SETTINGS_VIEWER
+      ];
       const inits = groups.flatMap(function (group) {
         return group.map(function (name) {
           return window.BTFW.init(name);
         });
       });
+      if (adminBundleLoaded) {
+        for (const name of BOOT_SETTINGS_ADMIN) {
+          inits.push(window.BTFW.init(name));
+        }
+      }
       return Promise.all(inits);
     })
     .then(function () {
+      watchForLateAdminAccess();
       return window.BTFW.init("feature:layout").then(function (layout) {
         const layoutApi = layout as { commitLayout?: () => Promise<void> } | null;
         return layoutApi && layoutApi.commitLayout

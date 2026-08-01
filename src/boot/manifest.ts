@@ -51,12 +51,25 @@ export const BOOT_SYNC = [
   "feature:local-subs"
 ] as const;
 
-/** Settings, admin, and channel configuration. */
-export const BOOT_SETTINGS = [
+/** Viewer settings that ship outside admin.bundle.js. */
+export const BOOT_SETTINGS_VIEWER = [
   "feature:emoji-loader",
-  "feature:motd-editor",
-  "feature:channelThemeAdmin",
   "feature:themeSettings"
+] as const;
+
+/**
+ * Channel-admin modules from admin.bundle.js.
+ * Only inited when {@link canLoadAdminBundle} is true (issue #197).
+ */
+export const BOOT_SETTINGS_ADMIN = [
+  "feature:motd-editor",
+  "feature:channelThemeAdmin"
+] as const;
+
+/** @deprecated Prefer BOOT_SETTINGS_VIEWER + BOOT_SETTINGS_ADMIN. */
+export const BOOT_SETTINGS = [
+  ...BOOT_SETTINGS_VIEWER,
+  ...BOOT_SETTINGS_ADMIN
 ] as const;
 
 export const BOOT_FEATURES = [

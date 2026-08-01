@@ -21,6 +21,21 @@ interface BtfwRegistryApi {
   state: BtfwAppState | null;
 }
 
+interface CytubeClientLike {
+  hasPermission?: (permission: string) => boolean;
+  rank?: number;
+  login?: string;
+}
+
+interface CytubeSocketLike {
+  on(event: string, handler: (...args: unknown[]) => void): unknown;
+}
+
 interface Window {
   BTFW: BtfwRegistryApi;
+  CLIENT?: CytubeClientLike;
+  hasPermission?: (permission: string) => boolean;
+  RANK?: Record<string, number>;
+  Ranks?: Record<string, number>;
+  socket?: CytubeSocketLike;
 }

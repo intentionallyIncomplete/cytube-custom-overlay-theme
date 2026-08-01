@@ -134,20 +134,22 @@ const bundles = [
     ]
   },
   {
+    // Admin-only: gated at runtime so non-admins never fetch this IIFE (#197).
     name: "admin",
+    modules: [
+      "src/modules/feature-channel-theme-admin.js",
+      "src/modules/feature-motd-editor.js"
+    ]
+  },
+  {
+    // Viewer features + theme settings (moved out of admin so gate does not break themes).
+    name: "features",
     modules: [
       "src/modules/user-release-notes.generated.js",
       "src/modules/util-theme-runtime.js",
       "src/modules/util-theme-icon-packs.js",
       "src/modules/util-theme-presets.js",
-      "src/modules/feature-channel-theme-admin.js",
       "src/modules/feature-theme-settings.js",
-      "src/modules/feature-motd-editor.js"
-    ]
-  },
-  {
-    name: "features",
-    modules: [
       "src/modules/feature-footer.js",
       "src/modules/feature-theme-icons.js",
       "src/modules/feature-navbar.js",
