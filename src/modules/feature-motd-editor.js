@@ -2,6 +2,11 @@
    MOTD editor using Summernote (outputs inline styles, not classes).
    Saves via socket.emit("setMotd", { motd: "<html>" }).
 */
+import {
+  createDirtyApplyController,
+  setApplyButtonVisible
+} from "../lib/dirty-apply.js";
+
 BTFW.define("feature:motd-editor", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -102,7 +107,7 @@ BTFW.define("feature:motd-editor", [], async () => {
           <div id="btfw-motd-editor"></div>
         </section>
       <footer class="modal-card-foot">
-        <button class="button is-link" id="btfw-motd-save">Save</button>
+        <button class="button is-link" id="btfw-motd-apply" hidden aria-hidden="true" tabindex="-1">Apply</button>
         <button class="button" id="btfw-motd-cancel">Cancel</button>
       </footer>
     </div>`;
@@ -111,7 +116,13 @@ BTFW.define("feature:motd-editor", [], async () => {
   }
 
   function wireModalDismiss(m, onDismiss) {
-    const dismiss = () => {
+    const dismiss = async () => {
+      if (m._btfwMotdDirty) {
+        const ok = await m._btfwMotdDirty.tryClose();
+        if (!ok) return;
+        m._btfwMotdDirty.dispose();
+        m._btfwMotdDirty = null;
+      }
       const host = $("#btfw-motd-editor", m);
       if (window.jQuery && window.jQuery.fn.summernote && host) {
         const hasEditor = jQuery(host).next(".note-editor").length;
@@ -120,9 +131,9 @@ BTFW.define("feature:motd-editor", [], async () => {
       motion.closeModal(m);
       if (typeof onDismiss === "function") onDismiss();
     };
-    $(".modal-background", m)?.addEventListener("click", dismiss);
-    $(".delete", m)?.addEventListener("click", dismiss);
-    $("#btfw-motd-cancel", m)?.addEventListener("click", dismiss);
+    $(".modal-background", m)?.addEventListener("click", () => { void dismiss(); });
+    $(".delete", m)?.addEventListener("click", () => { void dismiss(); });
+    $("#btfw-motd-cancel", m)?.addEventListener("click", () => { void dismiss(); });
     return dismiss;
   }
 
@@ -196,35 +207,73 @@ BTFW.define("feature:motd-editor", [], async () => {
       host.innerHTML = `<textarea class="textarea" style="height:400px;">${initialHTML}</textarea>`;
     }
 
-    const saveBtn = $("#btfw-motd-save", m);
-    if (saveBtn) {
-      saveBtn.onclick = async ()=>{
-        const html = window.jQuery && window.jQuery.fn.summernote 
-          ? jQuery(host).summernote('code') 
-          : ($("#btfw-motd-editor textarea")?.value || "");
-        
-        console.log('[motd-editor] Saving MOTD, length:', html.length);
-        
-        try {
-          if (window.socket?.emit) {
-            socket.emit("setMotd", { motd: html });
-          }
-        } catch(e){ 
-          console.warn("[motd-editor] setMotd emit failed", e); 
-        }
+    const applyBtn = $("#btfw-motd-apply", m);
+    let baselineHtml = initialHTML;
+    let currentHtml = () =>
+      window.jQuery && window.jQuery.fn.summernote
+        ? jQuery(host).summernote("code")
+        : ($("#btfw-motd-editor textarea", m)?.value || "");
 
-        const stackModule = await getStackApi();
-        if (stackModule?.applyMotdUpdate) {
-          stackModule.applyMotdUpdate(html);
-        } else {
-          const motdDisplay = resolveMotdDisplay();
-          if (motdDisplay) motdDisplay.innerHTML = html;
-          const csMotd = $("#cs-motdtext");
-          if (csMotd) csMotd.value = html;
+    if (applyBtn) {
+      setApplyButtonVisible(applyBtn, false);
+      const section = {
+        id: "motd-modal",
+        snapshot: () => currentHtml(),
+        restore: (snap) => {
+          if (window.jQuery && window.jQuery.fn.summernote) {
+            jQuery(host).summernote("code", snap);
+          } else {
+            const ta = $("#btfw-motd-editor textarea", m);
+            if (ta) ta.value = snap;
+          }
+        },
+        apply: async () => {
+          const html = currentHtml();
+          try {
+            if (window.socket?.emit) {
+              socket.emit("setMotd", { motd: html });
+            }
+          } catch (e) {
+            console.warn("[motd-editor] setMotd emit failed", e);
+            return { ok: false, error: "Failed to emit setMotd" };
+          }
+
+          const stackModule = await getStackApi();
+          if (stackModule?.applyMotdUpdate) {
+            stackModule.applyMotdUpdate(html);
+          } else {
+            const motdDisplay = resolveMotdDisplay();
+            if (motdDisplay) motdDisplay.innerHTML = html;
+            const csMotd = $("#cs-motdtext");
+            if (csMotd) csMotd.value = html;
+          }
+          baselineHtml = html;
+          return { ok: true };
         }
-        
-        closeEditor();
       };
+
+      const controller = createDirtyApplyController({
+        modal: m,
+        applyButton: applyBtn,
+        sections: [section],
+        confirmDiscard: () => window.confirm("Discard unsaved MOTD changes?")
+      });
+
+      applyBtn.onclick = async () => {
+        const result = await controller.applyAll();
+        if (result.ok) closeEditor();
+      };
+
+      if (window.jQuery && window.jQuery.fn.summernote) {
+        jQuery(host).on("summernote.change", () => {
+          controller.markDirty("motd-modal");
+        });
+      } else {
+        const ta = $("#btfw-motd-editor textarea", m);
+        ta?.addEventListener("input", () => controller.markDirty("motd-modal"));
+      }
+
+      m._btfwMotdDirty = controller;
     }
 
     motion.openModal(m);
@@ -274,6 +323,8 @@ BTFW.define("feature:motd-editor", [], async () => {
         onChange: function(contents) {
           // Summernote automatically updates the original textarea
           textarea.value = contents;
+          // Bubble so feature:channelOptionsApply dirty controller sees the edit
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
         }
       }
     });

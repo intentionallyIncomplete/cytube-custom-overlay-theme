@@ -1563,9 +1563,14 @@ setTimeout(() => {
       overwriteConfig(cfg, latest);
       dirty = true;
       if (status) {
-        status.textContent = "Changes pending. Click apply to sync with Channel JS/CSS.";
+        status.textContent = "Changes pending. Click Apply in the channel settings footer…";
         status.dataset.variant = "pending";
       }
+      try {
+        BTFW.init("feature:channelOptionsApply").then((mod) => {
+          mod?.markDirty?.("theme-admin");
+        });
+      } catch (_) {}
     };
 
     watchInputs(panel, cfg, markDirty);
@@ -1625,9 +1630,14 @@ setTimeout(() => {
     if (needsInit) {
       dirty = true;
       if (status) {
-        status.textContent = "Theme config needs to be applied. Click Apply to sync with Channel JS/CSS.";
+        status.textContent = "Changes pending. Click Apply in the channel settings footer…";
         status.dataset.variant = "idle";
       }
+      try {
+        BTFW.init("feature:channelOptionsApply").then((mod) => {
+          mod?.markDirty?.("theme-admin");
+        });
+      } catch (_) {}
     } else if (status && !dirty) {
       status.textContent = "Theme settings loaded. No changes applied yet.";
       status.dataset.variant = "idle";

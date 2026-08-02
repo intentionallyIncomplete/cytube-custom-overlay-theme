@@ -5,8 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import {
   applyChatTextPx,
   applyEmoteSize,
+  applyMediaScale,
   applyStoredChatTypography,
-  emoteSizeToPx
+  clampMediaScale,
+  emoteSizeToPercent,
+  MEDIA_SCALE_DEFAULT,
+  normalizeEmoteSizeName
 } from "../../src/lib/apply-chat-typography";
 import { wireDeferredFeatureOpen } from "../../src/lib/defer-feature-open";
 import { EVENTS, LS_KEYS } from "../../src/lib/btfw-constants.js";
@@ -63,11 +67,14 @@ function createFakeDocument(): Document {
 }
 
 describe("apply-chat-typography", () => {
-  it("maps emote size names to px", () => {
-    expect(emoteSizeToPx("small")).toBe(100);
-    expect(emoteSizeToPx("big")).toBe(170);
-    expect(emoteSizeToPx("medium")).toBe(130);
-    expect(emoteSizeToPx("unknown")).toBe(130);
+  it("maps emote size names to chat-width percent", () => {
+    expect(emoteSizeToPercent("small")).toBe(30);
+    expect(emoteSizeToPercent("big")).toBe(90);
+    expect(emoteSizeToPercent("medium")).toBe(60);
+    expect(emoteSizeToPercent("unknown")).toBe(60);
+    expect(emoteSizeToPercent("sm")).toBe(30);
+    expect(emoteSizeToPercent("lg")).toBe(90);
+    expect(normalizeEmoteSizeName("md")).toBe("medium");
   });
 
   it("sets and clamps chat text CSS var on #chatwrap", () => {
@@ -80,18 +87,34 @@ describe("apply-chat-typography", () => {
     expect(wrap.style.getPropertyValue("--btfw-chat-text")).toBe("20px");
   });
 
-  it("dispatches emote size change event", () => {
+  it("dispatches emote size change event with percent vars", () => {
     const doc = createFakeDocument();
     const spy = vi.fn();
     doc.addEventListener(EVENTS.chatEmoteSizeChanged, spy);
 
-    const px = applyEmoteSize("big", doc);
-    expect(px).toBe(170);
+    const pct = applyEmoteSize("big", doc);
+    expect(pct).toBe(90);
+    const rootStyle = (doc.documentElement as unknown as { style: StyleBag }).style;
+    expect(rootStyle.getPropertyValue("--btfw-emote-size-pct")).toBe("90");
+    expect(rootStyle.getPropertyValue("--btfw-emote-size")).toBe("90%");
+    expect(spy).toHaveBeenCalledOnce();
+  });
+
+  it("clamps and applies media scale percent", () => {
+    expect(clampMediaScale(80)).toBe(80);
+    expect(clampMediaScale(37)).toBe(40);
+    expect(clampMediaScale(103)).toBe(100);
+    expect(clampMediaScale("not-a-number")).toBe(MEDIA_SCALE_DEFAULT);
+
+    const doc = createFakeDocument();
+    const spy = vi.fn();
+    doc.addEventListener(EVENTS.chatMediaScaleChanged, spy);
+    expect(applyMediaScale(65, doc)).toBe(65);
     expect(
       (doc.documentElement as unknown as { style: StyleBag }).style.getPropertyValue(
-        "--btfw-emote-size"
+        "--btfw-chat-media-scale"
       )
-    ).toBe("170px");
+    ).toBe("65%");
     expect(spy).toHaveBeenCalledOnce();
   });
 
@@ -113,16 +136,16 @@ describe("apply-chat-typography", () => {
 
     store.set(LS_KEYS.chatTextPx, "16");
     store.set(LS_KEYS.emoteSize, "small");
+    store.set(LS_KEYS.mediaScale, "70");
 
     const doc = createFakeDocument();
     applyStoredChatTypography(doc);
     const wrap = doc.querySelector("#chatwrap") as unknown as { style: StyleBag };
+    const rootStyle = (doc.documentElement as unknown as { style: StyleBag }).style;
     expect(wrap.style.getPropertyValue("--btfw-chat-text")).toBe("16px");
-    expect(
-      (doc.documentElement as unknown as { style: StyleBag }).style.getPropertyValue(
-        "--btfw-emote-size"
-      )
-    ).toBe("100px");
+    expect(rootStyle.getPropertyValue("--btfw-emote-size")).toBe("30%");
+    expect(rootStyle.getPropertyValue("--btfw-emote-size-pct")).toBe("30");
+    expect(rootStyle.getPropertyValue("--btfw-chat-media-scale")).toBe("70%");
 
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,

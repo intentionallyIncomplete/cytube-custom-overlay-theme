@@ -2,13 +2,19 @@
 /* BTFW — feature:themeSettings */
 import {
   applyChatTextPx as applyChatTextPxShared,
-  applyEmoteSize as applyEmoteSizeShared
+  applyEmoteSize as applyEmoteSizeShared,
+  applyMediaScale as applyMediaScaleShared,
+  MEDIA_SCALE_DEFAULT,
+  MEDIA_SCALE_MAX,
+  MEDIA_SCALE_MIN,
+  MEDIA_SCALE_STEP
 } from "../lib/apply-chat-typography.js";
 
-BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants"], async ({ init }) => {
+BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const themePresets = await init("util:themePresets");
   const { LS_KEYS, EVENTS } = await init("util:constants");
+  const dirtyApplyUtil = await init("util:dirtyApply");
   const motion = await BTFW.init("util:motion");
 
   const $  = (s, r=document) => r.querySelector(s);
@@ -20,6 +26,10 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   let appearanceDraft = themeRuntime.cloneAppearance(themePresets.getActiveAppearance());
   let editingPresetId = themePresets.getActivePreset()?.id || null;
   let generalTabSyncing = false;
+  /** @type {string[]} */
+  let ignoreDraft = [];
+  /** @type {ReturnType<typeof dirtyApplyUtil.createDirtyApplyController> | null} */
+  let dirtyController = null;
 
   function buildTintOptionsHtml() {
     const options = Object.entries(themeRuntime.TINT_PRESETS)
@@ -261,6 +271,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   function applyEmoteSize(size){
     applyEmoteSizeShared(size, document);
   }
+  function applyMediaScale(value){
+    applyMediaScaleShared(value, document);
+  }
 
   function persistImageHoverMagnify(modal) {
     const on = $("#btfw-image-hover-magnify", modal)?.checked;
@@ -268,6 +281,94 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     document.dispatchEvent(new CustomEvent(EVENTS.chatImageHoverMagnifyChanged, {
       detail: { enabled: !!on }
     }));
+  }
+
+  function readThemeControlsSnapshot(modal) {
+    return {
+      avatarsMode: $("#btfw-avatars-mode", modal)?.value || "big",
+      chatTextPx: $("#btfw-chat-textsize", modal)?.value || "14",
+      emoteSize: $("#btfw-emote-size", modal)?.value || "medium",
+      mediaScale: $("#btfw-media-scale", modal)?.value || String(MEDIA_SCALE_DEFAULT),
+      gifAutoplay: !!$("#btfw-gif-autoplay", modal)?.checked,
+      chatAutoScroll: !!$("#btfw-chat-autoscroll", modal)?.checked,
+      imageHoverMagnify: !!$("#btfw-image-hover-magnify", modal)?.checked,
+      joinNotices: !!$("#btfw-chat-join-notices", modal)?.checked,
+      localSubs: !!$("#btfw-localsubs-toggle", modal)?.checked,
+      chatSide: $("#btfw-chat-side", modal)?.value || "right",
+      ignore: ignoreDraft.slice(),
+      appearance: themeRuntime.cloneAppearance(
+        modal ? readGeneralTabDraft(modal) : appearanceDraft
+      )
+    };
+  }
+
+  function writeThemeControlsSnapshot(modal, data) {
+    if (!modal || !data) return;
+    const avatarSelect = $("#btfw-avatars-mode", modal);
+    if (avatarSelect) avatarSelect.value = data.avatarsMode || "big";
+    const chatSlider = $("#btfw-chat-textsize", modal);
+    if (chatSlider) chatSlider.value = data.chatTextPx || "14";
+    const chatLabel = $("#btfw-chat-textsize-value", modal);
+    if (chatLabel) chatLabel.textContent = `${data.chatTextPx || "14"}px`;
+    const emoteSelect = $("#btfw-emote-size", modal);
+    if (emoteSelect) emoteSelect.value = data.emoteSize || "medium";
+    const mediaSlider = $("#btfw-media-scale", modal);
+    if (mediaSlider) mediaSlider.value = data.mediaScale || String(MEDIA_SCALE_DEFAULT);
+    const mediaLabel = $("#btfw-media-scale-value", modal);
+    if (mediaLabel) mediaLabel.textContent = `${data.mediaScale || MEDIA_SCALE_DEFAULT}%`;
+    const gif = $("#btfw-gif-autoplay", modal);
+    if (gif) gif.checked = !!data.gifAutoplay;
+    const autoScroll = $("#btfw-chat-autoscroll", modal);
+    if (autoScroll) autoScroll.checked = !!data.chatAutoScroll;
+    const hover = $("#btfw-image-hover-magnify", modal);
+    if (hover) hover.checked = !!data.imageHoverMagnify;
+    const join = $("#btfw-chat-join-notices", modal);
+    if (join) join.checked = !!data.joinNotices;
+    const subs = $("#btfw-localsubs-toggle", modal);
+    if (subs) subs.checked = !!data.localSubs;
+    const side = $("#btfw-chat-side", modal);
+    if (side) side.value = data.chatSide || "right";
+    ignoreDraft = Array.isArray(data.ignore) ? data.ignore.slice() : [];
+    appearanceDraft = themeRuntime.cloneAppearance(data.appearance || themePresets.getActiveAppearance());
+    syncGeneralTabUI(modal);
+    themeRuntime.applyUserAppearance(appearanceDraft);
+    if (typeof modal._btfwRenderIgnoreList === "function") modal._btfwRenderIgnoreList();
+  }
+
+  function wireDirtyApply(modal) {
+    if (!modal || modal._btfwDirtyApplyWired) return;
+    modal._btfwDirtyApplyWired = true;
+
+    const applyBtn = $("#btfw-ts-apply", modal);
+    const statusEl = $("#btfw-ts-apply-status", modal);
+    if (!applyBtn || !dirtyApplyUtil?.createDirtyApplyController) return;
+
+    const section = {
+      id: "theme-settings",
+      snapshot: () => JSON.stringify(readThemeControlsSnapshot(modal)),
+      restore: (raw) => {
+        try {
+          writeThemeControlsSnapshot(modal, JSON.parse(raw));
+        } catch (_) {}
+      },
+      apply: () => {
+        applyAndPersist();
+        return { ok: true };
+      }
+    };
+
+    dirtyController = dirtyApplyUtil.createDirtyApplyController({
+      modal,
+      applyButton: applyBtn,
+      sections: [section],
+      statusEl,
+      confirmDiscard: () => window.confirm("Discard unsaved theme settings?")
+    });
+
+    applyBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      void dirtyController?.applyAll();
+    });
   }
 
   const moduleCache = new Map();
@@ -399,7 +500,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                           <select class="btfw-ts-select is-small is-fullwidth" id="btfw-user-preset-select"></select>
                         </div>
                         <div class="control">
-                          <button type="button" class="button is-small is-link" id="btfw-user-preset-save">Save</button>
+                          <button type="button" class="button is-small is-link" id="btfw-user-preset-save">Save preset</button>
                         </div>
                       </div>
                       <p class="btfw-help">Load a preset or save the current look. Use Apply to persist edits to the active preset.</p>
@@ -493,11 +594,19 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                     <div class="btfw-ts-control">
                       <label class="btfw-input__label" for="btfw-emote-size">Emote size</label>
                       <select class="btfw-ts-select is-small" id="btfw-emote-size">
-                          <option value="small">Small (100×100)</option>
-                          <option value="medium">Medium (130×130)</option>
-                          <option value="big">Big (170×170)</option>
+                          <option value="small">Small (30%)</option>
+                          <option value="medium">Medium (60%)</option>
+                          <option value="big">Big (90%)</option>
                       </select>
-                      <p class="btfw-help">Applies to elements with <code>.channel-emote</code> and the GIF picker.</p>
+                      <p class="btfw-help">Max width for static <code>.channel-emote</code> images (percent of chat width). Animated GIF emotes follow Media scale.</p>
+                    </div>
+                    <div class="btfw-ts-control">
+                      <label class="btfw-input__label" for="btfw-media-scale">Media scale</label>
+                      <div class="control btfw-range-control">
+                        <input type="range" id="btfw-media-scale" min="${MEDIA_SCALE_MIN}" max="${MEDIA_SCALE_MAX}" step="${MEDIA_SCALE_STEP}" value="${MEDIA_SCALE_DEFAULT}">
+                        <span class="btfw-range-value" id="btfw-media-scale-value">${MEDIA_SCALE_DEFAULT}%</span>
+                      </div>
+                      <p class="btfw-help">Maximum width for GIFs and linked images in chat, as a percent of the chat window.</p>
                     </div>
                     <label class="checkbox btfw-checkbox">
                       <input type="checkbox" id="btfw-gif-autoplay"> <span>Autoplay GIFs in chat (otherwise play on hover)</span>
@@ -583,7 +692,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                 <section class="btfw-ts-card">
                   <header class="btfw-ts-card__header">
                     <h3>Ignored users</h3>
-                    <p>Hide messages from specific usernames. Changes apply instantly.</p>
+                    <p>Hide messages from specific usernames. Add/remove here, then click Apply.</p>
                   </header>
                   <div class="btfw-ts-card__body">
                     <form class="btfw-ignore-form" id="btfw-ignore-form">
@@ -605,7 +714,8 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         </section>
 
         <footer class="modal-card-foot">
-          <button class="button is-link" id="btfw-ts-apply">Apply</button>
+          <span id="btfw-ts-apply-status" class="btfw-apply-status" role="status" aria-live="polite"></span>
+          <button class="button is-link" id="btfw-ts-apply" hidden aria-hidden="true" tabindex="-1">Apply</button>
           <button class="button" id="btfw-ts-close">Close</button>
         </footer>
       </div>
@@ -613,9 +723,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     document.body.appendChild(m);
 
     // Close actions
-    $(".modal-background", m).addEventListener("click", close);
-    $(".delete", m).addEventListener("click", close);
-    $("#btfw-ts-close", m).addEventListener("click", close);
+    $(".modal-background", m).addEventListener("click", () => { void close(); });
+    $(".delete", m).addEventListener("click", () => { void close(); });
+    $("#btfw-ts-close", m).addEventListener("click", () => { void close(); });
 
     // Tabs
     $("#btfw-ts-tabs ul", m).addEventListener("click", (e)=>{
@@ -626,21 +736,22 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       if (tab === "general") onGeneralTabOpen();
     });
 
-    // Apply button
-    $("#btfw-ts-apply", m).addEventListener("click", applyAndPersist);
-
-    const hoverMagnifyInput = $("#btfw-image-hover-magnify", m);
-    if (hoverMagnifyInput && !hoverMagnifyInput._btfwHoverMagnifyBound) {
-      hoverMagnifyInput._btfwHoverMagnifyBound = true;
-      hoverMagnifyInput.addEventListener("change", () => persistImageHoverMagnify(m));
-    }
-
     const chatTextSlider = $("#btfw-chat-textsize", m);
     const chatTextValue  = $("#btfw-chat-textsize-value", m);
     if (chatTextSlider && chatTextValue) {
       const updateLabel = (val) => { chatTextValue.textContent = `${val}px`; };
       chatTextSlider.addEventListener("input", () => updateLabel(chatTextSlider.value || "14"));
       updateLabel(chatTextSlider.value || "14");
+    }
+
+    const mediaScaleSlider = $("#btfw-media-scale", m);
+    const mediaScaleValue = $("#btfw-media-scale-value", m);
+    if (mediaScaleSlider && mediaScaleValue) {
+      const updateMediaLabel = (val) => { mediaScaleValue.textContent = `${val}%`; };
+      mediaScaleSlider.addEventListener("input", () => {
+        updateMediaLabel(mediaScaleSlider.value || String(MEDIA_SCALE_DEFAULT));
+      });
+      updateMediaLabel(mediaScaleSlider.value || String(MEDIA_SCALE_DEFAULT));
     }
 
     // Open via event (also wired at boot via wireOpenEvent)
@@ -652,7 +763,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
     const renderIgnoreList = () => {
       if (!ignoreListEl) return;
-      const names = getIgnoreNames();
+      const names = ignoreDraft.slice();
       ignoreListEl.innerHTML = "";
       if (!names.length) {
         const empty = document.createElement("p");
@@ -693,9 +804,12 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         event.preventDefault();
         const value = normalizeName(ignoreInput?.value || "");
         if (!value) return;
-        const added = addIgnoreName(value);
-        if (added && ignoreInput) ignoreInput.value = "";
+        const key = value.toLowerCase();
+        if (ignoreDraft.some((n) => n.toLowerCase() === key)) return;
+        ignoreDraft.push(value);
+        if (ignoreInput) ignoreInput.value = "";
         renderIgnoreList();
+        dirtyController?.markDirty("theme-settings");
       });
     }
 
@@ -705,9 +819,12 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         const button = event.target?.closest?.("[data-ignore-remove]");
         if (!button) return;
         const name = button.getAttribute("data-ignore-remove") || "";
-        if (removeIgnoreName(name)) {
-          renderIgnoreList();
-        }
+        const key = normalizeName(name).toLowerCase();
+        const next = ignoreDraft.filter((n) => n.toLowerCase() !== key);
+        if (next.length === ignoreDraft.length) return;
+        ignoreDraft = next;
+        renderIgnoreList();
+        dirtyController?.markDirty("theme-settings");
       });
     }
 
@@ -715,6 +832,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
     bindGeneralTab(m);
     syncGeneralTabUI(m);
+    wireDirtyApply(m);
 
     return m;
   }
@@ -725,6 +843,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     const avatarsMode = $("#btfw-avatars-mode", m)?.value || "big";
     const chatTextPx  = $("#btfw-chat-textsize", m)?.value || "14";
     const emoteSize   = $("#btfw-emote-size", m)?.value   || "medium";
+    const mediaScale  = $("#btfw-media-scale", m)?.value  || String(MEDIA_SCALE_DEFAULT);
     const gifAutoOn   = $("#btfw-gif-autoplay", m)?.checked;
     const autoScrollOn = $("#btfw-chat-autoscroll", m)?.checked;
     const hoverMagnifyOn = $("#btfw-image-hover-magnify", m)?.checked;
@@ -742,11 +861,26 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     set(LS_KEYS.localSubs,   localSubsOn ? "1":"0");
     set(LS_KEYS.layoutSide, chatSide);
 
+    // Commit ignore draft to storage + chat-ignore module
+    const desired = new Set(ignoreDraft.map((n) => n.toLowerCase()));
+    const current = getIgnoreNames();
+    current.forEach((name) => {
+      if (!desired.has(name.toLowerCase())) removeIgnoreName(name);
+    });
+    ignoreDraft.forEach((name) => {
+      const key = name.toLowerCase();
+      if (!current.some((n) => n.toLowerCase() === key)) addIgnoreName(name);
+    });
+    persistIgnoreNames(ignoreDraft.map((n) => n.toLowerCase()));
+    ignoreDraft = getIgnoreNames();
+
     if (avatarsModule?.setMode) avatarsModule.setMode(avatarsMode);
     else resolveAvatars().then(mod => { if (mod?.setMode) mod.setMode(avatarsMode); });
 
     applyChatTextPx(parseInt(chatTextPx,10));
     applyEmoteSize(emoteSize);
+    const mediaScalePct = applyMediaScale(mediaScale);
+    set(LS_KEYS.mediaScale, String(mediaScalePct));
 
     document.dispatchEvent(new CustomEvent(EVENTS.chatGifAutoplayChanged, { detail:{ autoplay: !!gifAutoOn } }));
     document.dispatchEvent(new CustomEvent(EVENTS.chatAutoScrollChanged, { detail:{ enabled: !!autoScrollOn } }));
@@ -760,7 +894,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     document.dispatchEvent(new CustomEvent(EVENTS.themeSettingsApply,     { detail:{
       values: {
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
-        emoteSize, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
+        emoteSize, mediaScale: mediaScalePct, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
         localSubs: !!localSubsOn,
         joinNotices: !!joinNoticesOn,
         chatSide,
@@ -793,6 +927,11 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       const chatLabel = $("#btfw-chat-textsize-value", m);
       if (chatLabel) chatLabel.textContent = `${chatPxNow}px`;
       $("#btfw-emote-size", m).value   = get(LS_KEYS.emoteSize,   "medium");
+      const mediaScaleNow = get(LS_KEYS.mediaScale, String(MEDIA_SCALE_DEFAULT));
+      const mediaSlider = $("#btfw-media-scale", m);
+      const mediaLabel = $("#btfw-media-scale-value", m);
+      if (mediaSlider) mediaSlider.value = mediaScaleNow;
+      if (mediaLabel) mediaLabel.textContent = `${mediaScaleNow}%`;
       $("#btfw-gif-autoplay", m).checked = get(LS_KEYS.gifAutoplay, "1") === "1";
       $("#btfw-chat-autoscroll", m).checked = get(LS_KEYS.chatAutoScroll, "1") === "1";
       $("#btfw-image-hover-magnify", m).checked = get(LS_KEYS.imageHoverMagnify, "0") === "1";
@@ -807,12 +946,21 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       onGeneralTabOpen();
     }
 
+    ignoreDraft = getIgnoreNames();
+    if (typeof m._btfwRenderIgnoreList === "function") m._btfwRenderIgnoreList();
+    dirtyController?.captureBaseline();
+
     motion.openModal(m);
     document.dispatchEvent(new CustomEvent(EVENTS.themeSettingsOpen));
   }
-  function close(){
+  async function close(){
     const modal = $("#btfw-theme-modal");
-    if (modal) motion.closeModal(modal);
+    if (!modal) return;
+    if (dirtyController) {
+      const ok = await dirtyController.tryClose();
+      if (!ok) return;
+    }
+    motion.closeModal(modal);
   }
 
   const OPEN_SELECTOR = "#btfw-theme-btn-chat, #btfw-theme-btn-nav, .btfw-theme-open";
@@ -994,6 +1142,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   function boot(){
     applyChatTextPx(parseInt(get(LS_KEYS.chatTextPx, "14"),10));
     applyEmoteSize(get(LS_KEYS.emoteSize,"medium"));
+    applyMediaScale(get(LS_KEYS.mediaScale, String(MEDIA_SCALE_DEFAULT)));
     wireOpeners();
     wireOpenEvent();
     decorateUserOptions();

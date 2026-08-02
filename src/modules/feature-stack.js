@@ -1743,6 +1743,10 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     window.socket.on("closePoll", () => schedulePollSync(refs));
   }
   
+  function isModalScopedFooter(el){
+    return !!el.closest('.modal, [role="dialog"]');
+  }
+
   function attachFooter(footer){
     if (!footer) return;
     if (footer.querySelector("#btfw-footer")) return;
@@ -1754,7 +1758,12 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
       return;
     }
 
-    const real=document.getElementById("footer")||document.querySelector("footer");
+    // Only adopt the real page footer here. A bare `footer` tag selector
+    // would otherwise match modal footers (e.g. Theme Settings, MOTD editor)
+    // and silently relocate their Apply/Close buttons into this hidden
+    // stack footer — see feature-theme-settings.js Apply button reveal bug.
+    const real = document.getElementById("footer")
+      || Array.from(document.querySelectorAll("footer")).find((el) => !isModalScopedFooter(el));
     if(real && !footer.contains(real)){
       real.classList.add("btfw-footer");
       footer.innerHTML="";

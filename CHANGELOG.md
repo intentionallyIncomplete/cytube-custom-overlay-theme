@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.26.0...v1.27.0) (2026-08-02)
+
+
+### Features
+
+* chat media sizing + universal dirty-Apply settings ([#220](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/220)) ([ce8bcbf](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/ce8bcbf209cf221cddbd5223d842338db84f03d1))
+
 # [1.26.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.25.7...v1.26.0) (2026-08-01)
 
 

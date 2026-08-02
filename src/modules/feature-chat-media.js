@@ -1,3 +1,8 @@
+import {
+  applyEmoteSize,
+  normalizeEmoteSizeName
+} from "../lib/apply-chat-typography.js";
+
 BTFW.define("feature:chatMedia", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -5,14 +10,19 @@ BTFW.define("feature:chatMedia", [], async () => {
   const LS_SIZE = "btfw:chat:emoteSize";
   const LS_AUTO = "btfw:chat:gifAutoplay"; // "1" | "0"
   const LS_HOVER_MAGNIFY = "btfw:chat:imageHoverMagnify"; // "1" | "0"
-  const SIZE_PX = { sm: 100, md: 130, lg: 170 };
-  const SEL = "#messagebuffer img.giphy.chat-picture, #messagebuffer img.klipy.chat-picture";
+  const SEL = "#messagebuffer img.chat-media.chat-picture, #messagebuffer img.giphy.chat-picture, #messagebuffer img.klipy.chat-picture, #messagebuffer img.tenor.chat-picture";
 
-  function getSize(){ try { return localStorage.getItem(LS_SIZE) || "md"; } catch(_) { return "md"; } }
+  function getSize(){
+    try {
+      return normalizeEmoteSizeName(localStorage.getItem(LS_SIZE) || "medium");
+    } catch (_) {
+      return "medium";
+    }
+  }
   function setSize(v){
-    if (!SIZE_PX[v]) v = "md";
-    try { localStorage.setItem(LS_SIZE, v); } catch(_){}
-    applySize(v);
+    const name = normalizeEmoteSizeName(v);
+    try { localStorage.setItem(LS_SIZE, name); } catch(_){}
+    applyEmoteSize(name);
   }
   function getAutoplay(){ try { return localStorage.getItem(LS_AUTO) ?? "1"; } catch(_) { return "1"; } }
   function setAutoplay(on){
@@ -33,11 +43,6 @@ BTFW.define("feature:chatMedia", [], async () => {
     }
   }
 
-  function applySize(mode){
-    const px = SIZE_PX[mode] || SIZE_PX.md;
-    document.documentElement.style.setProperty("--btfw-emote-size", px + "px");
-  }
-
   const isGiphy = (img)=> img.classList.contains("giphy") || /media\d\.giphy\.com\/media\/.+\/.+\.gif/i.test(img.src);
   const toAnimated = (src)=> src
     .replace(/\/giphy_s\.gif$/i, "/giphy.gif")
@@ -51,6 +56,7 @@ BTFW.define("feature:chatMedia", [], async () => {
     if (next && img.src !== next) img.src = next;
   }
 
+  /** Clear legacy inline/attr size caps so CSS media-scale vars win. */
   function clearGifSizeCaps(img){
     if (img.hasAttribute("width"))  img.removeAttribute("width");
     if (img.hasAttribute("height")) img.removeAttribute("height");
@@ -108,7 +114,7 @@ BTFW.define("feature:chatMedia", [], async () => {
       buf._btfwMediaMO = mo;
     }
 
-    applySize(getSize());
+    applyEmoteSize(getSize());
     applyAutoplay();
     applyHoverMagnify(getHoverMagnify() === "1");
 
