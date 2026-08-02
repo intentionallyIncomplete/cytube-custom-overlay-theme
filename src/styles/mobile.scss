@@ -7,8 +7,6 @@
   #btfw-grid.btfw-grid--vertical{
     padding: var(--btfw-gap, 10px) 8px;
     margin-top: 0;
-    --btfw-emote-size: 84px;
-    --btfw-chat-gif-max-width: 56%;
   }
 
   #btfw-grid.btfw-grid--vertical #videowrap{
@@ -36,11 +34,6 @@ body.btfw-mobile-nav-open{
 
 /* --------- Phones (<= 768px): larger touch targets, overlay sizes ---------- */
 @media (max-width: 768px){
-  #btfw-grid.btfw-grid--vertical{
-    --btfw-emote-size: 68px;
-    --btfw-chat-gif-max-width: 48%;
-  }
-
   /* Chat bars */
   #chatwrap .btfw-chat-topbar{
     padding: 8px 10px 6px;

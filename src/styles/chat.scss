@@ -1060,10 +1060,17 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
   background: transparent;
 }
 
-:root { --btfw-emote-size: 130px; } /* default medium = 130px */
+/* Default medium emote = 60% of chat width; JS may override on :root */
+:root {
+  --btfw-emote-size-pct: 60;
+  --btfw-emote-size: calc(var(--btfw-emote-size-pct) * 1%);
+  --btfw-chat-media-scale: 80%;
+}
 
 #messagebuffer {
-  --btfw-chat-gif-max-width: 90%;
+  container-type: inline-size;
+  container-name: btfw-chat;
+  --btfw-chat-media-scale: 80%;
   --btfw-chat-gif-max-height: 220px;
   --btfw-chat-card-max-width: min(600px, 90%);
   --btfw-chat-card-poster-max-height: 138px;
@@ -1073,8 +1080,8 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
 #messagebuffer img.channel-emote {
   width: auto !important;
   height: auto !important;
-  max-width: var(--btfw-emote-size) !important;
-  max-height: var(--btfw-emote-size) !important;
+  max-width: calc(var(--btfw-emote-size-pct) * 1%) !important;
+  max-height: calc(var(--btfw-emote-size-pct) * 1cqw) !important;
   object-fit: contain;
   display: inline-block;
   vertical-align: middle;
@@ -1082,19 +1089,19 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
   border-radius: var(--btfw-radius);
 }
 
-/* Animated GIF emotes: wider cap; pre-shrink when hover magnify is on */
+/* Animated GIF emotes: follow media scale, not emote % */
 #messagebuffer img.channel-emote[src$=".gif" i] {
-  max-width: var(--btfw-chat-gif-max-width) !important;
+  max-width: var(--btfw-chat-media-scale) !important;
   max-height: var(--btfw-chat-gif-max-height) !important;
 }
 
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote[src$=".gif" i] {
-  max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-width: calc(var(--btfw-chat-media-scale) / var(--btfw-chat-gif-hover-scale)) !important;
 }
 
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:not([src$=".gif" i]) {
-  max-width: calc(var(--btfw-emote-size) / var(--btfw-chat-gif-hover-scale)) !important;
-  max-height: calc(var(--btfw-emote-size) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-width: calc(var(--btfw-emote-size-pct) * 1% / var(--btfw-chat-gif-hover-scale)) !important;
+  max-height: calc(var(--btfw-emote-size-pct) * 1cqw / var(--btfw-chat-gif-hover-scale)) !important;
 }
 
 #messagebuffer img.giphy.chat-picture,
@@ -1103,7 +1110,7 @@ html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.channel-emote:not([src
 #messagebuffer img.chat-media.chat-picture {
   width: auto !important;
   height: auto !important;
-  max-width: var(--btfw-chat-gif-max-width) !important;
+  max-width: var(--btfw-chat-media-scale) !important;
   max-height: var(--btfw-chat-gif-max-height) !important;
   object-fit: contain;
   display: inline-block;
@@ -1116,7 +1123,7 @@ html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.giphy.chat-picture,
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.klipy.chat-picture,
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.tenor.chat-picture,
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-media.chat-picture {
-  max-width: calc(var(--btfw-chat-gif-max-width) / var(--btfw-chat-gif-hover-scale)) !important;
+  max-width: calc(var(--btfw-chat-media-scale) / var(--btfw-chat-gif-hover-scale)) !important;
   max-height: calc(var(--btfw-chat-gif-max-height) / var(--btfw-chat-gif-hover-scale)) !important;
 }
 
@@ -1143,7 +1150,7 @@ html[data-btfw-chat-hover-magnify="1"] #messagebuffer img.chat-media.chat-pictur
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer > div:has(img.chat-picture),
 html[data-btfw-chat-hover-magnify="1"] #messagebuffer > div:has(img.channel-emote) {
   content-visibility: visible;
-  contain-intrinsic-size: auto var(--btfw-emote-size, 130px);
+  contain-intrinsic-size: auto 8rem;
   overflow: visible;
 }
 

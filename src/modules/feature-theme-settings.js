@@ -2,7 +2,12 @@
 /* BTFW — feature:themeSettings */
 import {
   applyChatTextPx as applyChatTextPxShared,
-  applyEmoteSize as applyEmoteSizeShared
+  applyEmoteSize as applyEmoteSizeShared,
+  applyMediaScale as applyMediaScaleShared,
+  MEDIA_SCALE_DEFAULT,
+  MEDIA_SCALE_MAX,
+  MEDIA_SCALE_MIN,
+  MEDIA_SCALE_STEP
 } from "../lib/apply-chat-typography.js";
 
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants"], async ({ init }) => {
@@ -261,6 +266,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   function applyEmoteSize(size){
     applyEmoteSizeShared(size, document);
   }
+  function applyMediaScale(value){
+    applyMediaScaleShared(value, document);
+  }
 
   function persistImageHoverMagnify(modal) {
     const on = $("#btfw-image-hover-magnify", modal)?.checked;
@@ -493,11 +501,19 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                     <div class="btfw-ts-control">
                       <label class="btfw-input__label" for="btfw-emote-size">Emote size</label>
                       <select class="btfw-ts-select is-small" id="btfw-emote-size">
-                          <option value="small">Small (100×100)</option>
-                          <option value="medium">Medium (130×130)</option>
-                          <option value="big">Big (170×170)</option>
+                          <option value="small">Small (30%)</option>
+                          <option value="medium">Medium (60%)</option>
+                          <option value="big">Big (90%)</option>
                       </select>
-                      <p class="btfw-help">Applies to elements with <code>.channel-emote</code> and the GIF picker.</p>
+                      <p class="btfw-help">Max width for static <code>.channel-emote</code> images (percent of chat width). Animated GIF emotes follow Media scale.</p>
+                    </div>
+                    <div class="btfw-ts-control">
+                      <label class="btfw-input__label" for="btfw-media-scale">Media scale</label>
+                      <div class="control btfw-range-control">
+                        <input type="range" id="btfw-media-scale" min="${MEDIA_SCALE_MIN}" max="${MEDIA_SCALE_MAX}" step="${MEDIA_SCALE_STEP}" value="${MEDIA_SCALE_DEFAULT}">
+                        <span class="btfw-range-value" id="btfw-media-scale-value">${MEDIA_SCALE_DEFAULT}%</span>
+                      </div>
+                      <p class="btfw-help">Maximum width for GIFs and linked images in chat, as a percent of the chat window.</p>
                     </div>
                     <label class="checkbox btfw-checkbox">
                       <input type="checkbox" id="btfw-gif-autoplay"> <span>Autoplay GIFs in chat (otherwise play on hover)</span>
@@ -643,6 +659,16 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       updateLabel(chatTextSlider.value || "14");
     }
 
+    const mediaScaleSlider = $("#btfw-media-scale", m);
+    const mediaScaleValue = $("#btfw-media-scale-value", m);
+    if (mediaScaleSlider && mediaScaleValue) {
+      const updateMediaLabel = (val) => { mediaScaleValue.textContent = `${val}%`; };
+      mediaScaleSlider.addEventListener("input", () => {
+        updateMediaLabel(mediaScaleSlider.value || String(MEDIA_SCALE_DEFAULT));
+      });
+      updateMediaLabel(mediaScaleSlider.value || String(MEDIA_SCALE_DEFAULT));
+    }
+
     // Open via event (also wired at boot via wireOpenEvent)
     if (!openEventWired) wireOpenEvent();
 
@@ -725,6 +751,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     const avatarsMode = $("#btfw-avatars-mode", m)?.value || "big";
     const chatTextPx  = $("#btfw-chat-textsize", m)?.value || "14";
     const emoteSize   = $("#btfw-emote-size", m)?.value   || "medium";
+    const mediaScale  = $("#btfw-media-scale", m)?.value  || String(MEDIA_SCALE_DEFAULT);
     const gifAutoOn   = $("#btfw-gif-autoplay", m)?.checked;
     const autoScrollOn = $("#btfw-chat-autoscroll", m)?.checked;
     const hoverMagnifyOn = $("#btfw-image-hover-magnify", m)?.checked;
@@ -747,6 +774,8 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
     applyChatTextPx(parseInt(chatTextPx,10));
     applyEmoteSize(emoteSize);
+    const mediaScalePct = applyMediaScale(mediaScale);
+    set(LS_KEYS.mediaScale, String(mediaScalePct));
 
     document.dispatchEvent(new CustomEvent(EVENTS.chatGifAutoplayChanged, { detail:{ autoplay: !!gifAutoOn } }));
     document.dispatchEvent(new CustomEvent(EVENTS.chatAutoScrollChanged, { detail:{ enabled: !!autoScrollOn } }));
@@ -760,7 +789,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     document.dispatchEvent(new CustomEvent(EVENTS.themeSettingsApply,     { detail:{
       values: {
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
-        emoteSize, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
+        emoteSize, mediaScale: mediaScalePct, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
         localSubs: !!localSubsOn,
         joinNotices: !!joinNoticesOn,
         chatSide,
@@ -793,6 +822,11 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       const chatLabel = $("#btfw-chat-textsize-value", m);
       if (chatLabel) chatLabel.textContent = `${chatPxNow}px`;
       $("#btfw-emote-size", m).value   = get(LS_KEYS.emoteSize,   "medium");
+      const mediaScaleNow = get(LS_KEYS.mediaScale, String(MEDIA_SCALE_DEFAULT));
+      const mediaSlider = $("#btfw-media-scale", m);
+      const mediaLabel = $("#btfw-media-scale-value", m);
+      if (mediaSlider) mediaSlider.value = mediaScaleNow;
+      if (mediaLabel) mediaLabel.textContent = `${mediaScaleNow}%`;
       $("#btfw-gif-autoplay", m).checked = get(LS_KEYS.gifAutoplay, "1") === "1";
       $("#btfw-chat-autoscroll", m).checked = get(LS_KEYS.chatAutoScroll, "1") === "1";
       $("#btfw-image-hover-magnify", m).checked = get(LS_KEYS.imageHoverMagnify, "0") === "1";
@@ -994,6 +1028,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   function boot(){
     applyChatTextPx(parseInt(get(LS_KEYS.chatTextPx, "14"),10));
     applyEmoteSize(get(LS_KEYS.emoteSize,"medium"));
+    applyMediaScale(get(LS_KEYS.mediaScale, String(MEDIA_SCALE_DEFAULT)));
     wireOpeners();
     wireOpenEvent();
     decorateUserOptions();

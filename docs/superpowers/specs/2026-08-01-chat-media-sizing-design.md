@@ -1,7 +1,7 @@
 # Chat media sizing system
 
 **Date:** 2026-08-01  
-**Status:** Draft — awaiting user review  
+**Status:** Implemented on `feat/chat-media-sizing`  
 **Repo:** cytube-custom-overlay-theme
 
 ## Goal

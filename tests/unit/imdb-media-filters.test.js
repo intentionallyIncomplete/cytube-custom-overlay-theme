@@ -40,19 +40,18 @@ const imdbFilter = {
   flags: "g",
 };
 
-const CHAT_MEDIA_MAX_STYLE = ' style="max-width:300px;max-height:300px"';
 const CHAT_IMGUR_REFERRER_ATTR = ' referrerpolicy="no-referrer"';
 const IMGUR_IMAGE_HOST_RE = /(?:^|\/\/)(?:i\.)?imgur\.com\//i;
 
 const lensdumpCdnFilter = {
   source: "(https?://b\\.l3n\\.co/[^\\s<]+\\.(?:gif|webp|png|jpe?g))",
-  replace: `<img class="lensdump chat-picture chat-media"${CHAT_MEDIA_MAX_STYLE} src="\\1" />`,
+  replace: `<img class="lensdump chat-picture chat-media" src="\\1" />`,
   flags: "gi",
 };
 
 const imgurDirectFilter = {
   source: "(https?://i\\.imgur\\.com/[a-zA-Z0-9]+\\.(?:gif|webp|png|jpe?g|mp4)(?:\\?[^\\s<]*)?)",
-  replace: `<img class="imgur chat-picture chat-media"${CHAT_MEDIA_MAX_STYLE}${CHAT_IMGUR_REFERRER_ATTR} src="\\1" />`,
+  replace: `<img class="imgur chat-picture chat-media"${CHAT_IMGUR_REFERRER_ATTR} src="\\1" />`,
   flags: "gi",
 };
 
@@ -118,8 +117,8 @@ test("imgur direct filter embeds url with tracking query string", () => {
   const url = "https://i.imgur.com/YV32qsq.jpg?fb";
   const out = pcreStyleReplace(imgurDirectFilter, url);
   assert.match(out, /src="https:\/\/i\.imgur\.com\/YV32qsq\.jpg\?fb"/);
-  assert.match(out, /max-width:300px/);
-  assert.match(out, /max-height:300px/);
+  assert.doesNotMatch(out, /max-width:300px/);
+  assert.doesNotMatch(out, /max-height:300px/);
   assert.doesNotMatch(out, /\?fb(?![^"]*")/);
 });
 
