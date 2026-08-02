@@ -57,7 +57,9 @@ export const BOOT_SYNC = [
  */
 export const BOOT_SETTINGS_VIEWER = [
   "feature:emoji-loader",
-  "util:themePresets"
+  "util:themePresets",
+  // Channel Options dirty→Apply footer (MOTD/CSS/JS/Permissions); leave General auto-save alone
+  "feature:channelOptionsApply"
 ] as const;
 
 /**

@@ -542,6 +542,23 @@
   flex-shrink: 0;
   justify-content: flex-end;
   gap: 12px;
+  align-items: center;
+}
+
+#btfw-theme-modal .modal-card-foot .btfw-apply-status,
+.modal-footer .btfw-apply-status,
+.modal-card-foot .btfw-apply-status {
+  margin-right: auto;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--btfw-color-text) 72%, transparent 28%);
+  min-height: 1.2em;
+}
+
+#btfw-theme-modal .modal-card-foot .button[hidden],
+.modal-footer .button[hidden],
+.modal-card-foot .button[hidden],
+.btfw-legacy-save-hidden[hidden] {
+  display: none !important;
 }
 
 #btfw-theme-modal .modal-card-foot .button{

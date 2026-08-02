@@ -90,6 +90,16 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     notes: "Gitignored; never ships to CDN.",
   },
   {
+    path: "docs",
+    ownership: "local-ephemera",
+    decision: "keep",
+    destination: "docs/",
+    followUpIssue: null,
+    purpose: "Local planning notes and design specs (e.g. docs/superpowers/specs/).",
+    notes:
+      "Gitignored via .gitignore; a small number of durable design-spec files are force-tracked. Not part of the public CDN tree.",
+  },
+  {
     path: "dist",
     ownership: "generated",
     decision: "keep",

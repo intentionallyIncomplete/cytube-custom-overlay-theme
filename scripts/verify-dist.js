@@ -36,6 +36,12 @@ if (!/feature:themeSettings/.test(featuresBundle)) {
   );
   process.exit(1);
 }
+if (!/feature:channelOptionsApply/.test(featuresBundle)) {
+  console.error(
+    "features.bundle.js does not define feature:channelOptionsApply (Channel Options dirty→Apply must ship to viewers/mods)"
+  );
+  process.exit(1);
+}
 
 const adminBundle = fs.readFileSync(path.join(rootDir, "dist/admin.bundle.js"), "utf8");
 if (!/feature:channelThemeAdmin/.test(adminBundle)) {
@@ -52,6 +58,7 @@ if (/feature:themeSettings/.test(adminBundle)) {
 console.log("✓ All production bundles present");
 console.log("✓ core.bundle.js includes util:motion");
 console.log("✓ features.bundle.js includes feature:themeSettings");
+console.log("✓ features.bundle.js includes feature:channelOptionsApply");
 console.log("✓ admin.bundle.js is admin-only (channelThemeAdmin, no themeSettings)");
 
 if (!verifyCss()) {

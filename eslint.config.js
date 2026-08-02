@@ -39,9 +39,13 @@ const esmModuleFiles = [
   "src/modules/util-templates.js",
   "src/modules/util-chat-autoscroll.js",
   "src/modules/util-theme-presets.js",
+  "src/modules/util-dirty-apply.js",
   "src/modules/feature-theme-settings.js",
   "src/modules/feature-nowplaying.js",
   "src/modules/feature-stack.js",
+  "src/modules/feature-chat-media.js",
+  "src/modules/feature-channel-options-apply.js",
+  "src/modules/feature-motd-editor.js",
 ];
 
 export default [

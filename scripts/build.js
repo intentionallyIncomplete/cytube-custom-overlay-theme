@@ -83,6 +83,7 @@ const bundles = [
     modules: [
       "src/modules/util-constants.js",
       "src/modules/util-dom.js",
+      "src/modules/util-dirty-apply.js",
       "src/modules/util-state.js",
       "src/modules/util-templates.js",
       "src/modules/util-motion.js",
@@ -154,6 +155,7 @@ const bundles = [
       "src/modules/feature-theme-icons.js",
       "src/modules/feature-navbar.js",
       "src/modules/feature-modal-skin.js",
+      "src/modules/feature-channel-options-apply.js",
       "src/modules/feature-emotes.js",
       "src/modules/feature-emoji-compat.js",
       "src/modules/feature-emoji-loader.js",
