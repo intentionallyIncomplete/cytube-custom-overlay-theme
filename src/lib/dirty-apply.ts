@@ -31,6 +31,8 @@ export interface DirtyApplyController {
   captureBaseline(): void;
   applyAll(): Promise<PersistResult>;
   tryClose(): Promise<boolean>;
+  /** Restore baselines without prompting (caller already confirmed discard). */
+  discard(): void;
   dispose(): void;
 }
 
@@ -249,6 +251,17 @@ export function createDirtyApplyController(
     return { ok: true };
   }
 
+  function discard(): void {
+    for (const section of sections) {
+      const baseline = baselines.get(section.id);
+      if (baseline !== undefined) {
+        section.restore(baseline);
+      }
+    }
+    forcedDirty.clear();
+    recalculate();
+  }
+
   async function tryClose(): Promise<boolean> {
     if (!isDirty()) return true;
     if (confirmDiscard) {
@@ -258,14 +271,7 @@ export function createDirtyApplyController(
       const ok = window.confirm("Discard unsaved changes?");
       if (!ok) return false;
     }
-    for (const section of sections) {
-      const baseline = baselines.get(section.id);
-      if (baseline !== undefined) {
-        section.restore(baseline);
-      }
-    }
-    forcedDirty.clear();
-    recalculate();
+    discard();
     return true;
   }
 
@@ -305,6 +311,7 @@ export function createDirtyApplyController(
     captureBaseline,
     applyAll,
     tryClose,
+    discard,
     dispose(): void {
       abort.abort();
     }

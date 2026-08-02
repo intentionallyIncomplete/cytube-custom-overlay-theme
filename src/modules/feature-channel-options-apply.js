@@ -257,8 +257,7 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
       applyButton: parts.applyBtn,
       sections,
       ignoreRoots: IGNORE_ROOTS,
-      statusEl: parts.status,
-      confirmDiscard: () => window.confirm("Discard unsaved channel settings?")
+      statusEl: parts.status
     });
 
     parts.applyBtn.addEventListener("click", (event) => {
@@ -266,16 +265,16 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
       void controller?.applyAll();
     });
 
-    const onHide = async (event) => {
+    const onHide = (event) => {
       if (!controller?.isDirty()) return;
-      const ok = await controller.tryClose();
-      if (!ok) {
+      // Bootstrap 3 hide.bs.modal only honors synchronous preventDefault.
+      const discard = window.confirm("Discard unsaved channel settings?");
+      if (!discard) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        try {
-          if (window.jQuery) window.jQuery(modal).modal("show");
-        } catch (_) {}
+        return;
       }
+      controller.discard();
     };
 
     modal.addEventListener("hide.bs.modal", onHide);
@@ -286,7 +285,13 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
       permsObserver?.disconnect();
       permsObserver = new MutationObserver(() => {
         hideLegacySaves(modal);
-        controller?.recalculate();
+        if (!controller) return;
+        const wasDirty = controller.isDirty();
+        controller.recalculate();
+        // First hydrate of #cs-permedit must not look like a user edit
+        if (!wasDirty && controller.isDirty()) {
+          controller.captureBaseline();
+        }
       });
       permsObserver.observe(permRoot, { childList: true, subtree: true });
     }

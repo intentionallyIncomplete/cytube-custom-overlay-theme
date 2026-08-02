@@ -316,6 +316,30 @@ describe("createDirtyApplyController", () => {
     controller.dispose();
   });
 
+  it("discard restores without prompting", () => {
+    const modal = createFakeEl("modal");
+    const button = createFakeEl("apply");
+    const section = createSection("a", "base");
+    const confirmDiscard = vi.fn(() => true);
+
+    const controller = createDirtyApplyController({
+      modal: modal as unknown as HTMLElement,
+      applyButton: button as unknown as HTMLButtonElement,
+      sections: [section],
+      confirmDiscard
+    });
+    section.value = "edited";
+    controller.recalculate();
+    expect(controller.isDirty()).toBe(true);
+
+    controller.discard();
+    expect(confirmDiscard).not.toHaveBeenCalled();
+    expect(section.value).toBe("base");
+    expect(controller.isDirty()).toBe(false);
+
+    controller.dispose();
+  });
+
   it("markDirty forces dirty even when snapshot matches", () => {
     const modal = createFakeEl("modal");
     const button = createFakeEl("apply");

@@ -323,6 +323,8 @@ BTFW.define("feature:motd-editor", [], async () => {
         onChange: function(contents) {
           // Summernote automatically updates the original textarea
           textarea.value = contents;
+          // Bubble so feature:channelOptionsApply dirty controller sees the edit
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
         }
       }
     });

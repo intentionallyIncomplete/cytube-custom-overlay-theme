@@ -1070,7 +1070,7 @@ img.twemoji { width: 1em; height: 1em; vertical-align: -0.15em; }
 #messagebuffer {
   container-type: inline-size;
   container-name: btfw-chat;
-  --btfw-chat-media-scale: 80%;
+  /* Inherit --btfw-chat-media-scale from :root (JS applyMediaScale writes there) */
   --btfw-chat-gif-max-height: 220px;
   --btfw-chat-card-max-width: min(600px, 90%);
   --btfw-chat-card-poster-max-height: 138px;
