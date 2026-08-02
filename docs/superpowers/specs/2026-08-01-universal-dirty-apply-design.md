@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-01  
 **Updated:** 2026-08-02  
-**Status:** Draft — awaiting user review  
+**Status:** Implemented on `feat/universal-dirty-apply`  
 **Repos:** `cytube-custom-overlay-theme` (primary); `sync` only if needed to hide/relabel native Save controls  
 **Scope lock:** Channel Options + Theme Settings use dirty → reveal **Apply**, **except** CyTube General / Admin options keep their existing **auto-save** behavior unchanged.
 

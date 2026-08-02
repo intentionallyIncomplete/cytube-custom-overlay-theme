@@ -10,10 +10,11 @@ import {
   MEDIA_SCALE_STEP
 } from "../lib/apply-chat-typography.js";
 
-BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants"], async ({ init }) => {
+BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const themePresets = await init("util:themePresets");
   const { LS_KEYS, EVENTS } = await init("util:constants");
+  const dirtyApplyUtil = await init("util:dirtyApply");
   const motion = await BTFW.init("util:motion");
 
   const $  = (s, r=document) => r.querySelector(s);
@@ -25,6 +26,10 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   let appearanceDraft = themeRuntime.cloneAppearance(themePresets.getActiveAppearance());
   let editingPresetId = themePresets.getActivePreset()?.id || null;
   let generalTabSyncing = false;
+  /** @type {string[]} */
+  let ignoreDraft = [];
+  /** @type {ReturnType<typeof dirtyApplyUtil.createDirtyApplyController> | null} */
+  let dirtyController = null;
 
   function buildTintOptionsHtml() {
     const options = Object.entries(themeRuntime.TINT_PRESETS)
@@ -278,6 +283,94 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     }));
   }
 
+  function readThemeControlsSnapshot(modal) {
+    return {
+      avatarsMode: $("#btfw-avatars-mode", modal)?.value || "big",
+      chatTextPx: $("#btfw-chat-textsize", modal)?.value || "14",
+      emoteSize: $("#btfw-emote-size", modal)?.value || "medium",
+      mediaScale: $("#btfw-media-scale", modal)?.value || String(MEDIA_SCALE_DEFAULT),
+      gifAutoplay: !!$("#btfw-gif-autoplay", modal)?.checked,
+      chatAutoScroll: !!$("#btfw-chat-autoscroll", modal)?.checked,
+      imageHoverMagnify: !!$("#btfw-image-hover-magnify", modal)?.checked,
+      joinNotices: !!$("#btfw-chat-join-notices", modal)?.checked,
+      localSubs: !!$("#btfw-localsubs-toggle", modal)?.checked,
+      chatSide: $("#btfw-chat-side", modal)?.value || "right",
+      ignore: ignoreDraft.slice(),
+      appearance: themeRuntime.cloneAppearance(
+        modal ? readGeneralTabDraft(modal) : appearanceDraft
+      )
+    };
+  }
+
+  function writeThemeControlsSnapshot(modal, data) {
+    if (!modal || !data) return;
+    const avatarSelect = $("#btfw-avatars-mode", modal);
+    if (avatarSelect) avatarSelect.value = data.avatarsMode || "big";
+    const chatSlider = $("#btfw-chat-textsize", modal);
+    if (chatSlider) chatSlider.value = data.chatTextPx || "14";
+    const chatLabel = $("#btfw-chat-textsize-value", modal);
+    if (chatLabel) chatLabel.textContent = `${data.chatTextPx || "14"}px`;
+    const emoteSelect = $("#btfw-emote-size", modal);
+    if (emoteSelect) emoteSelect.value = data.emoteSize || "medium";
+    const mediaSlider = $("#btfw-media-scale", modal);
+    if (mediaSlider) mediaSlider.value = data.mediaScale || String(MEDIA_SCALE_DEFAULT);
+    const mediaLabel = $("#btfw-media-scale-value", modal);
+    if (mediaLabel) mediaLabel.textContent = `${data.mediaScale || MEDIA_SCALE_DEFAULT}%`;
+    const gif = $("#btfw-gif-autoplay", modal);
+    if (gif) gif.checked = !!data.gifAutoplay;
+    const autoScroll = $("#btfw-chat-autoscroll", modal);
+    if (autoScroll) autoScroll.checked = !!data.chatAutoScroll;
+    const hover = $("#btfw-image-hover-magnify", modal);
+    if (hover) hover.checked = !!data.imageHoverMagnify;
+    const join = $("#btfw-chat-join-notices", modal);
+    if (join) join.checked = !!data.joinNotices;
+    const subs = $("#btfw-localsubs-toggle", modal);
+    if (subs) subs.checked = !!data.localSubs;
+    const side = $("#btfw-chat-side", modal);
+    if (side) side.value = data.chatSide || "right";
+    ignoreDraft = Array.isArray(data.ignore) ? data.ignore.slice() : [];
+    appearanceDraft = themeRuntime.cloneAppearance(data.appearance || themePresets.getActiveAppearance());
+    syncGeneralTabUI(modal);
+    themeRuntime.applyUserAppearance(appearanceDraft);
+    if (typeof modal._btfwRenderIgnoreList === "function") modal._btfwRenderIgnoreList();
+  }
+
+  function wireDirtyApply(modal) {
+    if (!modal || modal._btfwDirtyApplyWired) return;
+    modal._btfwDirtyApplyWired = true;
+
+    const applyBtn = $("#btfw-ts-apply", modal);
+    const statusEl = $("#btfw-ts-apply-status", modal);
+    if (!applyBtn || !dirtyApplyUtil?.createDirtyApplyController) return;
+
+    const section = {
+      id: "theme-settings",
+      snapshot: () => JSON.stringify(readThemeControlsSnapshot(modal)),
+      restore: (raw) => {
+        try {
+          writeThemeControlsSnapshot(modal, JSON.parse(raw));
+        } catch (_) {}
+      },
+      apply: () => {
+        applyAndPersist();
+        return { ok: true };
+      }
+    };
+
+    dirtyController = dirtyApplyUtil.createDirtyApplyController({
+      modal,
+      applyButton: applyBtn,
+      sections: [section],
+      statusEl,
+      confirmDiscard: () => window.confirm("Discard unsaved theme settings?")
+    });
+
+    applyBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      void dirtyController?.applyAll();
+    });
+  }
+
   const moduleCache = new Map();
   function getModule(name){
     if (moduleCache.has(name)) return moduleCache.get(name);
@@ -407,7 +500,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                           <select class="btfw-ts-select is-small is-fullwidth" id="btfw-user-preset-select"></select>
                         </div>
                         <div class="control">
-                          <button type="button" class="button is-small is-link" id="btfw-user-preset-save">Save</button>
+                          <button type="button" class="button is-small is-link" id="btfw-user-preset-save">Save preset</button>
                         </div>
                       </div>
                       <p class="btfw-help">Load a preset or save the current look. Use Apply to persist edits to the active preset.</p>
@@ -599,7 +692,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                 <section class="btfw-ts-card">
                   <header class="btfw-ts-card__header">
                     <h3>Ignored users</h3>
-                    <p>Hide messages from specific usernames. Changes apply instantly.</p>
+                    <p>Hide messages from specific usernames. Add/remove here, then click Apply.</p>
                   </header>
                   <div class="btfw-ts-card__body">
                     <form class="btfw-ignore-form" id="btfw-ignore-form">
@@ -621,7 +714,8 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         </section>
 
         <footer class="modal-card-foot">
-          <button class="button is-link" id="btfw-ts-apply">Apply</button>
+          <span id="btfw-ts-apply-status" class="btfw-apply-status" role="status" aria-live="polite"></span>
+          <button class="button is-link" id="btfw-ts-apply" hidden aria-hidden="true" tabindex="-1">Apply</button>
           <button class="button" id="btfw-ts-close">Close</button>
         </footer>
       </div>
@@ -629,9 +723,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     document.body.appendChild(m);
 
     // Close actions
-    $(".modal-background", m).addEventListener("click", close);
-    $(".delete", m).addEventListener("click", close);
-    $("#btfw-ts-close", m).addEventListener("click", close);
+    $(".modal-background", m).addEventListener("click", () => { void close(); });
+    $(".delete", m).addEventListener("click", () => { void close(); });
+    $("#btfw-ts-close", m).addEventListener("click", () => { void close(); });
 
     // Tabs
     $("#btfw-ts-tabs ul", m).addEventListener("click", (e)=>{
@@ -641,15 +735,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       $$("#btfw-ts-panels .btfw-ts-panel", m).forEach(p => p.style.display = (p.dataset.tab===tab) ? "block" : "none");
       if (tab === "general") onGeneralTabOpen();
     });
-
-    // Apply button
-    $("#btfw-ts-apply", m).addEventListener("click", applyAndPersist);
-
-    const hoverMagnifyInput = $("#btfw-image-hover-magnify", m);
-    if (hoverMagnifyInput && !hoverMagnifyInput._btfwHoverMagnifyBound) {
-      hoverMagnifyInput._btfwHoverMagnifyBound = true;
-      hoverMagnifyInput.addEventListener("change", () => persistImageHoverMagnify(m));
-    }
 
     const chatTextSlider = $("#btfw-chat-textsize", m);
     const chatTextValue  = $("#btfw-chat-textsize-value", m);
@@ -678,7 +763,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
     const renderIgnoreList = () => {
       if (!ignoreListEl) return;
-      const names = getIgnoreNames();
+      const names = ignoreDraft.slice();
       ignoreListEl.innerHTML = "";
       if (!names.length) {
         const empty = document.createElement("p");
@@ -719,9 +804,12 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         event.preventDefault();
         const value = normalizeName(ignoreInput?.value || "");
         if (!value) return;
-        const added = addIgnoreName(value);
-        if (added && ignoreInput) ignoreInput.value = "";
+        const key = value.toLowerCase();
+        if (ignoreDraft.some((n) => n.toLowerCase() === key)) return;
+        ignoreDraft.push(value);
+        if (ignoreInput) ignoreInput.value = "";
         renderIgnoreList();
+        dirtyController?.markDirty("theme-settings");
       });
     }
 
@@ -731,9 +819,12 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         const button = event.target?.closest?.("[data-ignore-remove]");
         if (!button) return;
         const name = button.getAttribute("data-ignore-remove") || "";
-        if (removeIgnoreName(name)) {
-          renderIgnoreList();
-        }
+        const key = normalizeName(name).toLowerCase();
+        const next = ignoreDraft.filter((n) => n.toLowerCase() !== key);
+        if (next.length === ignoreDraft.length) return;
+        ignoreDraft = next;
+        renderIgnoreList();
+        dirtyController?.markDirty("theme-settings");
       });
     }
 
@@ -741,6 +832,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
     bindGeneralTab(m);
     syncGeneralTabUI(m);
+    wireDirtyApply(m);
 
     return m;
   }
@@ -768,6 +860,19 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     set(LS_KEYS.chatJoinNotices, joinNoticesOn ? "1":"0");
     set(LS_KEYS.localSubs,   localSubsOn ? "1":"0");
     set(LS_KEYS.layoutSide, chatSide);
+
+    // Commit ignore draft to storage + chat-ignore module
+    const desired = new Set(ignoreDraft.map((n) => n.toLowerCase()));
+    const current = getIgnoreNames();
+    current.forEach((name) => {
+      if (!desired.has(name.toLowerCase())) removeIgnoreName(name);
+    });
+    ignoreDraft.forEach((name) => {
+      const key = name.toLowerCase();
+      if (!current.some((n) => n.toLowerCase() === key)) addIgnoreName(name);
+    });
+    persistIgnoreNames(ignoreDraft.map((n) => n.toLowerCase()));
+    ignoreDraft = getIgnoreNames();
 
     if (avatarsModule?.setMode) avatarsModule.setMode(avatarsMode);
     else resolveAvatars().then(mod => { if (mod?.setMode) mod.setMode(avatarsMode); });
@@ -841,12 +946,21 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       onGeneralTabOpen();
     }
 
+    ignoreDraft = getIgnoreNames();
+    if (typeof m._btfwRenderIgnoreList === "function") m._btfwRenderIgnoreList();
+    dirtyController?.captureBaseline();
+
     motion.openModal(m);
     document.dispatchEvent(new CustomEvent(EVENTS.themeSettingsOpen));
   }
-  function close(){
+  async function close(){
     const modal = $("#btfw-theme-modal");
-    if (modal) motion.closeModal(modal);
+    if (!modal) return;
+    if (dirtyController) {
+      const ok = await dirtyController.tryClose();
+      if (!ok) return;
+    }
+    motion.closeModal(modal);
   }
 
   const OPEN_SELECTOR = "#btfw-theme-btn-chat, #btfw-theme-btn-nav, .btfw-theme-open";
