@@ -9,6 +9,7 @@ import {
   MEDIA_SCALE_MIN,
   MEDIA_SCALE_STEP
 } from "../lib/apply-chat-typography.js";
+import { confirmDialog } from "../lib/confirm-dialog.js";
 
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
@@ -199,10 +200,15 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       syncGeneralTabUI(modal);
     });
 
-    $("#btfw-user-preset-delete", modal)?.addEventListener("click", () => {
+    $("#btfw-user-preset-delete", modal)?.addEventListener("click", async () => {
       const active = themePresets.getActivePreset();
       if (!active) return;
-      if (!window.confirm(`Delete preset "${active.name}"?`)) return;
+      const confirmed = await confirmDialog({
+        title: "Delete preset?",
+        message: `Delete preset "${active.name}"?`,
+        confirmLabel: "Delete"
+      });
+      if (!confirmed) return;
       themePresets.deletePreset(active.id);
       editingPresetId = null;
       appearanceDraft = themeRuntime.cloneAppearance(
@@ -362,7 +368,8 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       applyButton: applyBtn,
       sections: [section],
       statusEl,
-      confirmDiscard: () => window.confirm("Discard unsaved theme settings?")
+      confirmDiscard: () =>
+        confirmDialog({ message: "Discard unsaved theme settings?" })
     });
 
     applyBtn.addEventListener("click", (event) => {

@@ -60,6 +60,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
   };
 
   const STYLE_ID = "btfw-theme-admin-style";
+  let themeAdminSheetAdopted = false;
   const MODULE_FIELD_MIN = 3;
   const MODULE_FIELD_MAX = 10;
   const MODULE_INPUT_SELECTOR = '[data-role="module-inputs"]';
@@ -355,11 +356,14 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     }
   }
 
-  function injectLocalStyles(){
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = `
+  function supportsConstructableStylesheets(){
+    return typeof CSSStyleSheet === "function" &&
+      typeof CSSStyleSheet.prototype.replaceSync === "function" &&
+      typeof document !== "undefined" &&
+      Array.isArray(document.adoptedStyleSheets ?? []);
+  }
+
+  const THEME_ADMIN_CSS = `
       .btfw-theme-admin {
         --btfw-admin-surface: color-mix(in srgb, var(--btfw-theme-panel, #141f36) 92%, transparent 8%);
         --btfw-admin-surface-alt: color-mix(in srgb, var(--btfw-theme-surface, #0b111d) 88%, transparent 12%);
@@ -459,11 +463,32 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
         .btfw-theme-admin .grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
       }
     `;
+
+  function injectLocalStyles(){
+    if (typeof document === "undefined") return;
+
+    if (supportsConstructableStylesheets()) {
+      if (themeAdminSheetAdopted) return;
+      try {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(THEME_ADMIN_CSS);
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+        themeAdminSheetAdopted = true;
+        return;
+      } catch (err) {
+        console.warn("[theme-admin] Constructable stylesheet failed, falling back to <style> tag", err);
+      }
+    }
+
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = THEME_ADMIN_CSS;
     document.head.appendChild(style);
   }
 
   function cloneDefaults(){
-    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    return structuredClone(DEFAULT_CONFIG);
   }
 
   function overwriteConfig(target, source){
@@ -472,7 +497,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
       delete target[key];
     });
     if (!source || typeof source !== "object") return target;
-    const copy = JSON.parse(JSON.stringify(source));
+    const copy = structuredClone(source);
     Object.keys(copy).forEach(key => {
       target[key] = copy[key];
     });
@@ -864,7 +889,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     delete normalized.sliderJson;
 
     if (!normalized.integrations || typeof normalized.integrations !== "object") {
-      normalized.integrations = JSON.parse(JSON.stringify(defaults.integrations));
+      normalized.integrations = structuredClone(defaults.integrations);
     }
     if (typeof normalized.integrations.enabled !== "boolean") {
       normalized.integrations.enabled = true;
@@ -887,7 +912,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     }
 
     if (!normalized.resources || typeof normalized.resources !== "object") {
-      normalized.resources = JSON.parse(JSON.stringify(defaults.resources));
+      normalized.resources = structuredClone(defaults.resources);
     }
     if (!Array.isArray(normalized.resources.styles)) {
       normalized.resources.styles = [];
@@ -904,7 +929,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     delete normalized.modules;
 
     if (!normalized.branding || typeof normalized.branding !== "object") {
-      normalized.branding = JSON.parse(JSON.stringify(defaults.branding));
+      normalized.branding = structuredClone(defaults.branding);
     }
     if (typeof normalized.branding.favicon === "string" && !normalized.branding.faviconUrl) {
       normalized.branding.faviconUrl = normalized.branding.favicon;
@@ -926,14 +951,14 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     }
 
     if (!normalized.typography || typeof normalized.typography !== "object") {
-      normalized.typography = JSON.parse(JSON.stringify(defaults.typography));
+      normalized.typography = structuredClone(defaults.typography);
     }
 
     return normalized;
   }
 
   function sanitizeConfigForOutput(cfg){
-    const cleaned = JSON.parse(JSON.stringify(cfg || {}));
+    const cleaned = structuredClone(cfg || {});
     delete cleaned.slider;
     delete cleaned.sliderEnabled;
     delete cleaned.sliderJson;
@@ -1104,7 +1129,7 @@ function replaceBlock(original, startMarker, endMarker, block){
     if (!panel || !cfg || typeof cfg !== "object") return;
     const integrations = cfg.integrations = cfg.integrations && typeof cfg.integrations === "object"
       ? cfg.integrations
-      : (cfg.integrations = JSON.parse(JSON.stringify(DEFAULT_CONFIG.integrations)));
+      : (cfg.integrations = structuredClone(DEFAULT_CONFIG.integrations));
     if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
       integrations.movieInfo = { enabled: false };
     }
@@ -1139,9 +1164,9 @@ function replaceBlock(original, startMarker, endMarker, block){
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         const defaults = cloneDefaults();
-        cfg.integrations = JSON.parse(JSON.stringify(defaults.integrations));
-        cfg.branding = JSON.parse(JSON.stringify(defaults.branding));
-        cfg.resources = JSON.parse(JSON.stringify(defaults.resources));
+        cfg.integrations = structuredClone(defaults.integrations);
+        cfg.branding = structuredClone(defaults.branding);
+        cfg.resources = structuredClone(defaults.resources);
         updateInputs(panel, cfg);
         onChange();
       });

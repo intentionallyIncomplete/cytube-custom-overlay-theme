@@ -6,6 +6,7 @@ import {
   createDirtyApplyController,
   setApplyButtonVisible
 } from "../lib/dirty-apply.js";
+import { confirmDialog } from "../lib/confirm-dialog.js";
 
 BTFW.define("feature:motd-editor", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
@@ -256,7 +257,8 @@ BTFW.define("feature:motd-editor", [], async () => {
         modal: m,
         applyButton: applyBtn,
         sections: [section],
-        confirmDiscard: () => window.confirm("Discard unsaved MOTD changes?")
+        confirmDiscard: () =>
+          confirmDialog({ message: "Discard unsaved MOTD changes?" })
       });
 
       applyBtn.onclick = async () => {

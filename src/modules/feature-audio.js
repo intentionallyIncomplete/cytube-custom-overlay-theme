@@ -58,6 +58,7 @@
     _watchdogInterval: null,
     _mutationObserver: null,
     _watchdogPlayerHandlers: null,
+    _visibilityHandler: null,
     _lastKnownSrc: null,
     _lastInternalSrcSetAt: 0,
     _lastAutoReapplyAt: 0,
@@ -282,7 +283,7 @@
       }
 
       if (!this.audioContext || this.audioContext.state === 'closed') {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.audioContext = new AudioContext();
       }
 
       let node;
@@ -445,7 +446,12 @@
         this._mutationObserver._sourceObserver = sourceObserver;
       }
 
-      // Video.js hooks that often fire on internal resets
+      // Video.js hooks that often fire on internal resets.
+      // Intentionally NOT using AbortController/{ signal } here: player.on/off
+      // is video.js's own event emitter (not native EventTarget), and
+      // MutationObserver.disconnect() has no signal option either — neither
+      // API accepts an AbortSignal, so this manual on/off pairing (mirrored
+      // in stopWatchdog()) is the correct pattern for this case, not a gap.
       if (!this._watchdogPlayerHandlers) {
         this._watchdogPlayerHandlers = {
           sourceset: () => this._checkAndReapply('sourceset'),
@@ -461,18 +467,46 @@
         } catch {}
       }
 
-      // Lightweight interval backup
-      this._watchdogInterval = setInterval(() => this._checkAndReapply('interval'), WATCHDOG_TICK_MS);
+      // Lightweight interval backup — paused via Page Visibility API while the tab is hidden
+      if (typeof document === 'undefined' || !document.hidden) {
+        this._startWatchdogInterval();
+      }
+
+      if (!this._visibilityHandler && typeof document !== 'undefined') {
+        this._visibilityHandler = () => this._onVisibilityChange();
+        document.addEventListener('visibilitychange', this._visibilityHandler);
+      }
 
       // Prime last known
       this._lastKnownSrc = this.player.currentSrc();
     },
 
-    stopWatchdog() {
-      if (this._watchdogInterval) {
-        clearInterval(this._watchdogInterval);
-        this._watchdogInterval = null;
+    _startWatchdogInterval() {
+      if (this._watchdogInterval) return;
+      this._watchdogInterval = setInterval(() => this._checkAndReapply('interval'), WATCHDOG_TICK_MS);
+    },
+
+    _stopWatchdogInterval() {
+      if (!this._watchdogInterval) return;
+      clearInterval(this._watchdogInterval);
+      this._watchdogInterval = null;
+    },
+
+    // Backgrounded tabs don't need sub-second polling; the MutationObserver +
+    // player event hooks stay live (they're event-driven, not polling) so a
+    // revert is still caught immediately once the tab is visible again.
+    _onVisibilityChange() {
+      if (typeof document === 'undefined') return;
+      if (document.hidden) {
+        this._stopWatchdogInterval();
+      } else if (this.player) {
+        this._startWatchdogInterval();
+        this._checkAndReapply('visibility-restore');
       }
+    },
+
+    stopWatchdog() {
+      this._stopWatchdogInterval();
       if (this._mutationObserver) {
         try { this._mutationObserver.disconnect(); } catch {}
         try { this._mutationObserver._sourceObserver?.disconnect(); } catch {}
@@ -485,6 +519,10 @@
           });
         } catch {}
         this._watchdogPlayerHandlers = null;
+      }
+      if (this._visibilityHandler && typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', this._visibilityHandler);
+        this._visibilityHandler = null;
       }
     },
 
@@ -826,6 +864,32 @@
 (function() {
   'use strict';
 
+  const POPOVER_SUPPORTED = typeof HTMLElement !== 'undefined' &&
+    Object.hasOwn(HTMLElement.prototype, 'popover');
+  const ANCHOR_POSITIONING_SUPPORTED = typeof CSS !== 'undefined' &&
+    typeof CSS.supports === 'function' &&
+    CSS.supports('position-anchor: --btfw-anchor-probe');
+  const BOOST_ANCHOR_NAME = '--btfw-boost-anchor';
+  const NORM_ANCHOR_NAME = '--btfw-norm-anchor';
+
+  // Positions a popover/context menu against its trigger button. Prefers CSS
+  // anchor positioning (no JS geometry, follows scroll/resize for free) and
+  // falls back to getBoundingClientRect() math where unsupported.
+  function positionContextMenu(menu, button, anchorName) {
+    // Sit flush under the trigger so the pointer never crosses a hover gap
+    // between button and menu (top-layer popovers aren't hover-connected).
+    if (ANCHOR_POSITIONING_SUPPORTED && anchorName) {
+      button.style.setProperty('anchor-name', anchorName);
+      menu.style.setProperty('position-anchor', anchorName);
+      menu.style.setProperty('top', 'anchor(bottom)');
+      menu.style.setProperty('left', 'anchor(left)');
+      return;
+    }
+    const rect = button.getBoundingClientRect();
+    menu.style.left = rect.left + 'px';
+    menu.style.top = rect.bottom + 'px';
+  }
+
   function whenBTFWReady(callback) {
     if (window.BTFW && typeof BTFW.define === 'function') {
       callback();
@@ -847,6 +911,8 @@
       let shouldMonoAfterMediaChange = false;
       let boostContextMenu = null;
       let normContextMenu = null;
+      let boostMenuHideTimer = null;
+      let normMenuHideTimer = null;
 
       const BOOST_PRESETS = [
         { multiplier: 1.5, label: '150%' },
@@ -1079,13 +1145,12 @@
           }
         });
 
-        btn.addEventListener('mouseenter', () => showBoostContextMenu());
+        btn.addEventListener('mouseenter', () => {
+          if (boostMenuHideTimer) { clearTimeout(boostMenuHideTimer); boostMenuHideTimer = null; }
+          showBoostContextMenu();
+        });
         btn.addEventListener('mouseleave', () => {
-          setTimeout(() => {
-            if (!boostContextMenu?.matches(':hover') && !btn.matches(':hover')) {
-              hideBoostContextMenu();
-            }
-          }, 100);
+          boostMenuHideTimer = setTimeout(() => hideBoostContextMenu(), 150);
         });
 
         return btn;
@@ -1108,13 +1173,12 @@
           }
         });
 
-        btn.addEventListener('mouseenter', () => showNormContextMenu());
+        btn.addEventListener('mouseenter', () => {
+          if (normMenuHideTimer) { clearTimeout(normMenuHideTimer); normMenuHideTimer = null; }
+          showNormContextMenu();
+        });
         btn.addEventListener('mouseleave', () => {
-          setTimeout(() => {
-            if (!normContextMenu?.matches(':hover') && !btn.matches(':hover')) {
-              hideNormContextMenu();
-            }
-          }, 100);
+          normMenuHideTimer = setTimeout(() => hideNormContextMenu(), 150);
         });
 
         return btn;
@@ -1144,17 +1208,19 @@
 
         const menu = document.createElement('div');
         menu.id = 'btfw-boost-context-menu';
+        if (POPOVER_SUPPORTED) menu.popover = 'auto';
         menu.style.cssText = `
-          position: absolute;
+          position: fixed;
           background: rgba(20, 31, 54, 0.95);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(109, 77, 246, 0.3);
           border-radius: 8px;
           padding: 6px;
-          display: none;
+          margin: 0;
           z-index: 10000;
           min-width: 100px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+          ${POPOVER_SUPPORTED ? '' : 'display: none;'}
         `;
 
         BOOST_PRESETS.forEach(preset => {
@@ -1207,12 +1273,11 @@
           menu.appendChild(item);
         });
 
+        menu.addEventListener('mouseenter', () => {
+          if (boostMenuHideTimer) { clearTimeout(boostMenuHideTimer); boostMenuHideTimer = null; }
+        });
         menu.addEventListener('mouseleave', () => {
-          setTimeout(() => {
-            if (!boostButton?.matches(':hover')) {
-              hideBoostContextMenu();
-            }
-          }, 100);
+          boostMenuHideTimer = setTimeout(() => hideBoostContextMenu(), 100);
         });
 
         document.body.appendChild(menu);
@@ -1223,14 +1288,21 @@
       function showBoostContextMenu() {
         if (!boostButton) return;
         const menu = createBoostContextMenu();
-        const rect = boostButton.getBoundingClientRect();
-        menu.style.left = rect.left + 'px';
-        menu.style.top = (rect.bottom + 5) + 'px';
-        menu.style.display = 'block';
+        positionContextMenu(menu, boostButton, BOOST_ANCHOR_NAME);
+        if (POPOVER_SUPPORTED) {
+          if (!menu.matches(':popover-open')) menu.showPopover();
+        } else {
+          menu.style.display = 'block';
+        }
       }
 
       function hideBoostContextMenu() {
-        if (boostContextMenu) boostContextMenu.style.display = 'none';
+        if (!boostContextMenu) return;
+        if (POPOVER_SUPPORTED) {
+          if (boostContextMenu.matches(':popover-open')) boostContextMenu.hidePopover();
+        } else {
+          boostContextMenu.style.display = 'none';
+        }
       }
 
       function updateBoostContextMenuSelection() {
@@ -1253,17 +1325,19 @@
 
         const menu = document.createElement('div');
         menu.id = 'btfw-norm-context-menu';
+        if (POPOVER_SUPPORTED) menu.popover = 'auto';
         menu.style.cssText = `
-          position: absolute;
+          position: fixed;
           background: rgba(20, 31, 54, 0.95);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(52, 152, 219, 0.3);
           border-radius: 8px;
           padding: 6px;
-          display: none;
+          margin: 0;
           z-index: 10000;
           min-width: 110px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+          ${POPOVER_SUPPORTED ? '' : 'display: none;'}
         `;
 
         Object.keys(sharedAudio.NORM_PRESETS).forEach(key => {
@@ -1316,12 +1390,11 @@
           menu.appendChild(item);
         });
 
+        menu.addEventListener('mouseenter', () => {
+          if (normMenuHideTimer) { clearTimeout(normMenuHideTimer); normMenuHideTimer = null; }
+        });
         menu.addEventListener('mouseleave', () => {
-          setTimeout(() => {
-            if (!normButton?.matches(':hover')) {
-              hideNormContextMenu();
-            }
-          }, 100);
+          normMenuHideTimer = setTimeout(() => hideNormContextMenu(), 100);
         });
 
         document.body.appendChild(menu);
@@ -1332,14 +1405,21 @@
       function showNormContextMenu() {
         if (!normButton) return;
         const menu = createNormContextMenu();
-        const rect = normButton.getBoundingClientRect();
-        menu.style.left = rect.left + 'px';
-        menu.style.top = (rect.bottom + 5) + 'px';
-        menu.style.display = 'block';
+        positionContextMenu(menu, normButton, NORM_ANCHOR_NAME);
+        if (POPOVER_SUPPORTED) {
+          if (!menu.matches(':popover-open')) menu.showPopover();
+        } else {
+          menu.style.display = 'block';
+        }
       }
 
       function hideNormContextMenu() {
-        if (normContextMenu) normContextMenu.style.display = 'none';
+        if (!normContextMenu) return;
+        if (POPOVER_SUPPORTED) {
+          if (normContextMenu.matches(':popover-open')) normContextMenu.hidePopover();
+        } else {
+          normContextMenu.style.display = 'none';
+        }
       }
 
       function updateNormContextMenuSelection() {
