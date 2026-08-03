@@ -320,7 +320,7 @@ describe("createDirtyApplyController", () => {
     const modal = createFakeEl("modal");
     const button = createFakeEl("apply");
     let value = "base";
-    let resolveApply: (() => void) | null = null;
+    const deferred: { resolve: (() => void) | null } = { resolve: null };
     const section: DirtySection = {
       id: "a",
       snapshot: (): string => value,
@@ -329,7 +329,7 @@ describe("createDirtyApplyController", () => {
       },
       apply: (): Promise<PersistResult> =>
         new Promise((resolve) => {
-          resolveApply = () => resolve({ ok: true });
+          deferred.resolve = () => resolve({ ok: true });
         })
     };
     const confirmDiscard = vi.fn(() => true);
@@ -350,7 +350,7 @@ describe("createDirtyApplyController", () => {
 
     // User closes the modal while the Apply call is still in flight.
     const closePromise = controller.tryClose();
-    resolveApply?.();
+    deferred.resolve?.();
     await applyPromise;
     const closed = await closePromise;
 
