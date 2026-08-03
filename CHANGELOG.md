@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.27.0...v1.28.0) (2026-08-03)
+
+
+### Features
+
+* **browser:** adopt native APIs and fix phantom discard prompts ([#198](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/198)) ([#222](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/222)) ([6ab1367](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/6ab1367ee890bb493862dfc7540e85fb50a162e6))
+
 # [1.27.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.26.0...v1.27.0) (2026-08-02)
 
 
