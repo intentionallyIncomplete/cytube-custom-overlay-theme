@@ -3,6 +3,8 @@
  * Reveals an Apply button when registered sections diverge from baseline.
  */
 
+import { confirmDialog } from "./confirm-dialog.js";
+
 export type PersistResult =
   | { ok: true }
   | { ok: false; error: string };
@@ -26,6 +28,7 @@ export interface DirtyApplyControllerOptions {
 
 export interface DirtyApplyController {
   isDirty(): boolean;
+  isApplying(): boolean;
   recalculate(): void;
   markDirty(sectionId?: string): void;
   captureBaseline(): void;
@@ -143,6 +146,18 @@ export function createDirtyApplyController(
   const abort = new AbortController();
   let recalcQueued = false;
   let applying = false;
+  let idleWaiters: Array<() => void> = [];
+
+  function isApplying(): boolean {
+    return applying;
+  }
+
+  function whenIdle(): Promise<void> {
+    if (!applying) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      idleWaiters.push(resolve);
+    });
+  }
 
   function captureBaseline(): void {
     baselines.clear();
@@ -205,50 +220,54 @@ export function createDirtyApplyController(
     setBusy(applyButton, true);
     setStatus(statusEl, "");
 
-    const dirtySections = sections.filter((section) => sectionIsDirty(section));
-    if (dirtySections.length === 0) {
+    try {
+      const dirtySections = sections.filter((section) => sectionIsDirty(section));
+      if (dirtySections.length === 0) {
+        setApplyButtonVisible(applyButton, false);
+        return { ok: true };
+      }
+
+      let firstError: string | null = null;
+      let failCount = 0;
+
+      for (const section of dirtySections) {
+        try {
+          const result = await section.apply();
+          if (isPersistSuccess(result)) {
+            baselines.set(section.id, section.snapshot());
+            forcedDirty.delete(section.id);
+          } else {
+            failCount += 1;
+            if (firstError === null) firstError = result.error;
+          }
+        } catch (err) {
+          failCount += 1;
+          const message =
+            err instanceof Error ? err.message : "Unknown apply error";
+          if (firstError === null) firstError = message;
+        }
+      }
+
+      recalculate();
+
+      if (failCount > 0) {
+        const message =
+          firstError === null
+            ? `Failed to apply ${failCount} section(s)`
+            : `${firstError}${failCount > 1 ? ` (+${failCount - 1} more)` : ""}`;
+        setStatus(statusEl, message);
+        return { ok: false, error: message };
+      }
+
+      setStatus(statusEl, "Changes applied");
+      return { ok: true };
+    } finally {
       setBusy(applyButton, false);
       applying = false;
-      setApplyButtonVisible(applyButton, false);
-      return { ok: true };
+      const waiters = idleWaiters;
+      idleWaiters = [];
+      waiters.forEach((resolve) => resolve());
     }
-
-    let firstError: string | null = null;
-    let failCount = 0;
-
-    for (const section of dirtySections) {
-      try {
-        const result = await section.apply();
-        if (isPersistSuccess(result)) {
-          baselines.set(section.id, section.snapshot());
-          forcedDirty.delete(section.id);
-        } else {
-          failCount += 1;
-          if (firstError === null) firstError = result.error;
-        }
-      } catch (err) {
-        failCount += 1;
-        const message =
-          err instanceof Error ? err.message : "Unknown apply error";
-        if (firstError === null) firstError = message;
-      }
-    }
-
-    setBusy(applyButton, false);
-    applying = false;
-    recalculate();
-
-    if (failCount > 0) {
-      const message =
-        firstError === null
-          ? `Failed to apply ${failCount} section(s)`
-          : `${firstError}${failCount > 1 ? ` (+${failCount - 1} more)` : ""}`;
-      setStatus(statusEl, message);
-      return { ok: false, error: message };
-    }
-
-    setStatus(statusEl, "Changes applied");
-    return { ok: true };
   }
 
   function discard(): void {
@@ -263,12 +282,18 @@ export function createDirtyApplyController(
   }
 
   async function tryClose(): Promise<boolean> {
+    // An in-flight applyAll() hasn't updated baselines yet — wait for it so a
+    // just-applied change isn't mistaken for something to discard.
+    await whenIdle();
     if (!isDirty()) return true;
     if (confirmDiscard) {
       const ok = await confirmDiscard();
       if (!ok) return false;
     } else {
-      const ok = window.confirm("Discard unsaved changes?");
+      const ok = await confirmDialog({
+        title: "Discard changes?",
+        message: "Discard unsaved changes?"
+      });
       if (!ok) return false;
     }
     discard();
@@ -306,6 +331,7 @@ export function createDirtyApplyController(
 
   return {
     isDirty,
+    isApplying,
     recalculate,
     markDirty,
     captureBaseline,

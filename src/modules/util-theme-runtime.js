@@ -139,7 +139,7 @@ BTFW.define("util:themeRuntime", [], async () => {
   };
 
   function cloneAppearance(source) {
-    return JSON.parse(JSON.stringify(source || DEFAULT_APPEARANCE));
+    return structuredClone(source || DEFAULT_APPEARANCE);
   }
 
   function normalizeFontId(id) {

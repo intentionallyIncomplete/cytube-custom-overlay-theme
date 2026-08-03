@@ -316,6 +316,51 @@ describe("createDirtyApplyController", () => {
     controller.dispose();
   });
 
+  it("tryClose waits for an in-flight applyAll before checking dirty state", async () => {
+    const modal = createFakeEl("modal");
+    const button = createFakeEl("apply");
+    let value = "base";
+    let resolveApply: (() => void) | null = null;
+    const section: DirtySection = {
+      id: "a",
+      snapshot: (): string => value,
+      restore: (s: string): void => {
+        value = s;
+      },
+      apply: (): Promise<PersistResult> =>
+        new Promise((resolve) => {
+          resolveApply = () => resolve({ ok: true });
+        })
+    };
+    const confirmDiscard = vi.fn(() => true);
+
+    const controller = createDirtyApplyController({
+      modal: modal as unknown as HTMLElement,
+      applyButton: button as unknown as HTMLButtonElement,
+      sections: [section],
+      confirmDiscard
+    });
+
+    value = "edited";
+    controller.recalculate();
+    expect(controller.isDirty()).toBe(true);
+
+    const applyPromise = controller.applyAll();
+    expect(controller.isApplying()).toBe(true);
+
+    // User closes the modal while the Apply call is still in flight.
+    const closePromise = controller.tryClose();
+    resolveApply?.();
+    await applyPromise;
+    const closed = await closePromise;
+
+    expect(closed).toBe(true);
+    expect(confirmDiscard).not.toHaveBeenCalled();
+    expect(controller.isDirty()).toBe(false);
+
+    controller.dispose();
+  });
+
   it("discard restores without prompting", () => {
     const modal = createFakeEl("modal");
     const button = createFakeEl("apply");

@@ -20,6 +20,8 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
   let controller = null;
   /** @type {MutationObserver | null} */
   let permsObserver = null;
+  let permsHydrated = false;
+  let closingProgrammatically = false;
 
   function getSocket() {
     return window.socket || null;
@@ -230,6 +232,30 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
     }
   }
 
+  function handlePermsMutation(modal) {
+    hideLegacySaves(modal);
+    if (!controller) return;
+    if (!permsHydrated) {
+      // #cs-permedit populates asynchronously after the modal opens; the
+      // baseline captured at show-time can't see it yet. Recapture once so
+      // that initial hydration itself never counts as an unsaved edit.
+      permsHydrated = true;
+      controller.captureBaseline();
+      return;
+    }
+    controller.recalculate();
+  }
+
+  function flushPermsObserver(modal) {
+    if (!permsObserver) return;
+    // Force delivery of any mutation records still queued (e.g. permissions
+    // just hydrated) so the dirty check below sees an up-to-date baseline.
+    const pending = permsObserver.takeRecords();
+    if (pending.length > 0) {
+      handlePermsMutation(modal);
+    }
+  }
+
   function wire(modal) {
     if (!(modal instanceof HTMLElement) || modal.id !== "channeloptions") return;
     if (modal.dataset.btfwDirtyApplyWired === "1") {
@@ -265,16 +291,33 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
       void controller?.applyAll();
     });
 
-    const onHide = (event) => {
-      if (!controller?.isDirty()) return;
-      // Bootstrap 3 hide.bs.modal only honors synchronous preventDefault.
-      const discard = window.confirm("Discard unsaved channel settings?");
-      if (!discard) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
+    const onHide = async (event) => {
+      if (closingProgrammatically || !controller) return;
+      // Bootstrap 3 hide.bs.modal only honors synchronous preventDefault, but
+      // a <dialog>-based confirmation is inherently async — always cancel this
+      // native attempt first, then re-trigger the close programmatically once
+      // we know whether to actually discard.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      flushPermsObserver(modal);
+      const shouldClose = await controller.tryClose();
+      if (!shouldClose) return;
+      closingProgrammatically = true;
+      try {
+        if (window.jQuery && typeof window.jQuery.fn?.modal === "function") {
+          window.jQuery(modal).modal("hide");
+        } else {
+          // CyTube normally ships jQuery+Bootstrap; keep a non-jQuery escape hatch
+          // so preventDefault above cannot permanently trap the modal open.
+          modal.classList.remove("in", "show");
+          modal.style.display = "none";
+          modal.setAttribute("aria-hidden", "true");
+          document.body.classList.remove("modal-open");
+          document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
+        }
+      } finally {
+        closingProgrammatically = false;
       }
-      controller.discard();
     };
 
     modal.addEventListener("hide.bs.modal", onHide);
@@ -283,16 +326,8 @@ BTFW.define("feature:channelOptionsApply", [], async () => {
     const permRoot = modal.querySelector("#cs-permedit");
     if (permRoot && typeof MutationObserver === "function") {
       permsObserver?.disconnect();
-      permsObserver = new MutationObserver(() => {
-        hideLegacySaves(modal);
-        if (!controller) return;
-        const wasDirty = controller.isDirty();
-        controller.recalculate();
-        // First hydrate of #cs-permedit must not look like a user edit
-        if (!wasDirty && controller.isDirty()) {
-          controller.captureBaseline();
-        }
-      });
+      permsHydrated = false;
+      permsObserver = new MutationObserver(() => handlePermsMutation(modal));
       permsObserver.observe(permRoot, { childList: true, subtree: true });
     }
   }
