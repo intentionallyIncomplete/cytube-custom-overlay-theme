@@ -107,7 +107,7 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
     const closeBtn = document.createElement("button");
     closeBtn.className = "btfw-ct-close";
     closeBtn.setAttribute("aria-label", "Close");
-    closeBtn.innerHTML = "&times;";
+    closeBtn.textContent = "\u00d7";
 
     cardHead.appendChild(title);
     cardHead.appendChild(closeBtn);
@@ -120,16 +120,21 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
     grid.className = "btfw-ct-grid";
 
     [
-      { tag: "b", html: "<strong>B</strong><span>Bold</span>" },
-      { tag: "i", html: "<em>I</em><span>Italic</span>" },
-      { tag: "u", html: "<u>U</u><span>Underline</span>" },
-      { tag: "s", html: '<span style="text-decoration:line-through">S</span><span>Strike</span>' },
-      { tag: "sp", html: "<span>🙈</span><span>Spoiler</span>" }
-    ].forEach(({ tag, html }) => {
+      { tag: "b", previewTag: "strong", preview: "B", label: "Bold" },
+      { tag: "i", previewTag: "em", preview: "I", label: "Italic" },
+      { tag: "u", previewTag: "u", preview: "U", label: "Underline" },
+      { tag: "s", previewTag: "span", preview: "S", label: "Strike", previewStrike: true },
+      { tag: "sp", previewTag: "span", preview: "\ud83d\ude48", label: "Spoiler" }
+    ].forEach(({ tag, previewTag, preview, label, previewStrike }) => {
       const btn = document.createElement("button");
       btn.className = "btfw-ct-item";
       btn.setAttribute("data-tag", tag);
-      btn.innerHTML = html;
+      const previewEl = document.createElement(previewTag);
+      previewEl.textContent = preview;
+      if (previewStrike) previewEl.style.textDecoration = "line-through";
+      const labelEl = document.createElement("span");
+      labelEl.textContent = label;
+      btn.append(previewEl, labelEl);
       grid.appendChild(btn);
     });
     cardBody.appendChild(grid);
@@ -310,7 +315,11 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "Chat tools";
     b.setAttribute("aria-label", "Chat tools");
-    b.innerHTML = '<span style="font-weight:700;letter-spacing:.5px;">Aa</span>';
+    const bLabel = document.createElement("span");
+    bLabel.style.fontWeight = "700";
+    bLabel.style.letterSpacing = ".5px";
+    bLabel.textContent = "Aa";
+    b.appendChild(bLabel);
     const insertBefore = actions.querySelector("#btfw-chatcmds-btn")
       || actions.querySelector("#btfw-users-toggle")
       || actions.querySelector("#usercount");
@@ -387,7 +396,7 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
       const clr = e.target.closest && e.target.closest('.btfw-ct-item[data-act="clear"]');
       if (clr && inCard) {
         e.preventDefault();
-        const mb = $("#messagebuffer"); if (mb) mb.innerHTML = "";
+        const mb = $("#messagebuffer"); if (mb) mb.replaceChildren();
         closeMiniModal();
         return;
       }

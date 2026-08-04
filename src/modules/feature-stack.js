@@ -1,4 +1,5 @@
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
+import { sanitizeHtml } from "../lib/escape-html.js";
 
 BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
@@ -79,15 +80,23 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   let populateTimer = null;
   let bootWired = false;
 
+  // Regex-based tag strip, deliberately not `probe.innerHTML = raw` + read `.textContent`.
+  // MOTD content is admin-authored HTML, and setting innerHTML on a live-document element
+  // still triggers resource-loading event handlers like `<img src=x onerror=...>` even when
+  // that element is never attached to the visible DOM — "detached" is not the same as "inert".
+  // This is a same-behavior, environment-independent replacement (previously branched on
+  // `typeof document`); the entity handling here mirrors tests/unit/motd-stack.test.js.
   function isMotdHtmlEmpty(html = "") {
     const raw = String(html || "").trim();
     if (!raw) return true;
-    if (typeof document !== "undefined") {
-      const probe = document.createElement("div");
-      probe.innerHTML = raw;
-      return !((probe.textContent || "").replace(/\u00a0/g, " ").trim());
-    }
-    return !(raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    const text = raw
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return !text;
   }
 
   function hasMotdContent(doc = document) {
@@ -383,9 +392,9 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     if (extraParts.length) {
       const merged = extraParts.join("").trim();
       if (merged && isMotdHtmlEmpty(motd.innerHTML)) {
-        motd.innerHTML = merged;
+        motd.innerHTML = sanitizeHtml(merged);
       } else if (merged) {
-        motd.innerHTML += merged;
+        motd.innerHTML += sanitizeHtml(merged);
       }
     }
 
@@ -1634,7 +1643,23 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   function wireMotdSocket(refs) {
     if (motdSocketWired || !window.socket || !window.socket.on) return;
     motdSocketWired = true;
-    window.socket.on("setMotd", () => {
+    // CyTube's callbacks.js `setMotd` does `$("#motd").html(motd)` with the raw
+    // server payload. Theme socket handlers typically register after CyTube's, so
+    // by the time this runs live `#motd` already holds unsanitized HTML. Re-sanitize
+    // the painted markup so viewers are not left with the raw XSS payload.
+    window.socket.on("setMotd", (payload) => {
+      const html =
+        typeof payload === "string"
+          ? payload
+          : payload && typeof payload.motd === "string"
+            ? payload.motd
+            : null;
+      const motd = resolveMotdHost();
+      if (motd) {
+        const source = html !== null ? html : motd.innerHTML;
+        const cleaned = sanitizeHtml(source);
+        if (motd.innerHTML !== cleaned) motd.innerHTML = cleaned;
+      }
       scheduleMotdSync(refs);
     });
   }
@@ -1646,7 +1671,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     const resolved = normalizeMotdStructure(true);
     const motd = resolved?.motd || resolveMotdHost();
     if (motd && typeof html === "string") {
-      motd.innerHTML = html;
+      motd.innerHTML = sanitizeHtml(html);
     }
     const csMotd = document.getElementById("cs-motdtext");
     if (csMotd && typeof html === "string") csMotd.value = html;

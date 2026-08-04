@@ -403,38 +403,46 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
   function showLoadingState() {
     if (!state.header) return;
     resetBackdrop();
-    state.header.innerHTML = `
-      <div class="btfw-movie-content">
-        <div class="btfw-movie-loading">
-          <i class="fa fa-spinner fa-spin"></i>
-          <p>Loading movie information...</p>
-        </div>
-      </div>
-    `;
+    const content = document.createElement("div");
+    content.className = "btfw-movie-content";
+    const loading = document.createElement("div");
+    loading.className = "btfw-movie-loading";
+    const icon = document.createElement("i");
+    icon.className = "fa fa-spinner fa-spin";
+    const text = document.createElement("p");
+    text.textContent = "Loading movie information...";
+    loading.append(icon, text);
+    content.appendChild(loading);
+    state.header.replaceChildren(content);
   }
 
   function showErrorState() {
     if (!state.header) return;
     resetBackdrop();
-    state.header.innerHTML = `
-      <div class="btfw-movie-content">
-        <div class="btfw-movie-error">
-          <i class="fa fa-exclamation-triangle"></i>
-          <p>Unable to fetch movie information</p>
-          <small>Check TMDB API key in Theme Settings</small>
-        </div>
-      </div>
-    `;
+    const content = document.createElement("div");
+    content.className = "btfw-movie-content";
+    const error = document.createElement("div");
+    error.className = "btfw-movie-error";
+    const icon = document.createElement("i");
+    icon.className = "fa fa-exclamation-triangle";
+    const text = document.createElement("p");
+    text.textContent = "Unable to fetch movie information";
+    const hint = document.createElement("small");
+    hint.textContent = "Check TMDB API key in Theme Settings";
+    error.append(icon, text, hint);
+    content.appendChild(error);
+    state.header.replaceChildren(content);
   }
 
   function resetMovieHeader() {
     if (!state.header) return;
     resetBackdrop();
-    state.header.innerHTML = `
-      <div class="btfw-movie-content">
-        <p>No movie information available</p>
-      </div>
-    `;
+    const content = document.createElement("div");
+    content.className = "btfw-movie-content";
+    const text = document.createElement("p");
+    text.textContent = "No movie information available";
+    content.appendChild(text);
+    state.header.replaceChildren(content);
   }
 
   function resetBackdrop() {
@@ -445,7 +453,7 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
 
   function displayMovieInfo(movie) {
     if (!state.header) return;
-    state.header.innerHTML = "";
+    state.header.replaceChildren();
     if (CONFIG.ENABLE_BACKDROP && movie.backdrop) {
       state.header.style.backgroundImage = `url(${movie.backdrop})`;
       state.header.style.backgroundSize = "cover";

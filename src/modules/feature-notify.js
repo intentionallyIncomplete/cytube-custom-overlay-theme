@@ -1,5 +1,15 @@
+import { escapeHtml, sanitizeHtml } from "../lib/escape-html.js";
+
 BTFW.define("feature:notify", [], async () => {
   const $  = (s, r=document) => r.querySelector(s);
+  // Decode-only scratch <textarea>, never attached to the DOM. Safe even for attacker-controlled
+  // input: a <textarea>'s content model never parses nested markup into child elements (its
+  // innerHTML is always raw/escapable text per the HTML spec), so this can't create an <img>,
+  // <script>, or any other element capable of firing `onerror`/`onload`/etc. Do not repurpose
+  // this element for anything other than entity decoding, and do not swap it for a <div> — a
+  // detached <div> can still fire `<img onerror>` because "detached from the visible DOM" is not
+  // the same as "inert document" (see feature-notification-sounds.js's plainText() for why we
+  // avoid that pattern for untrusted chat text).
   const ENTITY_DECODER = document.createElement("textarea");
 
   function decodeHtmlEntities(value) {
@@ -140,7 +150,7 @@ BTFW.define("feature:notify", [], async () => {
     if (o.icon) {
       const icon = document.createElement("span");
       icon.className = "btfw-notice-icon";
-      icon.innerHTML = o.icon;
+      icon.innerHTML = sanitizeHtml(o.icon);
       iconWrap.appendChild(icon);
     } else {
       iconWrap.classList.add("is-empty");
@@ -166,7 +176,7 @@ BTFW.define("feature:notify", [], async () => {
 
     const body = document.createElement("div");
     body.className = "btfw-notice-body";
-    if (o.html) body.innerHTML = o.html;
+    if (o.html) body.innerHTML = sanitizeHtml(o.html);
     content.appendChild(body);
 
     if (o.actions && o.actions.length){
@@ -454,8 +464,6 @@ function startAutoclose(o){
       });
     });
   }
-
-  function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   function boot(){
     ensureStack();

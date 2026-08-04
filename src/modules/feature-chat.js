@@ -1,14 +1,28 @@
-BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom", "util:constants", "util:state", "util:templates"], async ({ init }) => {
+BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom", "util:constants", "util:state"], async ({ init }) => {
   const motion = await init("util:motion");
   const chatAutoscroll = await init("util:chatAutoscroll");
   const dom = await init("util:dom");
   const { SELECTORS } = await init("util:constants");
   const { state } = await init("util:state");
-  const templates = await init("util:templates");
-  const { chat: chatTpl } = templates;
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const MESSAGE_SELECTOR = SELECTORS.chatMsg;
+
+  function buildIconSlotElement(slot, iconClass) {
+    const span = document.createElement("span");
+    span.dataset.btfwIconSlot = slot;
+    span.setAttribute("aria-hidden", "true");
+    const icon = document.createElement("i");
+    icon.className = iconClass;
+    span.appendChild(icon);
+    return span;
+  }
+
+  function buildGifIconElement() {
+    const icon = document.createElement("i");
+    icon.className = "fa-solid fa-gif";
+    return icon;
+  }
 
   const CHAT_PLACEHOLDER = "Type your message here…";
 
@@ -315,7 +329,7 @@ function normalizeChatActionButtons() {
     b.id = "btfw-btn-emotes";
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "Emotes / Emoji";
-    b.innerHTML = chatTpl.chatEmotesIconHtml();
+    b.appendChild(buildIconSlotElement("chat-emotes", "fa fa-smile"));
     actions.appendChild(b);
   }
   if (!document.getElementById("btfw-btn-gif")) {
@@ -323,7 +337,7 @@ function normalizeChatActionButtons() {
     b.id = "btfw-btn-gif";
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "GIFs";
-    b.innerHTML = chatTpl.chatGifIconHtml();
+    b.appendChild(buildGifIconElement());
     actions.appendChild(b);
   }
 
@@ -340,7 +354,7 @@ function normalizeChatActionButtons() {
 
 const hasIcon = gifBtn.querySelector("i.fa-solid.fa-gif");
 if (!hasIcon) {
-  gifBtn.innerHTML = chatTpl.chatGifIconHtml();
+  gifBtn.replaceChildren(buildGifIconElement());
 }
   }
 
@@ -808,7 +822,18 @@ const scheduleNormalizeChatActions = (() => {
     pop.setAttribute("hidden", "");
     pop.setAttribute("aria-hidden", "true");
     pop.style.zIndex = "6002";
-    pop.innerHTML = chatTpl.chatUserlistPopoverHtml();
+    const popHead = document.createElement("div");
+    popHead.className = "btfw-pophead";
+    const popTitle = document.createElement("span");
+    popTitle.textContent = "Users";
+    const popCloseBtn = document.createElement("button");
+    popCloseBtn.className = "btfw-popclose";
+    popCloseBtn.setAttribute("aria-label", "Close");
+    popCloseBtn.textContent = "\u00d7";
+    popHead.append(popTitle, popCloseBtn);
+    const popBody = document.createElement("div");
+    popBody.className = "btfw-popbody";
+    pop.append(popHead, popBody);
     document.body.appendChild(pop);
 
     adoptUserlistIntoPopover();
@@ -859,7 +884,6 @@ const scheduleNormalizeChatActions = (() => {
       top = document.createElement("div");
       top.className = "btfw-chat-topbar";
       top.setAttribute("data-testid", "btfw-chat-topbar");
-      top.innerHTML = chatTpl.chatTopbarHtml();
       cw.prepend(top);
     } else if (!top.getAttribute("data-testid")) {
       top.setAttribute("data-testid", "btfw-chat-topbar");
@@ -934,7 +958,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-emotes";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Emotes / Emoji";
-      b.innerHTML = chatTpl.chatEmotesIconHtml();
+      b.appendChild(buildIconSlotElement("chat-emotes", "fa fa-smile"));
       actions.appendChild(b);
     }
 
@@ -946,7 +970,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-gif";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "GIFs";
-      b.innerHTML = chatTpl.chatGifIconSlotHtml();
+      b.appendChild(buildIconSlotElement("chat-gif", "fa fa-file-video-o"));
       actions.appendChild(b);
     }
 
@@ -961,7 +985,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-users-toggle";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Users";
-      b.innerHTML = chatTpl.chatUsersIconHtml();
+      b.appendChild(buildIconSlotElement("chat-users", "fa fa-users"));
       actions.appendChild(b);
     }
 

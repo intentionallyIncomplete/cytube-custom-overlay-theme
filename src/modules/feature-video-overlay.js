@@ -452,7 +452,9 @@ BTFW.define("feature:videoOverlay", [], async () => {
         btn = document.createElement("button");
         btn.id = btnConfig.id;
         btn.className = "btfw-vo-btn";
-        btn.innerHTML = `<i class="${btnConfig.icon}"></i>`;
+        const icon = document.createElement("i");
+        icon.className = btnConfig.icon;
+        btn.appendChild(icon);
         btn.title = btnConfig.tooltip;
         btn.addEventListener("click", btnConfig.action);
         (target || sections.right).appendChild(btn);
@@ -796,7 +798,9 @@ BTFW.define("feature:videoOverlay", [], async () => {
       btn.id = "btfw-vo-subs";
       btn.className = "btfw-vo-btn";
       btn.title = "Load local subtitles (.vtt/.srt)";
-      btn.innerHTML = `<i class="fa fa-closed-captioning"></i>`;
+      const icon = document.createElement("i");
+      icon.className = "fa fa-closed-captioning";
+      btn.appendChild(icon);
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         pickLocalSubs();

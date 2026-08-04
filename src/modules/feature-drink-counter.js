@@ -20,6 +20,16 @@ BTFW.define("feature:drink-counter", [], async () => {
 
   const drinkQueues = new WeakMap();
 
+  // The face/glass/stream scene is a large hand-authored static SVG fragment (no dynamic
+  // interpolation). Parsing it into a <template> keeps the fragment inert (its content never
+  // loads resources or fires events) until explicitly cloned into the live widget below, rather
+  // than assigning innerHTML directly on an already-attached element.
+  function buildSceneFragment() {
+    const template = document.createElement("template");
+    template.innerHTML = SCENE_HTML;
+    return template.content.cloneNode(true);
+  }
+
   const SCENE_HTML = `
     <svg class="btfw-drink-counter__stream" viewBox="0 0 80 200" aria-hidden="true">
       <path class="btfw-drink-counter__stream-path"
@@ -388,12 +398,14 @@ BTFW.define("feature:drink-counter", [], async () => {
     widget.id = "btfw-drink-counter";
     widget.className = "btfw-drink-counter is-hidden";
     widget.setAttribute("aria-live", "polite");
-    widget.innerHTML = `
-      <div class="btfw-drink-counter__scene" aria-hidden="true">
-        ${SCENE_HTML}
-      </div>
-      <span class="btfw-drink-counter__count">0</span>
-    `;
+    const sceneWrap = document.createElement("div");
+    sceneWrap.className = "btfw-drink-counter__scene";
+    sceneWrap.setAttribute("aria-hidden", "true");
+    sceneWrap.appendChild(buildSceneFragment());
+    const countSpan = document.createElement("span");
+    countSpan.className = "btfw-drink-counter__count";
+    countSpan.textContent = "0";
+    widget.append(sceneWrap, countSpan);
 
     if (motion.prefersReducedMotion()) {
       widget.classList.add("btfw-drink-counter--reduce-motion");

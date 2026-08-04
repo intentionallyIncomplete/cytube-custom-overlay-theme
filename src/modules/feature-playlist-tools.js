@@ -1,4 +1,6 @@
 /* BTFW — feature:playlist-tools (merged helpers: search, scroll-to-current, poll add) */
+import { escapeHtml } from "../lib/escape-html.js";
+
 BTFW.define("feature:playlist-tools", [], async () => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -19,20 +21,49 @@ BTFW.define("feature:playlist-tools", [], async () => {
     bar.id = "btfw-plbar";
     bar.className = "btfw-plbar";
 
-    bar.innerHTML = `
-      <div class="field has-addons" style="margin:0;">
-        <p class="control is-expanded">
-          <input id="btfw-pl-filter" class="input is-small" type="text" placeholder="Filter playlist…">
-        </p>
-        <p class="control">
-          <button id="btfw-pl-clear" class="button is-small" title="Clear filter"><i class="fa fa-times"></i></button>
-        </p>
-        <p class="control">
-          <button id="btfw-pl-scroll" class="button is-small" title="Scroll to current"><i class="fa fa-location-arrow"></i></button>
-        </p>
-      </div>
-      <span id="btfw-pl-count" class="is-size-7" style="opacity:.75;"></span>
-    `;
+    const field = document.createElement("div");
+    field.className = "field has-addons";
+    field.style.margin = "0";
+
+    const filterControl = document.createElement("p");
+    filterControl.className = "control is-expanded";
+    const filterInput = document.createElement("input");
+    filterInput.id = "btfw-pl-filter";
+    filterInput.className = "input is-small";
+    filterInput.type = "text";
+    filterInput.placeholder = "Filter playlist\u2026";
+    filterControl.appendChild(filterInput);
+
+    const clearControl = document.createElement("p");
+    clearControl.className = "control";
+    const clearBtn = document.createElement("button");
+    clearBtn.id = "btfw-pl-clear";
+    clearBtn.className = "button is-small";
+    clearBtn.title = "Clear filter";
+    const clearIcon = document.createElement("i");
+    clearIcon.className = "fa fa-times";
+    clearBtn.appendChild(clearIcon);
+    clearControl.appendChild(clearBtn);
+
+    const scrollControl = document.createElement("p");
+    scrollControl.className = "control";
+    const scrollBtn = document.createElement("button");
+    scrollBtn.id = "btfw-pl-scroll";
+    scrollBtn.className = "button is-small";
+    scrollBtn.title = "Scroll to current";
+    const scrollIcon = document.createElement("i");
+    scrollIcon.className = "fa fa-location-arrow";
+    scrollBtn.appendChild(scrollIcon);
+    scrollControl.appendChild(scrollBtn);
+
+    field.append(filterControl, clearControl, scrollControl);
+
+    const countSpan = document.createElement("span");
+    countSpan.id = "btfw-pl-count";
+    countSpan.className = "is-size-7";
+    countSpan.style.opacity = ".75";
+
+    bar.append(field, countSpan);
     // Put it at the top of the header container
     header.insertBefore(bar, header.firstChild);
 
@@ -101,7 +132,9 @@ BTFW.define("feature:playlist-tools", [], async () => {
         btn.type = "button";
         btn.className = "btn btn-xs btn-default qbtn-copytitle btfw-qbtn-copytitle";
         btn.setAttribute("title", "Copy title and URL");
-        btn.innerHTML = `<span class="glyphicon glyphicon-copy"></span>Copy`;
+        const copyIcon = document.createElement("span");
+        copyIcon.className = "glyphicon glyphicon-copy";
+        btn.append(copyIcon, document.createTextNode("Copy"));
         group.appendChild(btn);
       } else if (existing) {
         existing.remove();
@@ -467,15 +500,6 @@ BTFW.define("feature:playlist-tools", [], async () => {
     console.log("[playlist-tools]", text);
   }
 
-  function escapeHtml(str) {
-    return str.replace(/[&<>"']/g, (c) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    })[c]);
-  }
 
   /* ---------- OPTIMIZED MutationObserver Setup ---------- */
   function setupOptimizedObservers() {

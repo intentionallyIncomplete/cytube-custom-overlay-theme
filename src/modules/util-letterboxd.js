@@ -1,5 +1,7 @@
 // BTFW — util:letterboxd
 // Letterboxd film metadata via movies-storage worker (HTML OG scrape).
+import { escapeHtml } from "../lib/escape-html.js";
+
 BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
   const proxy = await init("util:tmdb-proxy");
 
@@ -67,14 +69,6 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
       .replace(/&#124;/g, "|")
       .replace(/&#91;/g, "[")
       .replace(/&#93;/g, "]");
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
   }
 
   function renderCardHtml(title, year, rating, overview, posterUrl, sourceUrl) {

@@ -1,5 +1,7 @@
 // BTFW — ext:movie-suggestion
 // TMDB movie requests via movies-storage worker
+import { escapeHtml } from "../lib/escape-html.js";
+
 BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], async ({ init }) => {
   const tmdb = await init("util:tmdb-proxy");
   const monkeyPaw = await init("feature:monkeyPaw");
@@ -548,17 +550,17 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
 
     container.innerHTML = movies.map((movie) => `
       <div class="movie-result"
-           data-id="${movie.id}"
-           data-title="${movie.title}"
-           data-poster="${movie.posterPath || ""}"
-           data-year="${movie.releaseYear || ""}">
+           data-id="${escapeHtml(movie.id)}"
+           data-title="${escapeHtml(movie.title)}"
+           data-poster="${escapeHtml(movie.posterPath || "")}"
+           data-year="${escapeHtml(movie.releaseYear || "")}">
         <div class="movie-result__poster">
-          <img src="${posterSrc(movie.posterPath)}" alt="${movie.title}" loading="lazy"
+          <img src="${escapeHtml(posterSrc(movie.posterPath))}" alt="${escapeHtml(movie.title)}" loading="lazy"
                onerror="this.src='https://via.placeholder.com/154x231?text=No+Image'">
         </div>
         <div class="movie-result__info">
-          <div class="movie-result__title">${movie.title}</div>
-          <small style="opacity:0.7;">${movie.releaseYear || "N/A"}</small>
+          <div class="movie-result__title">${escapeHtml(movie.title)}</div>
+          <small style="opacity:0.7;">${escapeHtml(movie.releaseYear || "N/A")}</small>
         </div>
       </div>
     `).join("");
@@ -624,15 +626,15 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
       }
 
       container.innerHTML = items.map((item) => {
-        const year = item.releaseYear ? ` (${item.releaseYear})` : "";
-        const poster = posterSrc(item.posterPath).replace("w154", "w92");
+        const year = item.releaseYear ? ` (${escapeHtml(item.releaseYear)})` : "";
+        const poster = escapeHtml(posterSrc(item.posterPath).replace("w154", "w92"));
         return `
           <div class="history-item">
-            <img src="${poster}" alt="${item.movieTitle}" loading="lazy"
+            <img src="${poster}" alt="${escapeHtml(item.movieTitle)}" loading="lazy"
                  onerror="this.src='https://via.placeholder.com/92x138?text=No+Image'">
             <div>
-              <div class="history-item__title">${item.movieTitle}${year}</div>
-              <div class="history-item__meta">Requested by ${item.username}</div>
+              <div class="history-item__title">${escapeHtml(item.movieTitle)}${year}</div>
+              <div class="history-item__meta">Requested by ${escapeHtml(item.username)}</div>
             </div>
           </div>
         `;

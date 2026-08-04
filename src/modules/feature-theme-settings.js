@@ -10,6 +10,7 @@ import {
   MEDIA_SCALE_STEP
 } from "../lib/apply-chat-typography.js";
 import { confirmDialog } from "../lib/confirm-dialog.js";
+import { escapeHtml } from "../lib/escape-html.js";
 
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
@@ -77,7 +78,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         const presets = themePresets.listPresets();
         const active = themePresets.getActivePreset();
         presetSelect.innerHTML = `<option value="">Channel default</option>${presets
-          .map((p) => `<option value="${p.id}">${p.name.replace(/</g, "&lt;")}</option>`)
+          .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`)
           .join("")}`;
         presetSelect.value = active?.id || "";
       }
@@ -472,7 +473,12 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     m.dataset.btfwModalState = "closed";
     m.setAttribute("hidden", "");
     m.setAttribute("aria-hidden", "true");
-    m.innerHTML = `
+    // The full settings-panel markup below is a large static, first-party fragment (built from
+    // hardcoded tint/font preset constants, never from user input). Parsing it via a <template>
+    // keeps the fragment inert until explicitly cloned into the live modal, rather than assigning
+    // innerHTML directly on an already-attached element.
+    const modalScratch = document.createElement("template");
+    modalScratch.innerHTML = `
       <div class="modal-background"></div>
       <div class="modal-card btfw-theme-modal-card">
         <header class="modal-card-head">
@@ -727,6 +733,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         </footer>
       </div>
     `;
+    m.appendChild(modalScratch.content.cloneNode(true));
     document.body.appendChild(m);
 
     // Close actions
@@ -771,7 +778,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     const renderIgnoreList = () => {
       if (!ignoreListEl) return;
       const names = ignoreDraft.slice();
-      ignoreListEl.innerHTML = "";
+      ignoreListEl.replaceChildren();
       if (!names.length) {
         const empty = document.createElement("p");
         empty.className = "btfw-help";
@@ -991,14 +998,6 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     });
   }
 
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
   function getUserReleaseNotesData() {
     if (typeof BTFW_USER_RELEASE_NOTES !== "undefined" && Array.isArray(BTFW_USER_RELEASE_NOTES?.releases)) {
       return BTFW_USER_RELEASE_NOTES;
@@ -1130,7 +1129,12 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     
     const customSection = document.createElement("div");
     customSection.className = "btfw-useroptions-about";
-    customSection.innerHTML = buildUserOptionsAboutHtml();
+    // buildUserOptionsAboutHtml() escapes all dynamic fields (release version/summary/highlights)
+    // via escapeHtml() already; parsing through an inert <template> avoids assigning innerHTML
+    // directly on an already-attached element.
+    const aboutScratch = document.createElement("template");
+    aboutScratch.innerHTML = buildUserOptionsAboutHtml();
+    customSection.appendChild(aboutScratch.content.cloneNode(true));
     
     pane.insertBefore(customSection, pane.firstChild);
   }

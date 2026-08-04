@@ -77,16 +77,28 @@ function buildDialog(): HTMLDialogElement {
 
   const dialog = document.createElement("dialog");
   dialog.id = DIALOG_ID;
-  dialog.innerHTML = `
-    <div class="btfw-confirm-body">
-      <h2 data-role="title"></h2>
-      <p data-role="message"></p>
-    </div>
-    <div class="btfw-confirm-actions">
-      <button type="button" class="btfw-confirm-cancel" data-role="cancel"></button>
-      <button type="button" class="btfw-confirm-ok" data-role="confirm"></button>
-    </div>
-  `;
+
+  const body = document.createElement("div");
+  body.className = "btfw-confirm-body";
+  const titleEl = document.createElement("h2");
+  titleEl.dataset.role = "title";
+  const messageEl = document.createElement("p");
+  messageEl.dataset.role = "message";
+  body.append(titleEl, messageEl);
+
+  const actions = document.createElement("div");
+  actions.className = "btfw-confirm-actions";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "btfw-confirm-cancel";
+  cancelBtn.dataset.role = "cancel";
+  const confirmBtn = document.createElement("button");
+  confirmBtn.type = "button";
+  confirmBtn.className = "btfw-confirm-ok";
+  confirmBtn.dataset.role = "confirm";
+  actions.append(cancelBtn, confirmBtn);
+
+  dialog.append(body, actions);
   document.body.appendChild(dialog);
   return dialog;
 }

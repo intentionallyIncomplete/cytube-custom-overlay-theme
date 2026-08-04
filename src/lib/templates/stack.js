@@ -1,3 +1,18 @@
+// No import from "../escape-html.js" here: that module is TypeScript (escape-html.ts) and
+// tests/unit/templates.test.js loads this file via a plain Node ESM `import`, which (unlike
+// esbuild's bundler-style resolution used for the production build) cannot resolve a `.js`
+// specifier to a sibling `.ts` file. Escape the 4 HTML-sensitive characters inline instead
+// (mirrors src/lib/escape-html.ts's escapeHtml()).
+function escapeHtml(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function addMediaPanelHtml() {
   return `
         <div class="btfw-addmedia-panel__inner">
@@ -17,7 +32,7 @@ export function addMediaPanelHtml() {
 
 export function stackGroupHeaderHtml(title) {
   return `
-      <span class="btfw-stack-item__title">${title}</span>
+      <span class="btfw-stack-item__title">${escapeHtml(title)}</span>
       <div class="btfw-stack-header-toolbar">
         <span class="btfw-stack-header-actions"></span>
         <span class="btfw-stack-arrows">

@@ -167,6 +167,13 @@ BTFW.define("feature:poll-overlay", [], async () => {
   let optionsGridClickWired = false;
   let syncOverlayFrame = 0;
 
+  // Decode-only scratch <textarea>, never attached to the DOM. Safe even for attacker-controlled
+  // poll titles: a <textarea>'s content model never parses nested markup into child elements (its
+  // innerHTML is always raw/escapable text per the HTML spec), so this can't create an <img>,
+  // <script>, or any other element capable of firing `onerror`/`onload`/etc. Do not repurpose
+  // this element for anything other than entity decoding, and do not swap it for a <div> — a
+  // detached <div> can still fire `<img onerror>` because "detached from the visible DOM" is not
+  // the same as "inert document".
   const ENTITY_DECODER = document.createElement("textarea");
 
   function decodeHtmlEntities(value) {

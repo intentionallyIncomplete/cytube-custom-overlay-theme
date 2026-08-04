@@ -1,4 +1,17 @@
 /* BTFW — feature:themeIcons (apply gag-theme icon packs to slotted UI elements) */
+import { sanitizeHtml } from "../lib/escape-html.js";
+
+// Icon-slot markup is always a single `<i>` (FontAwesome glyph) or `<img>` (theme-pack icon);
+// scoped narrower than the shared sanitizeHtml() defaults so aria-hidden/decoding survive.
+const ICON_HTML_SANITIZE_OPTIONS = {
+  allowedTags: ["i", "img", "span"],
+  allowedAttributes: {
+    "*": ["class", "aria-hidden"],
+    img: ["src", "alt", "decoding"]
+  },
+  allowedSchemes: ["http", "https", "data"]
+};
+
 BTFW.define("feature:themeIcons", ["util:themeIconPacks", "util:themeRuntime"], async ({ init }) => {
   const iconPacks = await init("util:themeIconPacks");
   const themeRuntime = await init("util:themeRuntime");
@@ -26,7 +39,7 @@ BTFW.define("feature:themeIcons", ["util:themeIconPacks", "util:themeRuntime"], 
     if (!host) return;
     const fallback = iconPacks.ICON_SLOTS[host.dataset.btfwIconSlot]?.defaultHtml || "";
     const stored = host.dataset.btfwIconDefault || fallback;
-    host.innerHTML = stored;
+    host.innerHTML = sanitizeHtml(stored, ICON_HTML_SANITIZE_OPTIONS);
     host.classList.remove("btfw-theme-icon-host--themed");
     host.removeAttribute("data-btfw-icon-active");
   }
@@ -40,7 +53,7 @@ BTFW.define("feature:themeIcons", ["util:themeIconPacks", "util:themeRuntime"], 
       return;
     }
     const slotMeta = iconPacks.ICON_SLOTS[slotId];
-    host.innerHTML = iconPacks.buildThemedIconHtml(url, slotMeta);
+    host.innerHTML = sanitizeHtml(iconPacks.buildThemedIconHtml(url, slotMeta), ICON_HTML_SANITIZE_OPTIONS);
     host.classList.add("btfw-theme-icon-host--themed");
     host.setAttribute("data-btfw-icon-active", slotId);
   }

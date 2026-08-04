@@ -10,7 +10,20 @@ BTFW.define("feature:playlistPerformance", [], function() {
 
   const INITIAL_BATCH = 120;
   const BATCH_SIZE = 80;
-  const PERF_ICON_HTML = '<span data-btfw-icon-slot="perf-rocket" aria-hidden="true"><i class="fa fa-rocket"></i></span>';
+
+  function buildPerfIcon() {
+    const span = document.createElement('span');
+    span.dataset.btfwIconSlot = 'perf-rocket';
+    span.setAttribute('aria-hidden', 'true');
+    const icon = document.createElement('i');
+    icon.className = 'fa fa-rocket';
+    span.appendChild(icon);
+    return span;
+  }
+
+  function setPerfButtonLabel(btn, suffix) {
+    btn.replaceChildren(buildPerfIcon(), document.createTextNode(' ' + suffix));
+  }
 
   function getQueue() {
     return $('#queue');
@@ -244,31 +257,40 @@ BTFW.define("feature:playlistPerformance", [], function() {
       color: #0f0;
       font-size: 12px;
     `;
-    indicator.innerHTML = `
-      <i class="fa fa-rocket"></i> Performance Mode Active<br>
-      <small class="btfw-perf-status"></small><br>
-      <div class="btfw-perf-controls" style="margin-top: 5px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-        <button id="btfw-show-more-items" class="btn btn-xs btn-default">Show More</button>
-        <button id="btfw-show-all-items" class="btn btn-xs btn-default">Show All (May Lag)</button>
-      </div>
-    `;
+    const indicatorIcon = document.createElement('i');
+    indicatorIcon.className = 'fa fa-rocket';
+    const indicatorStatus = document.createElement('small');
+    indicatorStatus.className = 'btfw-perf-status';
+    const indicatorControls = document.createElement('div');
+    indicatorControls.className = 'btfw-perf-controls';
+    indicatorControls.style.cssText = 'margin-top: 5px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;';
+    const showMoreBtn = document.createElement('button');
+    showMoreBtn.id = 'btfw-show-more-items';
+    showMoreBtn.className = 'btn btn-xs btn-default';
+    showMoreBtn.textContent = 'Show More';
+    const showAllBtn = document.createElement('button');
+    showAllBtn.id = 'btfw-show-all-items';
+    showAllBtn.className = 'btn btn-xs btn-default';
+    showAllBtn.textContent = 'Show All (May Lag)';
+    indicatorControls.append(showMoreBtn, showAllBtn);
+    indicator.append(
+      indicatorIcon,
+      document.createTextNode(' Performance Mode Active'),
+      document.createElement('br'),
+      indicatorStatus,
+      document.createElement('br'),
+      indicatorControls
+    );
 
     queue.appendChild(indicator);
-    
-    // Add show all button handler
-    const showMoreBtn = indicator.querySelector('#btfw-show-more-items');
-    if (showMoreBtn) {
-      showMoreBtn.addEventListener('click', () => {
-        revealNextBatch();
-      });
-    }
 
-    const showAllBtn = indicator.querySelector('#btfw-show-all-items');
-    if (showAllBtn) {
-      showAllBtn.addEventListener('click', () => {
-        restorePlaylist();
-      });
-    }
+    showMoreBtn.addEventListener('click', () => {
+      revealNextBatch();
+    });
+
+    showAllBtn.addEventListener('click', () => {
+      restorePlaylist();
+    });
 
     updatePerformanceIndicator(totalCount);
   }
@@ -333,19 +355,19 @@ BTFW.define("feature:playlistPerformance", [], function() {
     const btn = document.createElement('button');
     btn.id = 'btfw-perf-toggle';
     btn.className = 'btn btn-xs btn-default';
-    btn.innerHTML = `${PERF_ICON_HTML} Performance`;
+    setPerfButtonLabel(btn, 'Performance');
     btn.title = 'Toggle performance mode for smooth scrolling';
     btn.style.marginLeft = '5px';
-    
+
     btn.addEventListener('click', () => {
       if (isOptimized) {
         restorePlaylist();
         btn.classList.remove('btn-success');
-        btn.innerHTML = `${PERF_ICON_HTML} Performance`;
+        setPerfButtonLabel(btn, 'Performance');
       } else {
         optimizePlaylist();
         btn.classList.add('btn-success');
-        btn.innerHTML = `${PERF_ICON_HTML} Performance ON`;
+        setPerfButtonLabel(btn, 'Performance ON');
       }
     });
 
@@ -363,7 +385,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
     const btn = document.createElement('button');
     btn.id = 'btfw-stack-perf-toggle';
     btn.className = 'btfw-stack-perf-btn';
-    btn.innerHTML = '⚡';
+    btn.textContent = '\u26a1';
     btn.title = 'Performance mode - hide excess items';
     btn.style.cssText = `
       background: rgba(0, 150, 0, 0.2);
@@ -382,11 +404,11 @@ BTFW.define("feature:playlistPerformance", [], function() {
       if (isOptimized) {
         restorePlaylist();
         btn.style.background = 'rgba(0, 150, 0, 0.2)';
-        btn.innerHTML = '⚡';
+        btn.textContent = '\u26a1';
       } else {
         optimizePlaylist();
         btn.style.background = 'rgba(0, 150, 0, 0.5)';
-        btn.innerHTML = '⚡ ON';
+        btn.textContent = '\u26a1 ON';
       }
     });
     
@@ -430,7 +452,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
       const btn = $('#btfw-perf-toggle');
       if (btn) {
         btn.classList.add('btn-success');
-        btn.innerHTML = `${PERF_ICON_HTML} Performance ON`;
+        setPerfButtonLabel(btn, 'Performance ON');
       }
     }
   }

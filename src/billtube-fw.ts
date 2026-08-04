@@ -1,7 +1,7 @@
 import { createBtfwRegistry } from "./lib/btfw-registry.js";
 import { resolveBtfwBase } from "./lib/resolve-btfw-base.js";
 import { patchWaitUntilDefinedForVjsPlugins } from "./lib/patch-vjs-plugin-wait.js";
-import { bootOverlayCardHtml } from "./lib/templates/boot-overlay.js";
+import { buildBootOverlayCard } from "./lib/templates/boot-overlay.js";
 import {
   canLoadAdminBundle,
   readAdminBundleGateContext
@@ -124,7 +124,7 @@ interface BootOverlayApi {
       overlay.setAttribute("data-testid", "btfw-boot-overlay");
       overlay.setAttribute("role", "status");
       overlay.setAttribute("aria-live", "polite");
-      overlay.innerHTML = bootOverlayCardHtml();
+      overlay.appendChild(buildBootOverlayCard());
       const mount = function () {
         if (!overlay || overlay.isConnected) return;
         const host = document.body || document.documentElement;
@@ -161,8 +161,10 @@ interface BootOverlayApi {
       ov.setAttribute("data-state", "error");
       const label = ov.querySelector(".btfw-boot-overlay__label");
       if (label) {
-        label.innerHTML =
-          "<strong>Quigly's Playground</strong>Something went wrong loading the experience.";
+        label.replaceChildren();
+        const strong = document.createElement("strong");
+        strong.textContent = "Quigly's Playground";
+        label.append(strong, document.createTextNode("Something went wrong loading the experience."));
       }
       const err = ov.querySelector(".btfw-boot-overlay__error");
       if (err) err.textContent = message || "Please refresh to retry.";

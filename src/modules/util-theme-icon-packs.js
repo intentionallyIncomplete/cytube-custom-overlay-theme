@@ -1,5 +1,15 @@
 /* BTFW — util:themeIconPacks (gag-theme icon slot registry and pack resolution) */
 BTFW.define("util:themeIconPacks", [], async () => {
+  // No top-level import here: tests/unit/theme-icon-packs.test.js loads this file via
+  // eval(readFileSync(...)) in a non-module context, so `import` would throw a SyntaxError.
+  // Escape the 4 HTML-attribute-sensitive characters inline (mirrors src/lib/escape-html.ts).
+  function escapeHtmlAttr(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
   const ICON_SLOT_IDS = [
     "nav-theme",
     "nav-movie-request",
@@ -149,9 +159,9 @@ BTFW.define("util:themeIconPacks", [], async () => {
     return resolved;
   }
 
-  function buildThemedIconHtml(url, slotMeta) {
-    const label = slotMeta?.label || "Icon";
-    return `<img class="btfw-theme-icon" src="${url.replace(/"/g, "&quot;")}" alt="" aria-hidden="true" decoding="async">`;
+  // _slotMeta isn't rendered today (alt stays empty for decorative icons); kept for API stability.
+  function buildThemedIconHtml(url, _slotMeta) {
+    return `<img class="btfw-theme-icon" src="${escapeHtmlAttr(url)}" alt="" aria-hidden="true" decoding="async">`;
   }
 
   function buildSlotHtml(slotId, iconMap, options = {}) {
