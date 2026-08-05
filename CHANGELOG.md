@@ -1,3 +1,10 @@
+## [1.28.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.28.0...v1.28.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **security:** harden HTML sinks for issue [#201](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/201) ([#223](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/223)) ([9e42086](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/9e42086cd7bc5b478f350e5ba6e7c3766649dd23)), closes [hi#risk](https://github.com/hi/issues/risk) [hi#priority](https://github.com/hi/issues/priority)
+
 # [1.28.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.27.0...v1.28.0) (2026-08-03)
 
 
