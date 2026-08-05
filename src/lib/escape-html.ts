@@ -121,8 +121,15 @@ function normalizeUrlForSchemeCheck(value: string): string {
     if (next === result) break;
     result = next;
   }
-  // Drop C0 controls + DEL and collapse whitespace browsers may ignore in schemes.
-  return result.replace(/[\u0000-\u001f\u007f]/g, "").replace(/[\s\u00a0]+/g, "");
+  // Drop C0 controls + DEL (built without a control-char regex literal — ESLint
+  // no-control-regex) and collapse whitespace browsers may ignore in schemes.
+  let withoutControls = "";
+  for (let i = 0; i < result.length; i += 1) {
+    const code = result.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) continue;
+    withoutControls += result[i];
+  }
+  return withoutControls.replace(/[\s\u00a0]+/g, "");
 }
 
 function parseAttributes(attrString: string): Map<string, string> {
