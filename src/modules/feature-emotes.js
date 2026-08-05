@@ -175,28 +175,73 @@ BTFW.define("feature:emotes", [], async () => {
     pop.dataset.btfwPopoverState = "closed";
     pop.setAttribute("hidden", "");
     pop.setAttribute("aria-hidden", "true");
-    pop.innerHTML = `
-      <div class="btfw-emotes-head">
-        <div class="btfw-emotes-tabs">
-          <button class="btfw-tab is-active" data-tab="emotes">Channel</button>
-          <button class="btfw-tab" data-tab="emoji">Emoji</button>
-          <button class="btfw-tab" data-tab="recent">Recent</button>
-        </div>
-        <div class="btfw-emotes-sort">
-          <select id="btfw-emotes-sort" aria-label="Sort emotes">
-            <option value="alpha">A–Z</option>
-            <option value="added-asc">Oldest first</option>
-            <option value="added-desc">Newest first</option>
-          </select>
-        </div>
-        <div class="btfw-emotes-search">
-          <input id="btfw-emotes-search" type="search" placeholder="Search…" autocomplete="off" aria-label="Search emotes and emoji" />
-          <button id="btfw-emotes-clear" class="btfw-emotes-clear" type="button" title="Clear search" aria-label="Clear search" aria-hidden="true" tabindex="-1">×</button>
-        </div>
-        <button class="btfw-emotes-close" title="Close">×</button>
-      </div>
-      <div id="btfw-emotes-grid" class="btfw-emotes-grid" tabindex="0" aria-label="Emote grid"></div>
-    `;
+    const head = document.createElement("div");
+    head.className = "btfw-emotes-head";
+
+    const tabs = document.createElement("div");
+    tabs.className = "btfw-emotes-tabs";
+    [
+      { tab: "emotes", label: "Channel", active: true },
+      { tab: "emoji", label: "Emoji" },
+      { tab: "recent", label: "Recent" }
+    ].forEach(({ tab, label, active }) => {
+      const tabBtn = document.createElement("button");
+      tabBtn.className = active ? "btfw-tab is-active" : "btfw-tab";
+      tabBtn.dataset.tab = tab;
+      tabBtn.textContent = label;
+      tabs.appendChild(tabBtn);
+    });
+
+    const sortWrap = document.createElement("div");
+    sortWrap.className = "btfw-emotes-sort";
+    const sortSelect = document.createElement("select");
+    sortSelect.id = "btfw-emotes-sort";
+    sortSelect.setAttribute("aria-label", "Sort emotes");
+    [
+      { value: "alpha", label: "A\u2013Z" },
+      { value: "added-asc", label: "Oldest first" },
+      { value: "added-desc", label: "Newest first" }
+    ].forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      sortSelect.appendChild(opt);
+    });
+    sortWrap.appendChild(sortSelect);
+
+    const searchWrap = document.createElement("div");
+    searchWrap.className = "btfw-emotes-search";
+    const searchInput = document.createElement("input");
+    searchInput.id = "btfw-emotes-search";
+    searchInput.type = "search";
+    searchInput.placeholder = "Search\u2026";
+    searchInput.autocomplete = "off";
+    searchInput.setAttribute("aria-label", "Search emotes and emoji");
+    const clearBtn = document.createElement("button");
+    clearBtn.id = "btfw-emotes-clear";
+    clearBtn.className = "btfw-emotes-clear";
+    clearBtn.type = "button";
+    clearBtn.title = "Clear search";
+    clearBtn.setAttribute("aria-label", "Clear search");
+    clearBtn.setAttribute("aria-hidden", "true");
+    clearBtn.tabIndex = -1;
+    clearBtn.textContent = "\u00d7";
+    searchWrap.append(searchInput, clearBtn);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btfw-emotes-close";
+    closeBtn.title = "Close";
+    closeBtn.textContent = "\u00d7";
+
+    head.append(tabs, sortWrap, searchWrap, closeBtn);
+
+    const grid = document.createElement("div");
+    grid.id = "btfw-emotes-grid";
+    grid.className = "btfw-emotes-grid";
+    grid.tabIndex = 0;
+    grid.setAttribute("aria-label", "Emote grid");
+
+    pop.append(head, grid);
     const wrap = $("#chatwrap") || document.body;
     wrap.appendChild(pop);
 
@@ -417,7 +462,7 @@ function positionPopover(){
 
     const epoch = ++state.renderEpoch;
 
-    grid.innerHTML = "";
+    grid.replaceChildren();
     const total = state.filtered.length;
     let i = 0;
     const CHUNK = 200;
@@ -522,9 +567,17 @@ function positionPopover(){
     btn.id = "btfw-btn-emotes";
     btn.type = "button";
     btn.className = "button is-dark is-small btfw-chatbtn btfw-btn-emotes";
-    btn.innerHTML = (window.FontAwesome || document.querySelector('.fa'))
-      ? '<i class="fa fa-smile" aria-hidden="true"></i>'
-      : '<span aria-hidden="true">🙂</span>';
+    if (window.FontAwesome || document.querySelector('.fa')) {
+      const icon = document.createElement("i");
+      icon.className = "fa fa-smile";
+      icon.setAttribute("aria-hidden", "true");
+      btn.appendChild(icon);
+    } else {
+      const fallback = document.createElement("span");
+      fallback.setAttribute("aria-hidden", "true");
+      fallback.textContent = "\ud83d\ude42";
+      btn.appendChild(fallback);
+    }
     btn.title = "Emotes / Emoji";
 
     const gifBtn = bar.querySelector("#btfw-btn-gif, .btfw-btn-gif");

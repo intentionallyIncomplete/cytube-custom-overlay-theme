@@ -88,7 +88,13 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
         btn.id = "btfw-btn-gif";
         btn.type = "button";
         btn.className = "button is-dark is-small btfw-chatbtn btfw-btn-gif";
-        btn.innerHTML = (document.querySelector(".fa")) ? '<i class="fa fa-file-video-o"></i>' : 'GIF';
+        if (document.querySelector(".fa")) {
+          const icon = document.createElement("i");
+          icon.className = "fa fa-file-video-o";
+          btn.appendChild(icon);
+        } else {
+          btn.textContent = "GIF";
+        }
         btn.title = "GIFs";
         bar.appendChild(btn);
         btn.addEventListener("click", e => { e.preventDefault(); open(); }, { capture:true });
@@ -105,46 +111,113 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
     modal.dataset.btfwModalState = "closed";
     modal.setAttribute("hidden", "");
     modal.setAttribute("aria-hidden", "true");
-    modal.innerHTML = `
-      <div class="modal-background"></div>
-      <div class="modal-card btfw-modal">
-        <header class="modal-card-head">
-          <p class="modal-card-title">GIFs</p>
-          <button class="delete" aria-label="close"></button>
-        </header>
-        <section class="modal-card-body">
-          <div class="btfw-gif-toolbar">
-            <div class="tabs is-boxed is-small btfw-gif-tabs">
-              <ul>
-                <li class="is-active" data-p="giphy"><a>Giphy</a></li>
-                <li data-p="klipy"><a>KLIPY</a></li>
-                <li data-p="favorites"><a>Favorites</a></li>
-              </ul>
-            </div>
-            <div class="btfw-gif-search">
-              <input id="btfw-gif-q" class="input is-small" type="text" placeholder="Search GIFs…">
-              <button id="btfw-gif-go" class="button is-link is-small">Search</button>
-              <button id="btfw-gif-trending" class="button is-dark is-small">Trending</button>
-            </div>
-            <div id="btfw-klipy-branding" class="btfw-klipy-branding is-hidden" aria-hidden="true">
-              <img class="btfw-klipy-powered" src="" alt="Powered by KLIPY">
-            </div>
-          </div>
+    const background = document.createElement("div");
+    background.className = "modal-background";
 
-          <div id="btfw-gif-notice" class="btfw-gif-notice is-hidden"></div>
-          <div id="btfw-gif-grid" class="btfw-gif-grid"></div>
+    const card = document.createElement("div");
+    card.className = "modal-card btfw-modal";
 
-          <nav class="pagination is-centered btfw-gif-pager" role="navigation" aria-label="pagination">
-            <button id="btfw-gif-prev" class="button is-dark is-small">Prev</button>
-            <span id="btfw-gif-pages" class="btfw-gif-pages">1 / 1</span>
-            <button id="btfw-gif-next" class="button is-dark is-small">Next</button>
-          </nav>
-        </section>
-        <footer class="modal-card-foot">
-          <button class="button is-link" id="btfw-gif-close">Close</button>
-        </footer>
-      </div>
-    `;
+    const header = document.createElement("header");
+    header.className = "modal-card-head";
+    const headTitle = document.createElement("p");
+    headTitle.className = "modal-card-title";
+    headTitle.textContent = "GIFs";
+    const headDelete = document.createElement("button");
+    headDelete.className = "delete";
+    headDelete.setAttribute("aria-label", "close");
+    header.append(headTitle, headDelete);
+
+    const body = document.createElement("section");
+    body.className = "modal-card-body";
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "btfw-gif-toolbar";
+
+    const tabsWrap = document.createElement("div");
+    tabsWrap.className = "tabs is-boxed is-small btfw-gif-tabs";
+    const tabsList = document.createElement("ul");
+    [
+      { provider: "giphy", label: "Giphy", active: true },
+      { provider: "klipy", label: "KLIPY" },
+      { provider: "favorites", label: "Favorites" }
+    ].forEach(({ provider, label, active }) => {
+      const li = document.createElement("li");
+      if (active) li.className = "is-active";
+      li.dataset.p = provider;
+      const a = document.createElement("a");
+      a.textContent = label;
+      li.appendChild(a);
+      tabsList.appendChild(li);
+    });
+    tabsWrap.appendChild(tabsList);
+
+    const searchWrap = document.createElement("div");
+    searchWrap.className = "btfw-gif-search";
+    const searchInput = document.createElement("input");
+    searchInput.id = "btfw-gif-q";
+    searchInput.className = "input is-small";
+    searchInput.type = "text";
+    searchInput.placeholder = "Search GIFs\u2026";
+    const goBtn = document.createElement("button");
+    goBtn.id = "btfw-gif-go";
+    goBtn.className = "button is-link is-small";
+    goBtn.textContent = "Search";
+    const trendingBtn = document.createElement("button");
+    trendingBtn.id = "btfw-gif-trending";
+    trendingBtn.className = "button is-dark is-small";
+    trendingBtn.textContent = "Trending";
+    searchWrap.append(searchInput, goBtn, trendingBtn);
+
+    const klipyBranding = document.createElement("div");
+    klipyBranding.id = "btfw-klipy-branding";
+    klipyBranding.className = "btfw-klipy-branding is-hidden";
+    klipyBranding.setAttribute("aria-hidden", "true");
+    const klipyImg = document.createElement("img");
+    klipyImg.className = "btfw-klipy-powered";
+    klipyImg.src = "";
+    klipyImg.alt = "Powered by KLIPY";
+    klipyBranding.appendChild(klipyImg);
+
+    toolbar.append(tabsWrap, searchWrap, klipyBranding);
+
+    const notice = document.createElement("div");
+    notice.id = "btfw-gif-notice";
+    notice.className = "btfw-gif-notice is-hidden";
+
+    const grid = document.createElement("div");
+    grid.id = "btfw-gif-grid";
+    grid.className = "btfw-gif-grid";
+
+    const pager = document.createElement("nav");
+    pager.className = "pagination is-centered btfw-gif-pager";
+    pager.setAttribute("role", "navigation");
+    pager.setAttribute("aria-label", "pagination");
+    const prevBtn = document.createElement("button");
+    prevBtn.id = "btfw-gif-prev";
+    prevBtn.className = "button is-dark is-small";
+    prevBtn.textContent = "Prev";
+    const pagesSpan = document.createElement("span");
+    pagesSpan.id = "btfw-gif-pages";
+    pagesSpan.className = "btfw-gif-pages";
+    pagesSpan.textContent = "1 / 1";
+    const nextBtn = document.createElement("button");
+    nextBtn.id = "btfw-gif-next";
+    nextBtn.className = "button is-dark is-small";
+    nextBtn.textContent = "Next";
+    pager.append(prevBtn, pagesSpan, nextBtn);
+
+    body.append(toolbar, notice, grid, pager);
+
+    const footer = document.createElement("footer");
+    footer.className = "modal-card-foot";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "button is-link";
+    closeBtn.id = "btfw-gif-close";
+    closeBtn.textContent = "Close";
+    footer.appendChild(closeBtn);
+
+    card.append(header, body, footer);
+    modal.append(background, card);
     document.body.appendChild(modal);
 
     modal.querySelector(".modal-background").addEventListener("click", close);
@@ -267,7 +340,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
       return;
     }
 
-    grid.innerHTML = "";
+    grid.replaceChildren();
     const frag = document.createDocumentFragment();
 
     for (let i = 0; i < PER_PAGE; i++){

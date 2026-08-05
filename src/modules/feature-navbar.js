@@ -16,14 +16,6 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
   let lastNavMenuSignature = "";
   let navMenuDismissWired = false;
 
-  function escapeHtml(value){
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
   function getUserName(){
     try { return (window.CLIENT && CLIENT.name) ? CLIENT.name : ""; }
     catch(_) { return ""; }
@@ -107,10 +99,17 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
 
     const li = document.createElement("li");
     const a  = document.createElement("a");
-    a.innerHTML = `
-      <span class="btfw-nav-pill__icon" data-btfw-icon-slot="nav-theme" aria-hidden="true"><i class="fa fa-sliders"></i></span>
-      <span class="btfw-nav-pill__label">Theme</span>
-    `;
+    const iconSlot = document.createElement("span");
+    iconSlot.className = "btfw-nav-pill__icon";
+    iconSlot.dataset.btfwIconSlot = "nav-theme";
+    iconSlot.setAttribute("aria-hidden", "true");
+    const icon = document.createElement("i");
+    icon.className = "fa fa-sliders";
+    iconSlot.appendChild(icon);
+    const label = document.createElement("span");
+    label.className = "btfw-nav-pill__label";
+    label.textContent = "Theme";
+    a.append(iconSlot, label);
     a.href = "javascript:void(0)";
     styleThemeButton(a);
     li.appendChild(a);
@@ -229,7 +228,7 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
       li.className = "btfw-nav-avatar-item";
       navUL.appendChild(li);
     } else {
-      li.innerHTML = "";
+      li.replaceChildren();
       li.classList.remove("dropdown");
     }
 
@@ -363,7 +362,7 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
     const bar = document.getElementById("btfw-nav-menu-bar");
     if (!bar) return;
 
-    bar.innerHTML = "";
+    bar.replaceChildren();
     bar.style.setProperty("--btfw-nav-menu-count", String(items.length));
 
     items.forEach((item) => {
@@ -371,7 +370,10 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
       btn.type = "button";
       btn.className = "btfw-nav-menu-item";
       btn.setAttribute("role", "menuitem");
-      btn.innerHTML = `<span class="btfw-nav-menu-item__label">${escapeHtml(item.label)}</span>`;
+      const label = document.createElement("span");
+      label.className = "btfw-nav-menu-item__label";
+      label.textContent = item.label;
+      btn.appendChild(label);
 
       btn.addEventListener("click", (ev) => {
         ev.preventDefault();
@@ -527,7 +529,14 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
     const name = getUserName();
     btn.title = name || "Sign in";
     btn.setAttribute("aria-label", name ? `${name} account menu` : "Sign in");
-    btn.innerHTML = `<img class="btfw-nav-menu-avatar-btn__img" src="${escapeHtml(imgSrc)}" alt="" width="28" height="28">`;
+    btn.replaceChildren();
+    const avatarImg = document.createElement("img");
+    avatarImg.className = "btfw-nav-menu-avatar-btn__img";
+    avatarImg.src = imgSrc;
+    avatarImg.alt = "";
+    avatarImg.width = 28;
+    avatarImg.height = 28;
+    btn.appendChild(avatarImg);
 
     let menu = avatarLi.querySelector(":scope > .dropdown-menu");
     if (!menu) menu = wrap.querySelector(":scope > .dropdown-menu");
@@ -586,7 +595,16 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
       btn.className = "btfw-nav-access-btn btfw-nav-menu-btn";
       btn.setAttribute("aria-label", "Channel navigation menu");
       btn.setAttribute("aria-expanded", "false");
-      btn.innerHTML = '<span class="btfw-nav-access-btn__icon" aria-hidden="true"><i class="fa fa-bars"></i></span><span class="btfw-nav-access-btn__label">Menu</span>';
+      const btnIcon = document.createElement("span");
+      btnIcon.className = "btfw-nav-access-btn__icon";
+      btnIcon.setAttribute("aria-hidden", "true");
+      const btnIconGlyph = document.createElement("i");
+      btnIconGlyph.className = "fa fa-bars";
+      btnIcon.appendChild(btnIconGlyph);
+      const btnLabel = document.createElement("span");
+      btnLabel.className = "btfw-nav-access-btn__label";
+      btnLabel.textContent = "Menu";
+      btn.append(btnIcon, btnLabel);
       btn.addEventListener("click", onNavMenuButtonClick);
       toolbar.appendChild(btn);
       shell.appendChild(toolbar);

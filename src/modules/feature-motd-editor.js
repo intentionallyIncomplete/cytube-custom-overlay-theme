@@ -7,6 +7,7 @@ import {
   setApplyButtonVisible
 } from "../lib/dirty-apply.js";
 import { confirmDialog } from "../lib/confirm-dialog.js";
+import { escapeHtml, sanitizeHtml } from "../lib/escape-html.js";
 
 BTFW.define("feature:motd-editor", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
@@ -97,21 +98,46 @@ BTFW.define("feature:motd-editor", [], async () => {
     m.dataset.btfwModalState = "closed";
     m.setAttribute("hidden", "");
     m.setAttribute("aria-hidden", "true");
-    m.innerHTML = `
-      <div class="modal-background"></div>
-      <div class="modal-card btfw-modal">
-        <header class="modal-card-head">
-          <p class="modal-card-title">Edit MOTD</p>
-          <button class="delete" aria-label="close"></button>
-        </header>
-        <section class="modal-card-body">
-          <div id="btfw-motd-editor"></div>
-        </section>
-      <footer class="modal-card-foot">
-        <button class="button is-link" id="btfw-motd-apply" hidden aria-hidden="true" tabindex="-1">Apply</button>
-        <button class="button" id="btfw-motd-cancel">Cancel</button>
-      </footer>
-    </div>`;
+
+    const background = document.createElement("div");
+    background.className = "modal-background";
+
+    const card = document.createElement("div");
+    card.className = "modal-card btfw-modal";
+
+    const header = document.createElement("header");
+    header.className = "modal-card-head";
+    const title = document.createElement("p");
+    title.className = "modal-card-title";
+    title.textContent = "Edit MOTD";
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete";
+    deleteBtn.setAttribute("aria-label", "close");
+    header.append(title, deleteBtn);
+
+    const body = document.createElement("section");
+    body.className = "modal-card-body";
+    const editorHost = document.createElement("div");
+    editorHost.id = "btfw-motd-editor";
+    body.appendChild(editorHost);
+
+    const footer = document.createElement("footer");
+    footer.className = "modal-card-foot";
+    const applyBtn = document.createElement("button");
+    applyBtn.className = "button is-link";
+    applyBtn.id = "btfw-motd-apply";
+    applyBtn.hidden = true;
+    applyBtn.setAttribute("aria-hidden", "true");
+    applyBtn.tabIndex = -1;
+    applyBtn.textContent = "Apply";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "button";
+    cancelBtn.id = "btfw-motd-cancel";
+    cancelBtn.textContent = "Cancel";
+    footer.append(applyBtn, cancelBtn);
+
+    card.append(header, body, footer);
+    m.append(background, card);
     document.body.appendChild(m);
     return m;
   }
@@ -162,7 +188,7 @@ BTFW.define("feature:motd-editor", [], async () => {
       console.warn("[motd-editor] Summernote load failed", e);
       const host = $("#btfw-motd-editor", m);
       if (host) {
-        host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:monospace;">${initialHTML}</textarea>`;
+        host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:monospace;">${escapeHtml(initialHTML)}</textarea>`;
       }
       motion.openModal(m);
       editorModalOpen = false;
@@ -205,7 +231,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         }
       });
     } else {
-      host.innerHTML = `<textarea class="textarea" style="height:400px;">${initialHTML}</textarea>`;
+      host.innerHTML = `<textarea class="textarea" style="height:400px;">${escapeHtml(initialHTML)}</textarea>`;
     }
 
     const applyBtn = $("#btfw-motd-apply", m);
@@ -244,7 +270,7 @@ BTFW.define("feature:motd-editor", [], async () => {
             stackModule.applyMotdUpdate(html);
           } else {
             const motdDisplay = resolveMotdDisplay();
-            if (motdDisplay) motdDisplay.innerHTML = html;
+            if (motdDisplay) motdDisplay.innerHTML = sanitizeHtml(html);
             const csMotd = $("#cs-motdtext");
             if (csMotd) csMotd.value = html;
           }
@@ -364,8 +390,14 @@ BTFW.define("feature:motd-editor", [], async () => {
     }, true);
   }
 
-  const MOTD_EDIT_BTN_HTML = '<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD';
   const MOTD_EDIT_BTN_CLASS = "btfw-stack-header-btn";
+
+  function buildMotdEditBtnContent() {
+    const icon = document.createElement("i");
+    icon.className = "fa fa-plus";
+    icon.setAttribute("aria-hidden", "true");
+    return [icon, document.createTextNode(" Edit MOTD")];
+  }
   let injectButtonTimer = null;
   let editorModalOpen = false;
   let stackApi = null;
@@ -388,12 +420,22 @@ BTFW.define("feature:motd-editor", [], async () => {
     return $("#motd");
   }
 
+  // Regex-based tag strip + entity decode, deliberately avoiding `element.innerHTML = html`. MOTD
+  // source can be attacker-influenced (see feature-motd-editor.js's own CRITICAL-table fixes above),
+  // and setting innerHTML on a live-document element still triggers resource-loading event handlers
+  // like `<img src=x onerror=...>` even when that element is never attached to the visible DOM —
+  // "detached" is not the same as "inert document". Mirrors feature-stack.js's isMotdHtmlEmpty().
   function isMotdHtmlEmpty(html = "") {
     const raw = String(html || "").trim();
     if (!raw) return true;
-    const probe = document.createElement("div");
-    probe.innerHTML = raw;
-    return !((probe.textContent || "").replace(/\u00a0/g, " ").trim());
+    const text = raw
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return !text;
   }
 
   function injectButton(){
@@ -426,7 +468,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         btn.id = "btfw-motd-editbtn";
       }
       btn.className = MOTD_EDIT_BTN_CLASS;
-      if (btn.innerHTML !== MOTD_EDIT_BTN_HTML) btn.innerHTML = MOTD_EDIT_BTN_HTML;
+      if (!btn.querySelector(".fa-plus")) btn.replaceChildren(...buildMotdEditBtnContent());
       if (!btn._btfwMotdBound) {
         btn._btfwMotdBound = true;
         btn.addEventListener("click", openEditor);
@@ -443,7 +485,11 @@ BTFW.define("feature:motd-editor", [], async () => {
     let row = existingRow;
     if (!row) {
       row = document.createElement("div");
-      row.innerHTML = `<button id="btfw-motd-editbtn" class="btfw-stack-header-btn"><i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD</button>`;
+      const seedBtn = document.createElement("button");
+      seedBtn.id = "btfw-motd-editbtn";
+      seedBtn.className = "btfw-stack-header-btn";
+      seedBtn.append(...buildMotdEditBtnContent());
+      row.appendChild(seedBtn);
     }
 
     row.classList.add("buttons", "is-right", "btfw-motd-editrow");
@@ -452,7 +498,7 @@ BTFW.define("feature:motd-editor", [], async () => {
       const btn = document.createElement("button");
       btn.id = "btfw-motd-editbtn";
       btn.className = MOTD_EDIT_BTN_CLASS;
-      btn.innerHTML = `<i class="fa fa-plus" aria-hidden="true"></i> Edit MOTD`;
+      btn.append(...buildMotdEditBtnContent());
       row.appendChild(btn);
     }
 

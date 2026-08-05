@@ -137,7 +137,6 @@ const MP3_SOUND_PRESETS = [
     video:   { muted: true,  volume: 0.65, sound: "airy-bell" }
   };
 
-  const scratch = document.createElement("div");
   const dedupe = new Map();
 
   const ui = new Map();
@@ -321,12 +320,34 @@ const MP3_SOUND_PRESETS = [
     return false;
   }
 
+  // Regex-based tag strip + entity decode, deliberately avoiding `element.innerHTML = html`.
+  // Chat messages (this function's only caller) are attacker-controlled, and setting innerHTML
+  // on a live-document element still triggers resource-loading event handlers like
+  // `<img src=x onerror=...>` even when that element is never attached to the visible DOM —
+  // "detached" is not the same as "inert". Never hand this text to the HTML parser at all.
+  function decodeNumericEntity(code) {
+    if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return " ";
+    try {
+      return String.fromCodePoint(code);
+    } catch (_) {
+      return " ";
+    }
+  }
+
   function plainText(html){
     if (!html) return "";
-    scratch.innerHTML = String(html);
-    const text = scratch.textContent || scratch.innerText || "";
-    scratch.textContent = "";
-    return text;
+    return String(html)
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, "\"")
+      .replace(/&apos;/gi, "'")
+      .replace(/&#(\d+);/g, (_, dec) => decodeNumericEntity(Number(dec)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => decodeNumericEntity(parseInt(hex, 16)))
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   function getOwnName(){

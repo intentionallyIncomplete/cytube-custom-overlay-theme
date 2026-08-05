@@ -96,7 +96,3 @@ export function channelThemeAdminPanelHtml() {
       </div>
     `;
 }
-
-export function channelThemeTabAnchorHtml() {
-  return '<span class="fa fa-magic"></span> <span>Theme</span>';
-}

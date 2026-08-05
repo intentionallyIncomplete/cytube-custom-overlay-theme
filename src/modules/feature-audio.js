@@ -1135,7 +1135,9 @@
         const percentage = Math.round(sharedAudio.BOOST_MULTIPLIER * 100);
         btn.title = `Toggle Audio Boost (${percentage}%)`;
         btn.setAttribute('data-btfw-overlay', '1');
-        btn.innerHTML = '<i class="fa-solid fa-megaphone"></i>';
+        const boostIcon = document.createElement('i');
+        boostIcon.className = 'fa-solid fa-megaphone';
+        btn.appendChild(boostIcon);
 
         btn.addEventListener('click', () => {
           if (sharedAudio.boostEnabled) {
@@ -1163,7 +1165,9 @@
         const presetLabel = sharedAudio.NORM_PRESETS[sharedAudio.currentNormPreset].label;
         btn.title = `Toggle Audio Normalization (${presetLabel})`;
         btn.setAttribute('data-btfw-overlay', '1');
-        btn.innerHTML = '<i class="fa-solid fa-waveform-lines"></i>';
+        const normIcon = document.createElement('i');
+        normIcon.className = 'fa-solid fa-waveform-lines';
+        btn.appendChild(normIcon);
 
         btn.addEventListener('click', () => {
           if (sharedAudio.normalizationEnabled) {
@@ -1190,7 +1194,9 @@
         btn.className = 'btn btn-sm btn-default btfw-vo-adopted';
         btn.title = 'Toggle Mono Audio (mix both channels to stereo)';
         btn.setAttribute('data-btfw-overlay', '1');
-        btn.innerHTML = '<i class="fa-solid fa-headphones"></i>';
+        const monoIcon = document.createElement('i');
+        monoIcon.className = 'fa-solid fa-headphones';
+        btn.appendChild(monoIcon);
 
         btn.addEventListener('click', () => {
           if (sharedAudio.monoEnabled) {

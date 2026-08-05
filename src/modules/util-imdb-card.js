@@ -1,5 +1,7 @@
 // BTFW — util:imdb-card
 // IMDB title/person metadata cards via TMDB find API.
+import { escapeHtml } from "../lib/escape-html.js";
+
 BTFW.define("util:imdb-card", ["util:tmdb-proxy"], async ({ init }) => {
   const proxy = await init("util:tmdb-proxy");
 
@@ -29,14 +31,6 @@ BTFW.define("util:imdb-card", ["util:tmdb-proxy"], async ({ init }) => {
       .replace(/&#124;/g, "|")
       .replace(/&#91;/g, "[")
       .replace(/&#93;/g, "]");
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
   }
 
   function parseTitleUrl(url) {

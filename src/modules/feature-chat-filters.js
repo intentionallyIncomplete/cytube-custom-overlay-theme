@@ -163,6 +163,13 @@ const customFilters = [
     );
   }
 
+  // Re-audited for issue #201 Phase 3 (see .github/INNERHTML-AUDIT.md MEDIUM table): `html` here
+  // is CyTube's own already-rendered chat message markup (passed through CyTube's server-side
+  // `sanitize-html`, per the CHAT_IMGUR_REFERRER_ATTR note above), already live in `span` before
+  // this function runs. The letterboxd/tmdb/imdb card renderers it calls now escape all
+  // API-derived text via the shared escapeHtml() (Phase 1), so this function no longer introduces
+  // any unescaped interpolation of its own. Residual risk for the non-card parts of the message is
+  // CyTube core's sanitize-html boundary, which is out of scope for this theme.
   async function renderMediaCardsInMessage(span) {
     if (!span || span.dataset.btfwCardBusy === "1") return;
     let html = span.innerHTML;

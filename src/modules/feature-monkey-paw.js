@@ -28,6 +28,19 @@ BTFW.define("feature:monkeyPaw", [], async () => {
   let svgMarkupCache = null;
   let playPromise = null;
 
+  // Defense-in-depth for a compromised CDN mirror serving PAW_SVG_PATH: the file is our own
+  // static asset (no user input reaches this URL), but we still verify the fetched body looks
+  // like the inert decorative SVG we expect before handing it to innerHTML — reject anything
+  // carrying `<script>`, `<foreignObject>` (can embed arbitrary HTML in SVG), embed/iframe/object,
+  // event-handler attributes, or javascript:/data: URLs in href/xlink:href.
+  const UNSAFE_SVG_PATTERN = /<\s*(script|foreignobject|iframe|embed|object)\b|on\w+\s*=|(?:xlink:href|href)\s*=\s*["']?\s*(?:javascript|data):/i;
+
+  function isSafeSvgMarkup(markup) {
+    const trimmed = String(markup || "").trim();
+    if (!/^<svg[\s>]/i.test(trimmed)) return false;
+    return !UNSAFE_SVG_PATTERN.test(trimmed);
+  }
+
   function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -184,7 +197,11 @@ BTFW.define("feature:monkeyPaw", [], async () => {
     const url = `${base}${PAW_SVG_PATH}`;
     const res = await fetch(url, { credentials: "omit" });
     if (!res.ok) throw new Error(`Monkey paw SVG failed to load (${res.status})`);
-    svgMarkupCache = await res.text();
+    const markup = await res.text();
+    if (!isSafeSvgMarkup(markup)) {
+      throw new Error("Monkey paw SVG failed integrity check (unexpected markup)");
+    }
+    svgMarkupCache = markup;
     return svgMarkupCache;
   }
 

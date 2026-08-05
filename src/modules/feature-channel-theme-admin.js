@@ -661,7 +661,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     if (typeof container.replaceChildren === "function") {
       container.replaceChildren(...rows);
     } else {
-      container.innerHTML = "";
+      while (container.firstChild) container.removeChild(container.firstChild);
       rows.forEach(row => container.appendChild(row));
     }
   }
@@ -1145,9 +1145,23 @@ function replaceBlock(original, startMarker, endMarker, block){
     button.textContent = enabled ? 'Movie info overlay enabled' : 'Enable movie info overlay';
   }
 
+  function buildThemeTabAnchorContent(){
+    const icon = document.createElement('span');
+    icon.className = 'fa fa-magic';
+    const label = document.createElement('span');
+    label.textContent = 'Theme';
+    return [icon, document.createTextNode(' '), label];
+  }
+
   function renderPanel(panel){
     injectLocalStyles();
-    panel.innerHTML = adminTpl.channelThemeAdminPanelHtml();
+    // The admin panel markup is a large static, first-party fragment with no dynamic
+    // interpolation (see src/lib/templates/channel-theme-admin.js). Parsing it via a <template>
+    // keeps the fragment inert until explicitly cloned into the live panel, rather than assigning
+    // innerHTML directly on an already-attached element.
+    const scratch = document.createElement("template");
+    scratch.innerHTML = adminTpl.channelThemeAdminPanelHtml();
+    panel.replaceChildren(scratch.content.cloneNode(true));
     return panel;
   }
 
@@ -1422,7 +1436,7 @@ function replaceBlock(original, startMarker, endMarker, block){
         const anchor = document.createElement('a');
         anchor.href = '#btfw-theme-admin-panel';
         anchor.setAttribute('data-toggle', 'tab');
-        anchor.innerHTML = adminTpl.channelThemeTabAnchorHtml();
+        anchor.append(...buildThemeTabAnchorContent());
         anchor.style.display = 'flex';
         anchor.style.alignItems = 'center';
         anchor.style.gap = '8px';
@@ -1433,7 +1447,7 @@ function replaceBlock(original, startMarker, endMarker, block){
         anchor.href = '#btfw-theme-admin-panel';
         anchor.setAttribute('data-toggle', 'tab');
         anchor.className = 'btfw-theme-tab-toggle';
-        anchor.innerHTML = adminTpl.channelThemeTabAnchorHtml();
+        anchor.append(...buildThemeTabAnchorContent());
         tabContainer.appendChild(anchor);
         tab = anchor;
       }

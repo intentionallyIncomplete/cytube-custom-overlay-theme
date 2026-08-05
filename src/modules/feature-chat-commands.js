@@ -345,22 +345,45 @@ addCommand("cast", async (ctx)=>{
     } catch(_) {}
   }
   function buildCommandsTable(){
-    const rows = listPrimary().map(name=>{
+    const content = document.createElement("div");
+    content.className = "content";
+    const intro = document.createElement("p");
+    intro.textContent = "Type these in chat. Some require moderator permissions.";
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "table-container";
+    const table = document.createElement("table");
+    table.className = "table is-fullwidth is-narrow";
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["Command", "Description", "Usage"].forEach((text) => {
+      const th = document.createElement("th");
+      th.textContent = text;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    const tbody = document.createElement("tbody");
+    listPrimary().forEach((name) => {
       const c = REG.get(name);
       const desc  = c?.desc || "";
       const usage = c?.usage || ("!"+name);
-      return `<tr><td><code>!${name}</code></td><td>${desc}</td><td><code>${usage}</code></td></tr>`;
-    }).join("");
-    return `
-      <div class="content">
-        <p>Type these in chat. Some require moderator permissions.</p>
-        <div class="table-container">
-          <table class="table is-fullwidth is-narrow">
-            <thead><tr><th>Command</th><th>Description</th><th>Usage</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>`;
+      const row = document.createElement("tr");
+      const nameCell = document.createElement("td");
+      const nameCode = document.createElement("code");
+      nameCode.textContent = "!" + name;
+      nameCell.appendChild(nameCode);
+      const descCell = document.createElement("td");
+      descCell.textContent = desc;
+      const usageCell = document.createElement("td");
+      const usageCode = document.createElement("code");
+      usageCode.textContent = usage;
+      usageCell.appendChild(usageCode);
+      row.append(nameCell, descCell, usageCell);
+      tbody.appendChild(row);
+    });
+    table.append(thead, tbody);
+    tableWrap.appendChild(table);
+    content.append(intro, tableWrap);
+    return content;
   }
   function ensureCommandsModal(){
     let m = $("#btfw-cmds-modal");
@@ -371,18 +394,38 @@ addCommand("cast", async (ctx)=>{
     m.dataset.btfwModalState = "closed";
     m.setAttribute("hidden", "");
     m.setAttribute("aria-hidden", "true");
-    m.innerHTML = `
-      <div class="modal-background"></div>
-      <div class="modal-card btfw-modal">
-        <header class="modal-card-head">
-          <p class="modal-card-title">Chat Commands</p>
-          <button class="delete" aria-label="close"></button>
-        </header>
-        <section class="modal-card-body">${buildCommandsTable()}</section>
-        <footer class="modal-card-foot">
-          <button class="button is-link" id="btfw-cmds-close">Close</button>
-        </footer>
-      </div>`;
+
+    const background = document.createElement("div");
+    background.className = "modal-background";
+
+    const card = document.createElement("div");
+    card.className = "modal-card btfw-modal";
+
+    const header = document.createElement("header");
+    header.className = "modal-card-head";
+    const title = document.createElement("p");
+    title.className = "modal-card-title";
+    title.textContent = "Chat Commands";
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete";
+    deleteBtn.setAttribute("aria-label", "close");
+    header.append(title, deleteBtn);
+
+    const body = document.createElement("section");
+    body.className = "modal-card-body";
+    body.appendChild(buildCommandsTable());
+
+    const footer = document.createElement("footer");
+    footer.className = "modal-card-foot";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "button is-link";
+    closeBtn.id = "btfw-cmds-close";
+    closeBtn.textContent = "Close";
+    footer.appendChild(closeBtn);
+
+    card.append(header, body, footer);
+    m.append(background, card);
+
     document.body.appendChild(m);
     const dismiss = () => motion.closeModal(m);
     $(".modal-background", m).addEventListener("click", dismiss);
@@ -393,7 +436,7 @@ addCommand("cast", async (ctx)=>{
   function openCommandsModal(){
     const m = ensureCommandsModal();
     const body = m.querySelector(".modal-card-body");
-    if (body) body.innerHTML = buildCommandsTable();
+    if (body) body.replaceChildren(buildCommandsTable());
     motion.openModal(m);
   }
 
@@ -402,7 +445,13 @@ addCommand("cast", async (ctx)=>{
     const btn = document.createElement("button");
     btn.id = "btfw-chatcmds-btn";
     btn.className = "button is-dark is-small btfw-chatbtn";
-    btn.innerHTML = `<span data-btfw-icon-slot="chat-commands-help" aria-hidden="true"><i class="fa fa-question-circle"></i></span>`;
+    const iconSlot = document.createElement("span");
+    iconSlot.dataset.btfwIconSlot = "chat-commands-help";
+    iconSlot.setAttribute("aria-hidden", "true");
+    const icon = document.createElement("i");
+    icon.className = "fa fa-question-circle";
+    iconSlot.appendChild(icon);
+    btn.appendChild(iconSlot);
     btn.title = "Commands";
     btn.addEventListener("click", (e)=>{ e.preventDefault(); openCommandsModal(); });
     into.appendChild(btn);

@@ -46,6 +46,14 @@ const esmModuleFiles = [
   "src/modules/feature-chat-media.js",
   "src/modules/feature-channel-options-apply.js",
   "src/modules/feature-motd-editor.js",
+  "src/modules/feature-navbar.js",
+  "src/modules/feature-notify.js",
+  "src/modules/feature-playlist-tools.js",
+  "src/modules/feature-movie-suggestions.js",
+  "src/modules/feature-theme-icons.js",
+  "src/modules/util-imdb-card.js",
+  "src/modules/util-letterboxd.js",
+  "src/modules/util-tmdb-card.js",
 ];
 
 export default [
