@@ -19,6 +19,9 @@ import {
   BOOT_SYNC
 } from "./boot/manifest.js";
 
+// @ts-ignore - The JSON might not exist during the very first bootstrap before generate-sri.js runs
+import SRI_HASHES from "./config/sri-hashes.json" with { type: "json" };
+
 patchWaitUntilDefinedForVjsPlugins();
 
 const FALLBACK_CDN = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@latest";
@@ -50,7 +53,7 @@ interface BootOverlayApi {
   const { define, init } = createBtfwRegistry(DEV_CDN);
 
   const BASE = DEV_CDN;
-  window.BTFW = { define, init, DEV_CDN, BASE, state: null };
+  window.BTFW = { define, init, DEV_CDN, BASE, state: null, SRI: SRI_HASHES };
 
   const BootOverlay: BootOverlayApi = (function () {
     let overlay: HTMLDivElement | null = null;
@@ -240,6 +243,13 @@ interface BootOverlayApi {
         link.rel = "stylesheet";
       }
 
+      const relativeKey = href.startsWith(BASE + "/") ? href.replace(BASE + "/", "") : href;
+      const sri = (SRI_HASHES as Record<string, string>)[relativeKey];
+      if (sri) {
+        link.integrity = sri;
+        link.crossOrigin = "anonymous";
+      }
+
       link.onload = handleLoad;
       link.onerror = handleError;
       link.href = url;
@@ -262,6 +272,14 @@ interface BootOverlayApi {
       const s = document.createElement("script");
       s.async = true;
       s.defer = true;
+
+      const relativeKey = src.startsWith(BASE + "/") ? src.replace(BASE + "/", "") : src;
+      const sri = (SRI_HASHES as Record<string, string>)[relativeKey];
+      if (sri) {
+        s.integrity = sri;
+        s.crossOrigin = "anonymous";
+      }
+
       s.src = qparam(src, "v=" + encodeURIComponent(BTFW_VERSION)) + "&t=" + Date.now();
       s.onload = function () {
         resolve();
