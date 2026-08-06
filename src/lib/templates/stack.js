@@ -1,7 +1,7 @@
 // No import from "../escape-html.js" here: that module is TypeScript (escape-html.ts) and
 // tests/unit/templates.test.js loads this file via a plain Node ESM `import`, which (unlike
 // esbuild's bundler-style resolution used for the production build) cannot resolve a `.js`
-// specifier to a sibling `.ts` file. Escape the 4 HTML-sensitive characters inline instead
+// specifier to a sibling `.ts` file. Escape the 5 HTML-sensitive characters inline instead
 // (mirrors src/lib/escape-html.ts's escapeHtml()).
 function escapeHtml(value) {
   if (value === null || value === undefined) return "";
@@ -11,6 +11,23 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/**
+ * Tagged template literal that auto-escapes all interpolated values.
+ * Local mirror of `src/lib/escape-html.ts`'s `safeHtml` — kept here because
+ * this `.js` file cannot import from the sibling `.ts` module in the Node
+ * test runner (see comment above `escapeHtml()`).
+ */
+function safeHtml(strings, ...values) {
+  let result = "";
+  for (let i = 0; i < strings.length; i += 1) {
+    result += strings[i] ?? "";
+    if (i < values.length) {
+      result += escapeHtml(values[i]);
+    }
+  }
+  return result;
 }
 
 export function addMediaPanelHtml() {
@@ -31,8 +48,8 @@ export function addMediaPanelHtml() {
 }
 
 export function stackGroupHeaderHtml(title) {
-  return `
-      <span class="btfw-stack-item__title">${escapeHtml(title)}</span>
+  return safeHtml`
+      <span class="btfw-stack-item__title">${title}</span>
       <div class="btfw-stack-header-toolbar">
         <span class="btfw-stack-header-actions"></span>
         <span class="btfw-stack-arrows">
