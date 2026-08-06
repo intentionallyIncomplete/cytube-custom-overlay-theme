@@ -39,6 +39,13 @@ BTFW.define("feature:player", ["feature:layout"], async () => {
       const href = sources.shift();
       if (!href) return tryNext();
       link.href = href;
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[href]) {
+        link.integrity = window.BTFW.SRI[href];
+        link.crossOrigin = "anonymous";
+      } else {
+        link.removeAttribute("integrity");
+        link.removeAttribute("crossorigin");
+      }
       return true;
     };
     link.addEventListener("error", () => {
