@@ -6,6 +6,7 @@ import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import * as esbuild from "esbuild";
 import { buildCss } from "./build-css.js";
+import { generateSri } from "./generate-sri.js";
 import {
   getEsbuildBaseOptions,
   isDevBuild,
@@ -232,12 +233,15 @@ async function buildFrameworkLoader(esbuildOptions) {
   if (buildFlags.js) {
     copyChannelConfig();
     generateUserReleaseNotes();
-    await buildFrameworkLoader(esbuildOptions);
     console.log("");
     console.log("Bundling modules with esbuild...\n");
     for (const bundle of bundles) {
       await buildBundle(bundle, esbuildOptions);
     }
+    console.log("");
+    await generateSri();
+    console.log("");
+    await buildFrameworkLoader(esbuildOptions);
     console.log("\n✨ Build complete!");
     const verify = spawnSync(process.execPath, ["scripts/verify-dist.js"], {
       cwd: rootDir,
