@@ -192,7 +192,7 @@ BTFW.define("feature:motd-editor", [], async () => {
       console.warn("[motd-editor] Summernote load failed", e);
       const host = $("#btfw-motd-editor", m);
       if (host) {
-        // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML
+        // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML; see docs/INNERHTML-AUDIT.md
         host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:monospace;">${escapeHtml(initialHTML)}</textarea>`;
       }
       motion.openModal(m);
@@ -236,7 +236,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         }
       });
     } else {
-      // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML
+      // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML; see docs/INNERHTML-AUDIT.md
       host.innerHTML = `<textarea class="textarea" style="height:400px;">${escapeHtml(initialHTML)}</textarea>`;
     }
 
@@ -276,7 +276,7 @@ BTFW.define("feature:motd-editor", [], async () => {
             stackModule.applyMotdUpdate(html);
           } else {
             const motdDisplay = resolveMotdDisplay();
-            // eslint-disable-next-line no-restricted-syntax -- safe: MOTD sanitized via sanitizeHtml
+            // eslint-disable-next-line no-restricted-syntax -- safe: MOTD sanitized via sanitizeHtml; see docs/INNERHTML-AUDIT.md
             if (motdDisplay) motdDisplay.innerHTML = sanitizeHtml(html);
             const csMotd = $("#cs-motdtext");
             if (csMotd) csMotd.value = html;
