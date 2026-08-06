@@ -8,6 +8,10 @@ BTFW.define("feature:styleCore", [], async () => {
       s.rel = "stylesheet";
       s.href = "https://cdn.jsdelivr.net/npm/bootswatch@3.4.1/slate/bootstrap.min.css";
       s.dataset.btfwSlate = "1";
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[s.href]) {
+        s.integrity = window.BTFW.SRI[s.href];
+        s.crossOrigin = "anonymous";
+      }
       document.head.insertBefore(s, document.head.firstChild);
     }
   }
@@ -19,6 +23,10 @@ BTFW.define("feature:styleCore", [], async () => {
       l.rel = 'stylesheet';
       l.href = 'https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css';
       l.dataset.btfwBulma = "1";
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[l.href]) {
+        l.integrity = window.BTFW.SRI[l.href];
+        l.crossOrigin = "anonymous";
+      }
       document.head.appendChild(l);
     }
 
@@ -28,6 +36,10 @@ BTFW.define("feature:styleCore", [], async () => {
       fa.rel = "stylesheet";
       fa.href = "https://cdn.jsdelivr.net/gh/ElBeyonder/font-awesome-6.5.2-pro-full@master/css/all.css";
       fa.dataset.btfwFa6 = "1";
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[fa.href]) {
+        fa.integrity = window.BTFW.SRI[fa.href];
+        fa.crossOrigin = "anonymous";
+      }
       document.head.appendChild(fa);
     }
 
