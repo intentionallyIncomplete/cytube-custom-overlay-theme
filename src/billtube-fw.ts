@@ -19,7 +19,6 @@ import {
   BOOT_SYNC
 } from "./boot/manifest.js";
 
-// @ts-expect-error - The JSON might not exist during the very first bootstrap before generate-sri.js runs
 import SRI_HASHES from "./config/sri-hashes.json" with { type: "json" };
 
 patchWaitUntilDefinedForVjsPlugins();
