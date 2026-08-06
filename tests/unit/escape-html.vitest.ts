@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeHtml, sanitizeHtml } from "../../src/lib/escape-html";
+import { escapeHtml, safeHtml, sanitizeHtml } from "../../src/lib/escape-html";
 
 describe("escapeHtml", () => {
   it("escapes the five HTML-sensitive characters", () => {
@@ -130,5 +130,42 @@ describe("sanitizeHtml", () => {
         allowedAttributes: { p: ["data-foo"] }
       })
     ).toBe(`<p data-foo="bar">hi</p>`);
+  });
+});
+
+describe("safeHtml", () => {
+  it("auto-escapes interpolated values", () => {
+    const payload = "<script>alert('xss')</script>";
+    expect(safeHtml`<span>${payload}</span>`).toBe(
+      "<span>&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;</span>"
+    );
+  });
+
+  it("passes static parts verbatim when there are no interpolations", () => {
+    expect(safeHtml`<b>bold</b>`).toBe("<b>bold</b>");
+  });
+
+  it("returns empty string for null/undefined interpolations", () => {
+    expect(safeHtml`<span>${null}</span>`).toBe("<span></span>");
+    expect(safeHtml`<span>${undefined}</span>`).toBe("<span></span>");
+  });
+
+  it("coerces numeric and boolean interpolations safely", () => {
+    expect(safeHtml`<span>${42}</span>`).toBe("<span>42</span>");
+    expect(safeHtml`<span>${true}</span>`).toBe("<span>true</span>");
+  });
+
+  it("escapes each interpolation independently", () => {
+    const a = "<em>";
+    const b = "</em>";
+    expect(safeHtml`A:${a} B:${b}`).toBe("A:&lt;em&gt; B:&lt;/em&gt;");
+  });
+
+  it("escapes values in attribute context", () => {
+    const url = '" onclick="alert(1)';
+    const label = "<img src=x onerror=alert(1)>";
+    expect(safeHtml`<a href="${url}">${label}</a>`).toBe(
+      '<a href="&quot; onclick=&quot;alert(1)">&lt;img src=x onerror=alert(1)&gt;</a>'
+    );
   });
 });
