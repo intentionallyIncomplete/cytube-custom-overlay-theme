@@ -19,6 +19,7 @@ interface BtfwRegistryApi {
   DEV_CDN: string;
   BASE: string;
   state: BtfwAppState | null;
+  SRI?: Record<string, string>;
 }
 
 interface CytubeClientLike {
