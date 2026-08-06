@@ -1,396 +1,79 @@
-/* BTFW — feature:player (Video.js theme + tech guards) */
-BTFW.define("feature:player", ["feature:layout"], async () => {
-  const PLAYER_SELECTOR = "#videowrap .video-js";
-  const DEFAULT_SKIN_CLASS = "vjs-default-skin";
-  const CITY_THEME_CLASS = "vjs-theme-city";
-  const BIG_PLAY_CLASS = "vjs-big-play-centered";
-  const INLINE_VIDEO_SELECTORS = [
-    "#videowrap video",
-    "#ytapiplayer video",
-    "#videowrap .video-js video",
-    "#videowrap .video-js .vjs-tech"
-  ].join(",");
-  const INLINE_VIDEO_ATTRIBUTES = {
-    playsinline: "",
-    "webkit-playsinline": "",
-    "x5-video-player-type": "h5",
-    "x5-video-player-fullscreen": "false",
-    "x5-video-orientation": "portrait"
-  };
-  const BASE_STYLES_LINK_ID = "btfw-videojs-base-css";
-  const CITY_STYLES_LINK_ID = "btfw-videojs-city-css";
-  const BASE_STYLES_URLS = ["https://vjs.zencdn.net/7.20.3/video-js.css"];
-  const CITY_STYLES_URLS = [
-    "https://cdn.jsdelivr.net/npm/@videojs/themes@1/dist/city/index.css",
-    "https://unpkg.com/@videojs/themes@1/dist/city/index.css"
-  ];
 
-  function ensureStylesheet(id, urls) {
-    const doc = document;
-    if (!doc || !doc.head) return;
-    if (doc.getElementById(id)) return;
+BTFW.define("feature:player", [], async () => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-    const link = doc.createElement("link");
-    link.id = id;
+  const ASSET_BASE = window.BTFW?.BASE || "";
+
+  function ensureStylesheet(href) {
+    if (!href) return;
+    const abs = href.startsWith("http") ? href : `${ASSET_BASE}/${href.replace(/^\//, "")}`;
+
+    const exists = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(
+      (l) => l.getAttribute("href") === abs || l.getAttribute("href") === href
+    );
+    if (exists) return;
+
+    const link = document.createElement("link");
     link.rel = "stylesheet";
-    const sources = Array.isArray(urls) ? urls.slice() : [urls];
-    const tryNext = () => {
-      if (!sources.length) return false;
-      const href = sources.shift();
-      if (!href) return tryNext();
-      link.href = href;
-      return true;
-    };
-    link.addEventListener("error", () => {
-      if (tryNext()) return;
-      link.remove();
-    });
-    if (tryNext()) {
-      doc.head.appendChild(link);
+    if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[href]) {
+      link.integrity = window.BTFW.SRI[href];
+      link.crossOrigin = "anonymous";
     }
+    link.href = abs;
+    document.head.appendChild(link);
   }
 
-  function baseStylesActive() {
-    if (typeof window === "undefined" || !document.body) return false;
-    const probe = document.createElement("div");
-    probe.className = `video-js ${DEFAULT_SKIN_CLASS}`;
-    probe.style.position = "absolute";
-    probe.style.opacity = "0";
-    probe.style.pointerEvents = "none";
-    probe.style.width = "1px";
-    probe.style.height = "1px";
-    document.body.appendChild(probe);
-    const fontSize = window.getComputedStyle(probe).fontSize;
-    probe.remove();
-    return fontSize && Math.abs(parseFloat(fontSize) - 10) < 0.2;
-  }
+  function applyPlayerLayoutEnhancements() {
+    const wrap = $("#videowrap");
+    if (!wrap) return;
 
-  function ensureBaseStylesheet() {
-    if (baseStylesActive()) return;
-    const existing = document.querySelector(
-      'link[href*="video-js"], link[href*="videojs"], style[data-vjs-styles]'
-    );
-    if (existing) return;
-    ensureStylesheet(BASE_STYLES_LINK_ID, BASE_STYLES_URLS);
-  }
+    ensureStylesheet("dist/css/player.css");
 
-  function ensureCityStylesheet() {
-    const existing = document.querySelector(
-      'link[href*="videojs" i][href*="city" i], link[href*="@videojs/themes" i][href*="city" i]'
-    );
-    if (existing) return;
-    ensureStylesheet(CITY_STYLES_LINK_ID, CITY_STYLES_URLS);
-  }
+    wrap.classList.add("btfw-player-wrap");
 
-  function getVjsPlayer(playerEl) {
-    if (!playerEl) return null;
-    try {
-      return playerEl.player
-        || playerEl.player_
-        || (window.videojs && typeof window.videojs.getPlayer === "function" && window.videojs.getPlayer(playerEl.id))
-        || (window.videojs && window.videojs.players && window.videojs.players[playerEl.id]);
-    } catch (_) {
-      return null;
+    const controls = wrap.querySelector("#controlsrow, .player-controls");
+    if (controls) {
+      controls.classList.add("btfw-player-controls");
     }
+
+    enhanceVideojsIfPresent();
   }
 
-  function enhanceVolumePanel(playerEl) {
-    const vjsPlayer = getVjsPlayer(playerEl);
-    if (!vjsPlayer) return;
-
-    const controlBar = typeof vjsPlayer.getChild === "function"
-      ? vjsPlayer.getChild("controlBar")
-      : null;
-    const volumePanel = controlBar && typeof controlBar.getChild === "function"
-      ? controlBar.getChild("volumePanel")
-      : null;
-    if (!volumePanel) return;
-
-    playerEl.classList.add("btfw-volume-inline");
+  function enhanceVideojsIfPresent() {
+    if (!window.videojs) return;
 
     try {
-      if (typeof volumePanel.inline === "function") {
-        volumePanel.inline(true);
+      const playerEl = document.querySelector(".video-js");
+      if (playerEl && !playerEl.classList.contains("btfw-vjs-enhanced")) {
+        playerEl.classList.add("btfw-vjs-enhanced");
       }
-    } catch (_) {
-      /* no-op */
-    }
+    } catch (_) {}
   }
 
-  function applyCityTheme() {
-    ensureBaseStylesheet();
-    ensureCityStylesheet();
-    document.querySelectorAll(PLAYER_SELECTOR).forEach((player) => {
-      if (player.classList.contains(DEFAULT_SKIN_CLASS)) {
-        player.classList.remove(DEFAULT_SKIN_CLASS);
-      }
-      Array.from(player.classList).forEach((cls) => {
-        if (cls.startsWith("vjs-theme-") && cls !== CITY_THEME_CLASS) {
-          player.classList.remove(cls);
-        }
-      });
-      if (!player.classList.contains(CITY_THEME_CLASS)) {
-        player.classList.add(CITY_THEME_CLASS);
-      }
-      if (!player.classList.contains(BIG_PLAY_CLASS)) {
-        player.classList.add(BIG_PLAY_CLASS);
-      }
-      enhanceVolumePanel(player);
+  function setupMutationObserver() {
+    const wrap = $("#videowrap");
+    if (!wrap) return;
+
+    const observer = new MutationObserver(() => {
+      enhanceVideojsIfPresent();
     });
-  }
 
-  function applyPosterUrl() {
-    if (typeof window === "undefined") return;
-    
-    const posterUrl = window.BTFW?.channelPosterUrl;
-    if (!posterUrl) return;
-    
-    document.querySelectorAll(PLAYER_SELECTOR).forEach(player => {
-      // Set the poster attribute on the video element
-      if (player.poster !== posterUrl) {
-        player.poster = posterUrl;
-      }
-      
-      // Update VideoJS poster component if it exists
-      try {
-        const vjsPlayer = player.player || player.player_ || (window.videojs && window.videojs.players && window.videojs.players[player.id]);
-        if (vjsPlayer && typeof vjsPlayer.poster === "function") {
-          vjsPlayer.poster(posterUrl);
-        }
-      } catch (_) {
-        // Fallback: manually update the poster div
-        const posterDiv = player.querySelector('.vjs-poster');
-        if (posterDiv) {
-          posterDiv.style.backgroundImage = `url("${posterUrl}")`;
-        }
-      }
-    });
-  }
-
-  function togglePosterVisibility() {
-    if (typeof window === "undefined") return;
-    
-    // Check if we have a global PLAYER object like in billtube2
-    const mediaType = window.PLAYER?.mediaType;
-    const posterElements = document.querySelectorAll('.vjs-poster');
-    
-    posterElements.forEach(poster => {
-      // Hide poster for embedded video platforms (they have their own thumbnails)
-      if (mediaType === 'yt' || mediaType === 'dm' || mediaType === 'vi' || mediaType === 'tw') {
-        poster.classList.add('hidden');
-      } else {
-        // Show poster for direct files (fi), Google Drive (gd), and other media
-        poster.classList.remove('hidden');
-      }
-    });
-  }
-
-  function ensureInlinePlayback() {
-    const nodes = document.querySelectorAll(INLINE_VIDEO_SELECTORS);
-    nodes.forEach((node) => {
-      if (!(node instanceof HTMLVideoElement)) return;
-      if (typeof node.playsInline === "boolean") {
-        node.playsInline = true;
-      }
-      Object.entries(INLINE_VIDEO_ATTRIBUTES).forEach(([attr, value]) => {
-        try {
-          node.setAttribute(attr, value);
-        } catch (_) {
-          /* no-op */
-        }
-      });
-    });
-  }
-
-  function patchVideojsTextContent() {
-    if (typeof window === "undefined") return false;
-    const vjs = window.videojs;
-    if (!vjs) return false;
-    const dom = vjs.dom || vjs;
-    if (!dom || typeof dom.textContent !== "function") return false;
-    if (dom.textContent && dom.textContent._btfwOptimized) return true;
-
-    const original = dom.textContent.bind(dom);
-
-    const patched = function patchedTextContent(el, text) {
-      if (!el) return el;
-
-      let currentValue;
-      try {
-        if (typeof el.textContent !== "undefined") {
-          currentValue = el.textContent;
-        } else if (typeof el.innerText !== "undefined") {
-          currentValue = el.innerText;
-        }
-      } catch (_) {
-        currentValue = undefined;
-      }
-
-      if (currentValue !== undefined) {
-        const nextValue = text === null || text === undefined ? "" : String(text);
-        if (currentValue === nextValue) {
-          return el;
-        }
-      }
-
-      return original(el, text);
-    };
-
-    patched._btfwOptimized = true;
-    patched._btfwOriginal = original;
-    dom.textContent = patched;
-
-    return true;
-  }
-
-  function ensureTextContentPatch() {
-    if (patchVideojsTextContent()) {
-      ensureTextContentPatch._tries = 0;
-      return;
-    }
-
-    if (ensureTextContentPatch._tries > 20) return;
-    ensureTextContentPatch._tries = (ensureTextContentPatch._tries || 0) + 1;
-
-    setTimeout(ensureTextContentPatch, 250);
-  }
-
-  /* ===== Guard: block context menu + surface click-to-pause ===== */
-  const GUARD_MARK = "_btfwGuarded";
-
-  function shouldAllowClick(target) {
-    if (!target) return false;
-
-    const allowSelectors = [
-      ".vjs-control-bar",
-      ".vjs-control",
-      ".vjs-menu",
-      ".vjs-menu-content",
-      ".vjs-slider",
-      ".vjs-volume-panel",
-      ".vjs-text-track-settings",  
-      ".vjs-tech .alert",
-      ".vjs-tech [role=\"alert\"]",
-      ".vjs-tech [role=\"dialog\"]",
-      ".vjs-tech .modal",
-      ".vjs-tech .modal-dialog",
-      ".vjs-big-play-button",
-      ".vjs-poster"
-    ].join(",");
-
-    if (target.closest(allowSelectors)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  function attachGuardsTo(el) {
-    if (!el || el[GUARD_MARK]) return;
-    el[GUARD_MARK] = true;
-
-    const block = (e) => {
-      if (shouldAllowClick(e.target)) return;
-      if (e.type === "click" && e.button !== 0) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    };
-
-    el.addEventListener("click", block, true);
-    el.addEventListener("pointerdown", (e) => {
-      if (!shouldAllowClick(e.target)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    }, true);
-    el.addEventListener("contextmenu", block, true);
-  }
-
-  function attachGuards() {
-    document.querySelectorAll(PLAYER_SELECTOR).forEach(attachGuardsTo);
-  }
-
-  function watchPlayerMount() {
-    if (watchPlayerMount._mo) return;
-    
-    const target = document.getElementById("videowrap") || document.body;
-    const mo = new MutationObserver((mutations) => {
-      let shouldReact = false;
-      
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType === 1 && 
-              (node.classList?.contains('video-js') || 
-               node.tagName === 'VIDEO' ||
-               node.tagName === 'IFRAME' ||
-               node.querySelector?.(PLAYER_SELECTOR))) {
-            shouldReact = true;
-            break;
-          }
-        }
-        
-        for (const node of mutation.removedNodes) {
-          if (node.nodeType === 1 && 
-              (node.classList?.contains('video-js') || 
-               node.tagName === 'VIDEO' ||
-               node.tagName === 'IFRAME')) {
-            shouldReact = true;
-            break;
-          }
-        }
-      }
-      
-      if (shouldReact) {
-        applyCityTheme();
-        attachGuards();
-        ensureInlinePlayback();
-        applyPosterUrl();
-        togglePosterVisibility();
-        document.querySelectorAll(PLAYER_SELECTOR).forEach(enhanceVolumePanel);
-      }
-    });
-    
-    mo.observe(target, { 
-      childList: true, 
-      subtree: true,
-      characterData: false
-    });
-    watchPlayerMount._mo = mo;
-  }
-
-  function handleVideoChange() {
-    setTimeout(() => {
-      ensureInlinePlayback();
-      applyPosterUrl();
-      togglePosterVisibility();
-      document.querySelectorAll(PLAYER_SELECTOR).forEach(enhanceVolumePanel);
-    }, 100);
+    observer.observe(wrap, { childList: true, subtree: true });
   }
 
   function boot() {
-    applyCityTheme();
-    attachGuards();
-    ensureInlinePlayback();
-    ensureTextContentPatch();
-    applyPosterUrl();
-    togglePosterVisibility();
-    watchPlayerMount();
+    applyPlayerLayoutEnhancements();
+    setupMutationObserver();
 
-    // Periodic check like billtube2.js
-    setInterval(() => {
-      togglePosterVisibility();
-    }, 1000);
-
-    if (typeof window !== "undefined" && window.socket && typeof socket.on === "function") {
-      try {
-        if (typeof socket.off === "function") {
-          socket.off("changeMedia", handleVideoChange);
-        }
-        socket.on("changeMedia", handleVideoChange);
-      } catch (err) {
-        console.warn("[feature:player] Unable to bind changeMedia handler", err);
+    try {
+      const sock = window.socket;
+      if (sock && typeof sock.on === "function") {
+        sock.on("changeMedia", () => {
+          setTimeout(applyPlayerLayoutEnhancements, 100);
+        });
       }
-    }
+    } catch (_) {}
   }
 
   if (document.readyState === "loading") {
@@ -399,15 +82,8 @@ BTFW.define("feature:player", ["feature:layout"], async () => {
     boot();
   }
 
-  document.addEventListener("btfw:layoutReady", () => setTimeout(boot, 0));
-
   return {
     name: "feature:player",
-    applyCityTheme,
-    attachGuards,
-    ensureInlinePlayback,
-    applyPosterUrl,
-    togglePosterVisibility,
-    shouldAllowClick
+    applyPlayerLayoutEnhancements
   };
 });
