@@ -24,7 +24,12 @@ BTFW.define("feature:emoji-compat", [], async () => {
       if (window.twemoji) return resolve();
       const s = document.createElement("script");
       s.async = true; s.defer = true;
-      s.src = TW_JS + "?v=" + Date.now();
+      const url = TW_JS;
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[url]) {
+        s.integrity = window.BTFW.SRI[url];
+        s.crossOrigin = "anonymous";
+      }
+      s.src = url + "?v=" + Date.now();
       s.onload = ()=> resolve();
       s.onerror = ()=> reject(new Error("Failed to load Twemoji"));
       document.head.appendChild(s);
