@@ -26,6 +26,10 @@ BTFW.define("feature:motd-editor", [], async () => {
       if (rel === "stylesheet" && $$(`link[href="${href}"]`).length) return res();
       if (rel === "script" && $$(`script[src="${href}"]`).length) return res();
       const el = document.createElement(rel==="script"?"script":"link");
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[href]) {
+        el.integrity = window.BTFW.SRI[href];
+        el.crossOrigin = "anonymous";
+      }
       if (rel==="script") { 
         el.src = href; 
         el.async = false; // Summernote needs jQuery first
@@ -188,6 +192,7 @@ BTFW.define("feature:motd-editor", [], async () => {
       console.warn("[motd-editor] Summernote load failed", e);
       const host = $("#btfw-motd-editor", m);
       if (host) {
+        // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML
         host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:monospace;">${escapeHtml(initialHTML)}</textarea>`;
       }
       motion.openModal(m);
@@ -231,6 +236,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         }
       });
     } else {
+      // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML
       host.innerHTML = `<textarea class="textarea" style="height:400px;">${escapeHtml(initialHTML)}</textarea>`;
     }
 
@@ -270,6 +276,7 @@ BTFW.define("feature:motd-editor", [], async () => {
             stackModule.applyMotdUpdate(html);
           } else {
             const motdDisplay = resolveMotdDisplay();
+            // eslint-disable-next-line no-restricted-syntax -- safe: MOTD sanitized via sanitizeHtml
             if (motdDisplay) motdDisplay.innerHTML = sanitizeHtml(html);
             const csMotd = $("#cs-motdtext");
             if (csMotd) csMotd.value = html;
