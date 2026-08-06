@@ -38,7 +38,7 @@ host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:mo
 
 ---
 
-### 2. Movie Suggestions API Results — Unescaped External Data
+## 2. Movie Suggestions API Results — Unescaped External Data
 **File:** `src/modules/feature-movie-suggestions.js`
 **Lines:** 549–626
 **Risk:** CRITICAL (External API data rendered without escaping)
@@ -70,7 +70,7 @@ container.innerHTML = movies.map((movie) => `
 
 ---
 
-### 3. Notify Custom Notice — Unrestricted HTML Passthrough
+## 3. Notify Custom Notice — Unrestricted HTML Passthrough
 **File:** `src/modules/feature-notify.js`
 **Lines:** 143, 169
 **Risk:** CRITICAL (Custom notice HTML/icon passed without validation)
@@ -116,7 +116,7 @@ if (o.html) {
 
 ---
 
-### 4. Stack Template Header — Unescaped Template Parameter
+## 4. Stack Template Header — Unescaped Template Parameter
 **File:** `src/lib/templates/stack.js`
 **Lines:** 18–20
 **Risk:** HIGH (Template function parameter not escaped)
@@ -298,5 +298,5 @@ function plainText(html){
 
 ---
 
-**Last Updated:** August 3, 2026
-**Status:** Ready for Phase 2 remediation
+**Last Updated:** August 6, 2026
+**Status:** ✅ Fully remediated. All critical, high, and medium sinks have been fixed, and Phase 4 SRI asset hardening is complete.
