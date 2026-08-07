@@ -5,6 +5,8 @@ export const FIXTURE_PATH =
 
 /** Navigate to the fixture and wait until BillTube layout is ready. */
 export async function gotoFixtureAndBoot(page) {
+  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+  page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
   await page.goto(FIXTURE_PATH, { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("btfw-grid")).toBeVisible({ timeout: 45_000 });
   await expect(page.getByTestId("btfw-boot-overlay")).toHaveCount(0);

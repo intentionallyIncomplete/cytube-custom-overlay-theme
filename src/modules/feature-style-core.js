@@ -1,5 +1,5 @@
 
-BTFW.define("feature:style-core", [], async () => {
+BTFW.define("feature:styleCore", [], async () => {
   const CDN_FONT_AWESOME = "https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css";
   const CDN_BULMA = "https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css";
   const CDN_BOOTSWATCH_P = "https://cdn.jsdelivr.net/npm/bootswatch@3.4.1/paper/bootstrap.min.css";
@@ -58,5 +58,5 @@ BTFW.define("feature:style-core", [], async () => {
     boot();
   }
 
-  return { name: "feature:style-core" };
+  return { name: "feature:styleCore" };
 });
