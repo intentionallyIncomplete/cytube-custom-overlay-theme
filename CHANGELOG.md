@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.28.1...v1.29.0) (2026-08-07)
+
+
+### Features
+
+* **security:** remove raw HTML sinks and implement Subresource Integrity (SRI) ([#201](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/201)) ([#225](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/225)) ([ef5a541](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/ef5a5413400aaa27d491498cf885b7ce34d05234)), closes [hi#risk](https://github.com/hi/issues/risk) [hi#priority](https://github.com/hi/issues/priority)
+
 ## [1.28.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.28.0...v1.28.1) (2026-08-05)
 
 
