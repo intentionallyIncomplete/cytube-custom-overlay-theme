@@ -10,38 +10,42 @@ import { confirmDialog } from "../lib/confirm-dialog.js";
 import { escapeHtml, sanitizeHtml } from "../lib/escape-html.js";
 
 BTFW.define("feature:motd-editor", [], async () => {
-  const $  = (s,r=document)=>r.querySelector(s);
-  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const motion = await BTFW.init("util:motion");
-  
+
   // Summernote CDN (v0.8.20 - stable)
   const SUMMERNOTE_CSS = "https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.css";
   const SUMMERNOTE_JS = "https://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.20/summernote-lite.min.js";
-  
+
   // jQuery is required for Summernote
   const JQUERY_JS = "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js";
 
-  function loadOnce(href, rel="stylesheet"){
-    return new Promise((res,rej)=>{
+  function loadOnce(href, rel = "stylesheet") {
+    return new Promise((res, rej) => {
       if (rel === "stylesheet" && $$(`link[href="${href}"]`).length) return res();
       if (rel === "script" && $$(`script[src="${href}"]`).length) return res();
-      const el = document.createElement(rel==="script"?"script":"link");
-      if (rel==="script") { 
-        el.src = href; 
+      const el = document.createElement(rel === "script" ? "script" : "link");
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[href]) {
+        el.integrity = window.BTFW.SRI[href];
+        el.crossOrigin = "anonymous";
+      }
+      if (rel === "script") {
+        el.src = href;
         el.async = false; // Summernote needs jQuery first
-        el.onload = res; 
-        el.onerror = rej; 
-      } else { 
-        el.rel="stylesheet"; 
-        el.href = href; 
-        el.onload = res; 
-        el.onerror = rej; 
+        el.onload = res;
+        el.onerror = rej;
+      } else {
+        el.rel = "stylesheet";
+        el.href = href;
+        el.onload = res;
+        el.onerror = rej;
       }
       document.head.appendChild(el);
     });
   }
 
-  function canEditMotd(){
+  function canEditMotd() {
     try {
       if (typeof window.hasPermission === "function") {
         if (window.hasPermission("motdedit") || window.hasPermission("editMotd") || window.hasPermission("motd")) {
@@ -55,18 +59,18 @@ BTFW.define("feature:motd-editor", [], async () => {
         }
       }
       if (client && typeof client.rank !== "undefined") {
-        const rank = client.rank|0;
+        const rank = client.rank | 0;
         const ranks = window.RANK || window.Ranks || {};
         const thresholds = [ranks.moderator, ranks.mod, ranks.admin, ranks.administrator];
         const needed = thresholds.find(v => typeof v === "number");
         if (typeof needed === "number") return rank >= needed;
         return rank >= 2;
       }
-    } catch(_) {}
+    } catch (_) { }
     return false;
   }
 
-  function getMotdContent(){
+  function getMotdContent() {
     const csMotd = $("#cs-motdtext");
     if (csMotd && csMotd.value && !isMotdHtmlEmpty(csMotd.value)) {
       return csMotd.value;
@@ -80,7 +84,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     return "";
   }
 
-  function buildModal(){
+  function buildModal() {
     const existing = $("#btfw-motd-modal");
     if (existing) {
       if (window.jQuery && window.jQuery.fn.summernote) {
@@ -91,7 +95,7 @@ BTFW.define("feature:motd-editor", [], async () => {
       }
       existing.remove();
     }
-    
+
     const m = document.createElement("div");
     m.id = "btfw-motd-modal";
     m.className = "modal";
@@ -164,7 +168,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     return dismiss;
   }
 
-  async function openEditor(){
+  async function openEditor() {
     if (editorModalOpen) return;
     editorModalOpen = true;
 
@@ -176,7 +180,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     const initialHTML = getMotdContent();
     const m = buildModal();
     const closeEditor = wireModalDismiss(m, () => { editorModalOpen = false; });
-    
+
     // Load dependencies in order: jQuery → Summernote CSS → Summernote JS
     try {
       if (!window.jQuery) {
@@ -184,17 +188,18 @@ BTFW.define("feature:motd-editor", [], async () => {
       }
       await loadOnce(SUMMERNOTE_CSS, "stylesheet");
       await loadOnce(SUMMERNOTE_JS, "script");
-    } catch(e){ 
+    } catch (e) {
       console.warn("[motd-editor] Summernote load failed", e);
       const host = $("#btfw-motd-editor", m);
       if (host) {
+        // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML; see docs/INNERHTML-AUDIT.md
         host.innerHTML = `<textarea class="textarea" style="height:400px; font-family:monospace;">${escapeHtml(initialHTML)}</textarea>`;
       }
       motion.openModal(m);
       editorModalOpen = false;
       return;
     }
-    
+
     const host = $("#btfw-motd-editor", m);
     if (!host) {
       console.error('[motd-editor] Editor host not found');
@@ -223,7 +228,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         fontSizes: ['8', '10', '12', '14', '16', '18', '20', '24', '28', '32', '36', '48'],
         placeholder: 'Enter your message of the day here...',
         callbacks: {
-          onInit: function() {
+          onInit: function () {
             // Set initial content
             jQuery(host).summernote('code', initialHTML);
             console.log('[motd-editor] Summernote initialized');
@@ -231,6 +236,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         }
       });
     } else {
+      // eslint-disable-next-line no-restricted-syntax -- safe: fallback textarea construction with escaped initialHTML; see docs/INNERHTML-AUDIT.md
       host.innerHTML = `<textarea class="textarea" style="height:400px;">${escapeHtml(initialHTML)}</textarea>`;
     }
 
@@ -270,6 +276,7 @@ BTFW.define("feature:motd-editor", [], async () => {
             stackModule.applyMotdUpdate(html);
           } else {
             const motdDisplay = resolveMotdDisplay();
+            // eslint-disable-next-line no-restricted-syntax -- safe: MOTD sanitized via sanitizeHtml; see docs/INNERHTML-AUDIT.md
             if (motdDisplay) motdDisplay.innerHTML = sanitizeHtml(html);
             const csMotd = $("#cs-motdtext");
             if (csMotd) csMotd.value = html;
@@ -308,27 +315,27 @@ BTFW.define("feature:motd-editor", [], async () => {
   }
 
   // Enhance channel settings MOTD textarea
-  async function enhanceChannelSettingsMotd(){
+  async function enhanceChannelSettingsMotd() {
     const textarea = $("#cs-motdtext");
     if (!textarea || textarea.dataset.btfwSummernoteEnhanced) return;
-    
+
     textarea.dataset.btfwSummernoteEnhanced = "true";
-    
+
     try {
       if (!window.jQuery) {
         await loadOnce(JQUERY_JS, "script");
       }
       await loadOnce(SUMMERNOTE_CSS, "stylesheet");
       await loadOnce(SUMMERNOTE_JS, "script");
-    } catch(e){ 
-      console.warn("[motd-editor] Summernote load failed for channel settings", e); 
+    } catch (e) {
+      console.warn("[motd-editor] Summernote load failed for channel settings", e);
       return;
     }
-    
+
     if (!window.jQuery || !window.jQuery.fn.summernote) return;
-    
+
     const initialHTML = textarea.value || "";
-    
+
     // Initialize Summernote directly on textarea
     jQuery(textarea).summernote({
       height: 350,
@@ -348,7 +355,7 @@ BTFW.define("feature:motd-editor", [], async () => {
       fontNames: ['Arial', 'Comic Sans MS', 'Courier New', 'Helvetica', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana', 'Roboto', 'Open Sans'],
       fontSizes: ['8', '10', '12', '14', '16', '18', '20', '24', '28', '32', '36', '48'],
       callbacks: {
-        onChange: function(contents) {
+        onChange: function (contents) {
           // Summernote automatically updates the original textarea
           textarea.value = contents;
           // Bubble so feature:channelOptionsApply dirty controller sees the edit
@@ -356,32 +363,32 @@ BTFW.define("feature:motd-editor", [], async () => {
         }
       }
     });
-    
+
     console.log('[motd-editor] Channel settings MOTD enhanced with Summernote');
   }
 
-  function watchChannelSettings(){
+  function watchChannelSettings() {
     const observer = new MutationObserver(() => {
       const modal = $("#channeloptions, #channelsettingsmodal, #channeloptionsmodal");
       if (modal && modal.style.display !== "none" && !modal.classList.contains("hidden")) {
         setTimeout(() => enhanceChannelSettingsMotd(), 150);
       }
     });
-    
-    observer.observe(document.body, { 
-      childList: true, 
+
+    observer.observe(document.body, {
+      childList: true,
       subtree: true,
       attributes: true,
       attributeFilter: ['style', 'class']
     });
-    
+
     document.addEventListener("show.bs.modal", (event) => {
       const modal = event?.target;
       if (modal && (modal.id === "channeloptions" || modal.id === "channelsettingsmodal" || modal.id === "channeloptionsmodal")) {
         setTimeout(() => enhanceChannelSettingsMotd(), 150);
       }
     }, true);
-    
+
     document.addEventListener("shown.bs.modal", (event) => {
       const modal = event?.target;
       if (modal && (modal.id === "channeloptions" || modal.id === "channelsettingsmodal" || modal.id === "channeloptionsmodal")) {
@@ -404,7 +411,7 @@ BTFW.define("feature:motd-editor", [], async () => {
 
   async function getStackApi() {
     if (!stackApi) {
-      try { stackApi = await BTFW.init("feature:stack"); } catch (_) {}
+      try { stackApi = await BTFW.init("feature:stack"); } catch (_) { }
     }
     return stackApi;
   }
@@ -438,7 +445,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     return !text;
   }
 
-  function injectButton(){
+  function injectButton() {
     const existingBtn = document.getElementById("btfw-motd-editbtn");
     const existingRow = existingBtn ? existingBtn.closest(".btfw-motd-editrow") : null;
 
@@ -522,7 +529,7 @@ BTFW.define("feature:motd-editor", [], async () => {
     });
   }
 
-  function boot(){
+  function boot() {
     injectButton();
     const stackRoot = document.getElementById("btfw-stack");
     if (stackRoot) {
@@ -538,5 +545,5 @@ BTFW.define("feature:motd-editor", [], async () => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 
-  return { name:"feature:motd-editor", openEditor };
+  return { name: "feature:motd-editor", openEditor };
 });

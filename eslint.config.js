@@ -26,6 +26,23 @@ const sharedRules = {
   "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
   "no-empty": ["error", { allowEmptyCatch: true }],
   "no-console": "off",
+  // Issue #201 — Task 3.3: warn on direct innerHTML/outerHTML assignment to
+  // prevent new raw-HTML sinks. Existing reviewed sites that intentionally use
+  // innerHTML (e.g. clearing content with `= ""`, or assigning safeHtml output)
+  // should add an inline eslint-disable comment explaining why they are safe.
+  "no-restricted-syntax": [
+    "warn",
+    {
+      selector: "AssignmentExpression[left.property.name='innerHTML']",
+      message:
+        "Avoid `.innerHTML =`. Use `textContent`, `createElement()`, `replaceChildren()`, or the `safeHtml` tagged template from `escape-html.ts`. See docs/INNERHTML-AUDIT.md for guidance.",
+    },
+    {
+      selector: "AssignmentExpression[left.property.name='outerHTML']",
+      message:
+        "Avoid `.outerHTML =`. Use DOM methods instead. See docs/INNERHTML-AUDIT.md.",
+    },
+  ],
 };
 
 const esmModuleFiles = [

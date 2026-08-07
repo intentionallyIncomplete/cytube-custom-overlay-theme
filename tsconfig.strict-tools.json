@@ -20,6 +20,7 @@
     "src/lib/cdn-deploy.js",
     "src/lib/channel-config.js",
     "src/lib/asset-paths.ts",
+    "src/lib/escape-html.ts",
     "src/lib/can-load-admin-bundle.ts",
     "src/lib/apply-chat-typography.ts",
     "src/lib/defer-feature-open.ts",

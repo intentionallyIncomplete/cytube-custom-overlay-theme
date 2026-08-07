@@ -26,6 +26,12 @@ test("stackGroupHeaderHtml embeds title", () => {
   assert.match(stackGroupHeaderHtml("Playlist"), /Playlist/);
 });
 
+test("stackGroupHeaderHtml escapes script injection in title", () => {
+  const result = stackGroupHeaderHtml('<script>alert("xss")</script>');
+  assert.ok(!result.includes("<script>"), "raw <script> tag must not appear in output");
+  assert.match(result, /&lt;script&gt;/, "script tag should be escaped");
+});
+
 test("channelThemeAdminPanelHtml includes apply button", () => {
   assert.match(channelThemeAdminPanelHtml(), /btfw-theme-apply/);
 });

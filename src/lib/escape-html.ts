@@ -29,6 +29,35 @@ export function escapeHtml(value: unknown): string {
   return String(value).replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPE_MAP[char] ?? char);
 }
 
+/**
+ * Tagged template literal that auto-escapes all interpolated values.
+ *
+ * Every interpolated expression is passed through {@link escapeHtml} before
+ * concatenation, so untrusted data can never break out of the text/attribute
+ * context. Static template parts (the literal string segments written by the
+ * developer) are trusted and emitted verbatim.
+ *
+ * @example
+ * ```ts
+ * const title = '<script>alert("xss")</script>';
+ * const markup = safeHtml`<span class="title">${title}</span>`;
+ * // → '<span class="title">&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;</span>'
+ * ```
+ */
+export function safeHtml(
+  strings: TemplateStringsArray,
+  ...values: readonly unknown[]
+): string {
+  let result = "";
+  for (let i = 0; i < strings.length; i += 1) {
+    result += strings[i] ?? "";
+    if (i < values.length) {
+      result += escapeHtml(values[i]);
+    }
+  }
+  return result;
+}
+
 /** Escapes only the characters that are unsafe inside a double-quoted HTML attribute. */
 function escapeAttributeValue(value: string): string {
   return value.replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
