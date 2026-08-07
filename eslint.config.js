@@ -35,12 +35,12 @@ const sharedRules = {
     {
       selector: "AssignmentExpression[left.property.name='innerHTML']",
       message:
-        "Avoid `.innerHTML =`. Use `textContent`, `createElement()`, `replaceChildren()`, or the `safeHtml` tagged template from `escape-html.ts`. See .github/INNERHTML-AUDIT.md for guidance.",
+        "Avoid `.innerHTML =`. Use `textContent`, `createElement()`, `replaceChildren()`, or the `safeHtml` tagged template from `escape-html.ts`. See docs/INNERHTML-AUDIT.md for guidance.",
     },
     {
       selector: "AssignmentExpression[left.property.name='outerHTML']",
       message:
-        "Avoid `.outerHTML =`. Use DOM methods instead. See .github/INNERHTML-AUDIT.md.",
+        "Avoid `.outerHTML =`. Use DOM methods instead. See docs/INNERHTML-AUDIT.md.",
     },
   ],
 };
