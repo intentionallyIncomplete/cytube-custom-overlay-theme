@@ -127,7 +127,11 @@ BTFW.define("feature:emotes", [], async () => {
 
     const url = "https://cdn.jsdelivr.net/npm/emoji.json@13.1.0/emoji.json";
     try {
-      const res = await fetch(url, { cache: "force-cache" });
+      const opts = { cache: "force-cache" };
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[url]) {
+        opts.integrity = window.BTFW.SRI[url];
+      }
+      const res = await fetch(url, opts);
       const arr = await res.json();
       state.list.emoji = arr.map((e, index) => ({
         char: e.char,

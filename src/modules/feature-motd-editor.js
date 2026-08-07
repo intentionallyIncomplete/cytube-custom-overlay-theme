@@ -26,6 +26,10 @@ BTFW.define("feature:motd-editor", [], async () => {
       if (rel === "stylesheet" && $$(`link[href="${href}"]`).length) return res();
       if (rel === "script" && $$(`script[src="${href}"]`).length) return res();
       const el = document.createElement(rel==="script"?"script":"link");
+      if (window.BTFW && window.BTFW.SRI && window.BTFW.SRI[href]) {
+        el.integrity = window.BTFW.SRI[href];
+        el.crossOrigin = "anonymous";
+      }
       if (rel==="script") { 
         el.src = href; 
         el.async = false; // Summernote needs jQuery first

@@ -16,6 +16,7 @@ billtube-fw.js
 
 # Maintainer / local-only (not needed for CDN or CI)
 .cursor/
+.agents/
 wiki/
 docs/
 dev/

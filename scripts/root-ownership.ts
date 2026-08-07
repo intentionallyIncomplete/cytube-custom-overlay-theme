@@ -36,6 +36,7 @@ export interface RootDirectoryEntry {
  */
 export const IGNORED_FOR_LAYOUT_CONTRACT: ReadonlySet<string> = new Set([
   ".git",
+  ".agents",
   "css",
   "scss",
   "assets",
