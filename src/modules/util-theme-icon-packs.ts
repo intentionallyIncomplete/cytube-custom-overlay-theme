@@ -38,7 +38,7 @@ BTFW.define("util:themeIconPacks", [], async () => {
     },
     "chat-emotes": {
       label: "Emotes",
-      defaultHtml: '<i class="fa fa-smile" aria-hidden="true"></i>'
+      defaultHtml: '<i class="fa fa-smile-o" aria-hidden="true"></i>'
     },
     "chat-gif": {
       label: "GIF picker",

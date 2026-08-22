@@ -26,9 +26,8 @@ BTFW.define("feature:styleCore", [], async () => {
   }
 
   function ensureFontAwesome() {
-    const hasFaIcon = !!document.querySelector('.fa');
     const hasFaWindow = !!window.FontAwesome;
-    if (!hasFaIcon && !hasFaWindow && !hasStylesheet("font-awesome")) {
+    if (!hasFaWindow && !hasStylesheet("font-awesome")) {
       appendCssIfMissing("btfw-fa-css", CDN_FONT_AWESOME);
     }
   }
@@ -46,7 +45,18 @@ BTFW.define("feature:styleCore", [], async () => {
     }
   }
 
+  function ensureViewportMeta() {
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "viewport";
+      meta.content = "width=device-width, initial-scale=1";
+      document.head.appendChild(meta);
+    }
+  }
+
   function boot() {
+    ensureViewportMeta();
     ensureFontAwesome();
     ensureBulma();
     ensureBootswatchTheme();

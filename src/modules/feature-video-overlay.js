@@ -434,12 +434,12 @@ BTFW.define("feature:videoOverlay", [], async () => {
     const customButtons = [];
 
     if (!document.querySelector("#fullscreenbtn")) {
-      customButtons.push({ id: "btfw-fullscreen", icon: "fas fa-expand", tooltip: "Fullscreen", action: toggleFullscreen, section: "right" });
+      customButtons.push({ id: "btfw-fullscreen", icon: "fa fa-expand", tooltip: "Fullscreen", action: toggleFullscreen, section: "right" });
     }
 
     customButtons.push({
       id: "btfw-airplay",
-      icon: "fas fa-cast",
+      icon: "fa fa-television",
       tooltip: "AirPlay",
       action: enableAirplay,
       section: "right"
@@ -799,7 +799,7 @@ BTFW.define("feature:videoOverlay", [], async () => {
       btn.className = "btfw-vo-btn";
       btn.title = "Load local subtitles (.vtt/.srt)";
       const icon = document.createElement("i");
-      icon.className = "fa fa-closed-captioning";
+      icon.className = "fa fa-cc";
       btn.appendChild(icon);
       btn.addEventListener("click", (e) => {
         e.preventDefault();

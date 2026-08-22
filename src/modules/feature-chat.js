@@ -19,9 +19,7 @@ BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom"
   }
 
   function buildGifIconElement() {
-    const icon = document.createElement("i");
-    icon.className = "fa-solid fa-gif";
-    return icon;
+    return buildIconSlotElement("chat-gifs", "fa fa-file-video-o");
   }
 
   const CHAT_PLACEHOLDER = "Type your message here…";
@@ -329,7 +327,7 @@ function normalizeChatActionButtons() {
     b.id = "btfw-btn-emotes";
     b.className = "button is-dark is-small btfw-chatbtn";
     b.title = "Emotes / Emoji";
-    b.appendChild(buildIconSlotElement("chat-emotes", "fa fa-smile"));
+    b.appendChild(buildIconSlotElement("chat-emotes", "fa fa-smile-o"));
     actions.appendChild(b);
   }
   if (!document.getElementById("btfw-btn-gif")) {
@@ -352,7 +350,7 @@ function normalizeChatActionButtons() {
     gifBtn.classList.add("button", "is-dark", "is-small");
     gifBtn.title = gifBtn.title || "GIFs";
 
-const hasIcon = gifBtn.querySelector("i.fa-solid.fa-gif");
+const hasIcon = gifBtn.querySelector("[data-btfw-icon-slot='chat-gifs']") || gifBtn.querySelector("i.fa");
 if (!hasIcon) {
   gifBtn.replaceChildren(buildGifIconElement());
 }
@@ -958,7 +956,7 @@ const scheduleNormalizeChatActions = (() => {
       b.id = "btfw-btn-emotes";
       b.className = "button is-dark is-small btfw-chatbtn";
       b.title = "Emotes / Emoji";
-      b.appendChild(buildIconSlotElement("chat-emotes", "fa fa-smile"));
+      b.appendChild(buildIconSlotElement("chat-emotes", "fa fa-smile-o"));
       actions.appendChild(b);
     }
 
