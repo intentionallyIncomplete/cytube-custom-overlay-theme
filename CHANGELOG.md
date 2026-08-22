@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.29.0...v1.30.0) (2026-08-22)
+
+
+### Features
+
+* add theme-admin-blocks.js to strict tools configuration ([#227](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/227)) ([0744d16](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/0744d16bad2c76cc0b6528b94790689402d85812))
+
 # [1.29.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.28.1...v1.29.0) (2026-08-07)
 
 
