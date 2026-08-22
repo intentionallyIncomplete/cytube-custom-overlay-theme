@@ -5,11 +5,11 @@ BTFW.define("util:motion", [], async () => {
   let reduceMotion = !!(reduceQuery && reduceQuery.matches);
 
   if (reduceQuery) {
-    const onChange = (event: MediaQueryListEvent | Event) => { reduceMotion = !!(event as MediaQueryListEvent).matches; };
+    const onChange = (event) => { reduceMotion = !!event.matches; };
     if (typeof reduceQuery.addEventListener === "function") {
-      reduceQuery.addEventListener("change", onChange as EventListener);
+      reduceQuery.addEventListener("change", onChange);
     } else if (typeof reduceQuery.addListener === "function") {
-      reduceQuery.addListener(onChange as EventListener);
+      reduceQuery.addListener(onChange);
     }
   }
 
@@ -17,7 +17,7 @@ BTFW.define("util:motion", [], async () => {
     return reduceMotion;
   }
 
-  function toMilliseconds(timeString: string | null): number {
+  function toMilliseconds(timeString) {
     if (!timeString) return 0;
     return timeString.split(",").reduce((max, token) => {
       const value = parseFloat(token.trim());
@@ -29,7 +29,7 @@ BTFW.define("util:motion", [], async () => {
     }, 0);
   }
 
-  function transitionTotal(el: HTMLElement | null): number {
+  function transitionTotal(el) {
     if (!el || typeof window === "undefined" || !window.getComputedStyle) return 0;
     const style = getComputedStyle(el);
     const duration = toMilliseconds(style.transitionDuration || "0s");
@@ -37,7 +37,7 @@ BTFW.define("util:motion", [], async () => {
     return duration + delay;
   }
 
-  function waitForTransition(el: HTMLElement | null): Promise<void> {
+  function waitForTransition(el) {
     return new Promise((resolve) => {
       if (!el || prefersReducedMotion()) { resolve(); return; }
       const total = transitionTotal(el);
@@ -51,7 +51,7 @@ BTFW.define("util:motion", [], async () => {
         resolve();
       };
 
-      const onEnd = (event: Event) => {
+      const onEnd = (event) => {
         if (event && event.target !== el) return;
         finish();
       };
@@ -61,7 +61,7 @@ BTFW.define("util:motion", [], async () => {
     });
   }
 
-  function nextFrame(fn: FrameRequestCallback): void {
+  function nextFrame(fn) {
     if (typeof fn !== "function") return;
     if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
       window.requestAnimationFrame(() => { window.requestAnimationFrame(fn); });
@@ -70,7 +70,7 @@ BTFW.define("util:motion", [], async () => {
     }
   }
 
-  function openModal(modal: HTMLElement | null): void {
+  function openModal(modal) {
     if (!modal) return;
     const state = modal.dataset.btfwModalState;
     if (state === "open" || state === "opening") return;
@@ -92,7 +92,7 @@ BTFW.define("util:motion", [], async () => {
     }
   }
 
-  async function closeModal(modal: HTMLElement | null): Promise<void> {
+  async function closeModal(modal) {
     if (!modal) return;
     const state = modal.dataset.btfwModalState;
     if (state === "closing" || state === "closed") return;
@@ -112,7 +112,7 @@ BTFW.define("util:motion", [], async () => {
     }
   }
 
-  function openPopover(pop: HTMLElement | null, options: { backdrop?: HTMLElement | null } = {}): void {
+  function openPopover(pop, options = {}) {
     if (!pop) return;
     const state = pop.dataset.btfwPopoverState;
     if (state === "open" || state === "opening") return;
@@ -143,7 +143,7 @@ BTFW.define("util:motion", [], async () => {
     }
   }
 
-  async function closePopover(pop: HTMLElement | null, options: { backdrop?: HTMLElement | null } = {}): Promise<void> {
+  async function closePopover(pop, options = {}) {
     if (!pop) return;
     const state = pop.dataset.btfwPopoverState;
     if (state === "closing" || state === "closed") return;
