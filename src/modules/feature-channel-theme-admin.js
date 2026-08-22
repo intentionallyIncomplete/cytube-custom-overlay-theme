@@ -1,3 +1,17 @@
+import {
+  CSS_END_MARKERS,
+  CSS_START_MARKERS,
+  JS_END_MARKERS,
+  JS_START_MARKERS,
+  buildJsConfigBlock,
+  hasBrokenThemeAdminJsMarkers,
+  hasThemeAdminCssBlock,
+  hasThemeAdminJsBlock,
+  parseThemeAdminConfig,
+  replaceThemeAdminBlock,
+  wrapCssThemeBlock
+} from "../lib/theme-admin-blocks.js";
+
 BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
   const { channelThemeAdmin: adminTpl } = templates;
@@ -14,11 +28,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
 
   const $  = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-  const JS_BLOCK_START  = "==BTFW_THEME_ADMIN_START==";
-  const JS_BLOCK_END    = "=BTFW_THEME_ADMIN_END==";
-  const CSS_BLOCK_START = "==BTFW_THEME_ADMIN_START==";
-  const CSS_BLOCK_END   = "==BTFW_THEME_ADMIN_END==";
 
   const JS_FIELD_SELECTORS = [
     "#cs-jstext",
@@ -66,29 +75,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
   const MODULE_INPUT_SELECTOR = '[data-role="module-inputs"]';
   const moduleWatcherRegistry = new WeakMap();
   const activeModuleWatchers = new Set();
-
-  const LOADER_SENTINEL = "// BTFW_LOADER_SENTINEL";
-  const LOADER_SENTINEL_REG = /\s*\/\/\s*BTFW_LOADER_SENTINEL/;
-
-  function findLoaderStart(src){
-    const idx = src.indexOf(LOADER_SENTINEL);
-    if (idx === -1) return -1;
-    return src.lastIndexOf('\n', idx) + 1;
-  }
-
-  function joinSections(parts, ensureTrailingNewline){
-    const filtered = (parts || [])
-      .map(part => typeof part === "string" ? part : "")
-      .filter(part => part.trim().length > 0);
-    if (filtered.length === 0) {
-      return ensureTrailingNewline ? "\n" : "";
-    }
-    let combined = filtered.join("\n\n");
-    if (ensureTrailingNewline && !combined.endsWith("\n")) {
-      combined += "\n";
-    }
-    return combined;
-  }
 
   function removeRuntimeAsset(id){
     if (typeof document === "undefined") return;
@@ -864,19 +850,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
   }
 
   function parseConfig(jsText){
-    if (!jsText) return null;
-    const start = jsText.indexOf(JS_BLOCK_START);
-    const end = jsText.indexOf(JS_BLOCK_END);
-    if (start === -1 || end === -1 || end < start) return null;
-    const block = jsText.slice(start + JS_BLOCK_START.length, end).trim();
-    const match = block.match(/window\.BTFW_THEME_ADMIN\s*=\s*(\{[\s\S]*?\});/);
-    if (!match) return null;
-    try {
-      return JSON.parse(match[1]);
-    } catch (err) {
-      console.warn("[theme-admin] Failed to parse stored config", err);
-      return null;
-    }
+    return parseThemeAdminConfig(jsText);
   }
 
   function normalizeConfig(cfg){
@@ -982,7 +956,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     const normalized = normalizeConfig(cfg);
     const cleaned = sanitizeConfigForOutput(normalized);
     const json = JSON.stringify(cleaned, null, 2);
-    return `${JS_BLOCK_START}\nwindow.BTFW_THEME_ADMIN = ${json};\n${JS_BLOCK_END}`;
+    return buildJsConfigBlock(json);
   }
 
   function buildCssBlock(cfg){
@@ -996,37 +970,8 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     const accent = colors.accent || "#6d4df6";
     const fontFamily = typography.family || FONT_FALLBACK_FAMILY;
 
-    return `\n${CSS_BLOCK_START}\n:root {\n  --btfw-theme-bg: ${bg};\n  --btfw-theme-surface: ${surface};\n  --btfw-theme-panel: ${panel};\n  --btfw-theme-text: ${textColor};\n  --btfw-theme-chat-text: ${chatText};\n  --btfw-theme-accent: ${accent};\n  --btfw-theme-font-family: ${fontFamily};\n}\n${CSS_BLOCK_END}`;
+    return wrapCssThemeBlock(`:root {\n  --btfw-theme-bg: ${bg};\n  --btfw-theme-surface: ${surface};\n  --btfw-theme-panel: ${panel};\n  --btfw-theme-text: ${textColor};\n  --btfw-theme-chat-text: ${chatText};\n  --btfw-theme-accent: ${accent};\n  --btfw-theme-font-family: ${fontFamily};\n}`);
   }
-
-function replaceBlock(original, startMarker, endMarker, block){
-  const sanitizedBlock = (block || "").trim();
-  if (!sanitizedBlock) return original;
-
-  const start = original.indexOf(startMarker);
-  const end = original.indexOf(endMarker);
-  const hadTrailingNewline = /\n\s*$/.test(original);
-
-  if (start !== -1 && end !== -1 && end > start) {
-    const before = original.slice(0, start).replace(/\s+$/, "");
-    const after = original.slice(end + endMarker.length).replace(/^\s+/, "");
-    return joinSections([before, sanitizedBlock, after], hadTrailingNewline);
-  }
-
-  const loaderStart = findLoaderStart(original);
-  if (loaderStart !== -1) {
-    const before = original.slice(0, loaderStart).replace(/\s+$/, "");
-    const after = original.slice(loaderStart);
-    return joinSections([before, sanitizedBlock, after], hadTrailingNewline);
-  }
-
-
-  const trimmed = original.trim();
-  if (!trimmed) {
-    return sanitizedBlock + "\n";
-  }
-  return joinSections([trimmed, sanitizedBlock], true);
-}
 
   function canManageChannel(){
     try {
@@ -1484,9 +1429,9 @@ function replaceBlock(original, startMarker, endMarker, block){
     const cssBlock = buildCssBlock(mergedConfig);
 
     const cleanedJs = stripLegacySliderGlobals(existingJs);
-    jsField.value = replaceBlock(cleanedJs, JS_BLOCK_START, JS_BLOCK_END, jsBlock);
+    jsField.value = replaceThemeAdminBlock(cleanedJs, jsBlock, JS_START_MARKERS, JS_END_MARKERS);
 
-    cssField.value = replaceBlock(existingCss, CSS_BLOCK_START, CSS_BLOCK_END, cssBlock);
+    cssField.value = replaceThemeAdminBlock(existingCss, cssBlock, CSS_START_MARKERS, CSS_END_MARKERS);
 
     ['input', 'change'].forEach(type => {
       try {
@@ -1658,8 +1603,8 @@ setTimeout(() => {
 
     const existingJs = jsField?.value || "";
     const existingCss = cssField?.value || "";
-    const hasJsBlock = existingJs.includes(JS_BLOCK_START) && existingJs.includes(JS_BLOCK_END);
-    const hasCssBlock = existingCss.includes(CSS_BLOCK_START) && existingCss.includes(CSS_BLOCK_END);
+    const hasJsBlock = hasThemeAdminJsBlock(existingJs) && !hasBrokenThemeAdminJsMarkers(existingJs);
+    const hasCssBlock = hasThemeAdminCssBlock(existingCss);
     const currentVersion = storedVersion;
     let needsInit = !hasJsBlock || !hasCssBlock;
     if (currentVersion < DEFAULT_CONFIG.version) {

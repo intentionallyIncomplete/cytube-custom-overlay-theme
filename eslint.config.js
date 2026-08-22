@@ -62,6 +62,7 @@ const esmModuleFiles = [
   "src/modules/feature-stack.js",
   "src/modules/feature-chat-media.js",
   "src/modules/feature-channel-options-apply.js",
+  "src/modules/feature-channel-theme-admin.js",
   "src/modules/feature-motd-editor.js",
   "src/modules/feature-navbar.js",
   "src/modules/feature-notify.js",
