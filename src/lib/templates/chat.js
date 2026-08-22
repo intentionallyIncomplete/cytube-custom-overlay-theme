@@ -1,9 +1,9 @@
 export function chatEmotesIconHtml() {
-  return '<span data-btfw-icon-slot="chat-emotes" aria-hidden="true"><i class="fa fa-smile"></i></span>';
+  return '<span data-btfw-icon-slot="chat-emotes" aria-hidden="true"><i class="fa fa-smile-o"></i></span>';
 }
 
 export function chatGifIconHtml() {
-  return '<i class="fa-solid fa-gif"></i>';
+  return '<i class="fa fa-file-video-o"></i>';
 }
 
 export function chatGifIconSlotHtml() {

@@ -415,7 +415,7 @@ BTFW.define("feature:playlistPerformance", [], function() {
     // Insert before arrows
     const arrows = header.querySelector('.btfw-stack-arrows');
     if (arrows) {
-      header.insertBefore(btn, arrows);
+      arrows.parentNode.insertBefore(btn, arrows);
     } else {
       header.appendChild(btn);
     }

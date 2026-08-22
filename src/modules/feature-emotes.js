@@ -573,7 +573,7 @@ BTFW.define("feature:emotes", [], async () => {
     btn.className = "button is-dark is-small btfw-chatbtn btfw-btn-emotes";
     if (window.FontAwesome || document.querySelector('.fa')) {
       const icon = document.createElement("i");
-      icon.className = "fa fa-smile";
+      icon.className = "fa fa-smile-o";
       icon.setAttribute("aria-hidden", "true");
       btn.appendChild(icon);
     } else {

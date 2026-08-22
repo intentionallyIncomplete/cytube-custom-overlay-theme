@@ -465,7 +465,7 @@ BTFW.define("feature:motd-editor", [], async () => {
         slot = document.createElement("span");
         slot.className = "btfw-stack-header-actions";
         const arrows = header.querySelector(".btfw-stack-arrows");
-        if (arrows) header.insertBefore(slot, arrows);
+        if (arrows) arrows.parentNode.insertBefore(slot, arrows);
         else header.appendChild(slot);
       }
 

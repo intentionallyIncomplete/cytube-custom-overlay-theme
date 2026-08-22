@@ -123,7 +123,7 @@ BTFW.define("feature:local-subs", [], async () => {
       btn.className = "button is-dark is-small btfw-vo-btn";
       btn.title = "Local Subtitles (VTT/SRT)";
       const icon = document.createElement("i");
-      icon.className = "fa fa-closed-captioning";
+      icon.className = "fa fa-cc";
       btn.appendChild(icon);
       btn.addEventListener("click", pickAndLoad);
       overlay.querySelector(".btfw-vo-buttons")?.appendChild(btn) || overlay.appendChild(btn);

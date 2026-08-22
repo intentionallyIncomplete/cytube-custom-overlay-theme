@@ -80,6 +80,10 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px !important;
+}
+
 html, body {
   min-height: 100%;
   background: linear-gradient(160deg, color-mix(in srgb, var(--btfw-color-bg) 92%, black 8%), color-mix(in srgb, var(--btfw-color-surface) 90%, black 10%));
