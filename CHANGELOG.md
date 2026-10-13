@@ -1,3 +1,10 @@
+## [1.30.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.0...v1.30.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* regenerate package-lock.json with npm 10 to restore npm ci sync ([ed34055](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/ed34055649a95eaa7cdfea7491c41783bda5df13))
+
 # [1.30.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.29.0...v1.30.0) (2026-08-22)
 
 
