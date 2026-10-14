@@ -14,7 +14,7 @@ import {
   storeDocked,
   isPanelInDrawer,
   applyStoredPanelOpenState
-} from "../../src/lib/stack-core.js";
+} from "../../src/lib/stack-core.ts";
 
 /** Minimal localStorage stub (node --test has no storage). */
 function installStorageStub() {

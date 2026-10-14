@@ -1,5 +1,7 @@
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
-import { sanitizeHtml } from "../lib/escape-html.js";
+import { createStackMotd } from "./stack/stack-motd.js";
+import { createStackPlaylist } from "./stack/stack-playlist.js"; // resolves to stack-playlist.ts
+import { createStackPoll } from "./stack/stack-poll.js"; // resolves to stack-poll.ts
 import {
   MOTD_VISIBILITY_KEY,
   PLAYLIST_VISIBILITY_KEY,
@@ -19,7 +21,7 @@ import {
   isPanelInDrawer,
   applyStoredPanelOpenState,
   dispatchStackVisibility
-} from "../lib/stack-core.js";
+} from "../lib/stack-core.js"; // resolves to stack-core.ts (see scripts/build.js)
 
 BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
@@ -29,8 +31,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   let activeFlyoutGroup = null;
   let lastPanelBarSignature = "";
   let flyoutCloseTimer = null;
-  let queuePreviewObserver = null;
-  let queuePreviewHost = null;
 
   const STACK_VISIBILITY = {
     "motd-group": {
@@ -59,204 +59,35 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     }
   };
 
-  let pollSyncTimer = null;
-  let pollObserverWired = false;
-  let pollSocketWired = false;
-  let motdSyncTimer = null;
-  let motdObserverWired = false;
-  let motdSocketWired = false;
   let populateActive = false;
   let populateTimer = null;
   let bootWired = false;
 
-  // Regex-based tag strip, deliberately not `probe.innerHTML = raw` + read `.textContent`.
-  // MOTD content is admin-authored HTML, and setting innerHTML on a live-document element
-  // still triggers resource-loading event handlers like `<img src=x onerror=...>` even when
-  // that element is never attached to the visible DOM — "detached" is not the same as "inert".
-  // This is a same-behavior, environment-independent replacement (previously branched on
-  // `typeof document`); the entity handling here mirrors tests/unit/motd-stack.test.js.
-  function isMotdHtmlEmpty(html = "") {
-    const raw = String(html || "").trim();
-    if (!raw) return true;
-    const text = raw
-      .replace(/<br\s*\/?>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/\u00a0/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return !text;
-  }
+  // MOTD sub-domain (#228 Phase 2): structure normalization, content detection,
+  // panel adoption, visibility sync, observers, and the setMotd socket handler
+  // now live in ./stack/stack-motd.ts. Function declarations below are hoisted,
+  // so referencing createGroupItem/ensureStack here is safe.
+  const motd = createStackMotd({
+    createGroupItem,
+    ensureStackRefs: () => ensureStack()
+  });
+  const hasMotdContent = motd.hasMotdContent;
 
-  function hasMotdContent(doc = document) {
-    if (!doc || typeof doc.querySelector !== "function") return false;
-    const motd = resolveMotdHost(doc);
-    if (!motd) return false;
-    return !isMotdHtmlEmpty(motd.innerHTML || "");
-  }
+  // Playlist sub-domain (#228 Phase 2): merged controls bar, add-media panel,
+  // and panel-bar queue preview now live in ./stack/stack-playlist.ts.
+  const playlist = createStackPlaylist({
+    tpl: stackTpl,
+    getActiveFlyoutGroup: () => activeFlyoutGroup
+  });
 
-  function resolveMotdHost(doc = document) {
-    if (!doc || typeof doc.getElementById !== "function") return null;
-    const motdwrap = doc.getElementById("motdwrap");
-    if (!motdwrap) return doc.getElementById("motd");
-    const direct = motdwrap.querySelector(":scope > #motd");
-    if (direct) return direct;
-    return motdwrap.querySelector("#motd") || doc.getElementById("motd");
-  }
+  // Poll sub-domain (#228 Phase 2): pollwrap decoupling from the playlist DOM,
+  // poll button relocation, panel adoption, visibility sync, observers, and
+  // the newPoll/closePoll socket handlers now live in ./stack/stack-poll.ts.
+  const poll = createStackPoll({
+    createGroupItem
+  });
   
   // Define what should be grouped together
-  const ADD_MEDIA_SECTIONS = [
-    { id: "addfromurl", title: "From URL", default: true },
-    { id: "searchcontrol", title: "Library & YouTube" }
-  ];
-
-  function ensureAddMediaUI(mainContainer, controlsBar, actionsCluster) {
-    if (!mainContainer || !controlsBar || !actionsCluster) return null;
-
-    const available = ADD_MEDIA_SECTIONS.map(cfg => {
-      const el = document.getElementById(cfg.id);
-      if (!el) return null;
-      return { ...cfg, el };
-    }).filter(Boolean);
-
-    if (!available.length) {
-      const existingPanel = document.getElementById("btfw-addmedia-panel");
-      if (existingPanel) existingPanel.remove();
-      return null;
-    }
-
-    let panel = document.getElementById("btfw-addmedia-panel");
-    if (!panel) {
-      panel = document.createElement("section");
-      panel.id = "btfw-addmedia-panel";
-      panel.className = "btfw-addmedia-panel";
-      panel.dataset.open = "false";
-      panel.setAttribute("role", "region");
-      panel.setAttribute("aria-label", "Add media controls");
-      panel.setAttribute("aria-hidden", "true");
-      panel.setAttribute("hidden", "hidden");
-      panel.innerHTML = stackTpl.addMediaPanelHtml();
-    }
-
-    if (panel.parentElement !== mainContainer) {
-      const anchor = controlsBar.parentElement === mainContainer ?
-        controlsBar.nextSibling : null;
-      mainContainer.insertBefore(panel, anchor);
-    }
-
-    const tabs = panel.querySelector(".btfw-addmedia-tabs");
-    const viewsHost = panel.querySelector(".btfw-addmedia-views");
-    const closeBtn = panel.querySelector(".btfw-addmedia-close");
-
-    if (!tabs || !viewsHost) return null;
-
-    while (tabs.firstChild) tabs.removeChild(tabs.firstChild);
-    while (viewsHost.firstChild) viewsHost.removeChild(viewsHost.firstChild);
-
-    available.forEach(({ id, title, el }) => {
-      el.classList.remove("collapse", "in", "plcontrol-collapse");
-      el.style.removeProperty("display");
-      el.style.removeProperty("height");
-      el.removeAttribute("aria-expanded");
-      el.setAttribute("role", "tabpanel");
-      el.setAttribute("data-btfw-addmedia", "panel");
-
-      const tab = document.createElement("button");
-      tab.type = "button";
-      tab.className = "btfw-addmedia-tab";
-      tab.dataset.target = id;
-      tab.textContent = title;
-      tab.setAttribute("role", "tab");
-      tabs.appendChild(tab);
-
-      const view = document.createElement("div");
-      view.className = "btfw-addmedia-view";
-      view.dataset.target = id;
-      view.setAttribute("role", "tabpanel");
-      view.setAttribute("aria-hidden", "true");
-      view.appendChild(el);
-      viewsHost.appendChild(view);
-    });
-
-    const defaultSection = available.find(sec => sec.default) || available[0];
-
-    const setActive = (targetId) => {
-      const activeId = targetId || panel.dataset.active || defaultSection.id;
-      panel.dataset.active = activeId;
-      tabs.querySelectorAll(".btfw-addmedia-tab").forEach(tab => {
-        const match = tab.dataset.target === activeId;
-        tab.classList.toggle("is-active", match);
-        tab.setAttribute("aria-selected", match ? "true" : "false");
-        tab.setAttribute("tabindex", match ? "0" : "-1");
-      });
-      viewsHost.querySelectorAll(".btfw-addmedia-view").forEach(view => {
-        const match = view.dataset.target === activeId;
-        view.classList.toggle("is-active", match);
-        view.setAttribute("aria-hidden", match ? "false" : "true");
-      });
-    };
-
-    const toggle = (force) => {
-      const open = force != null ? !!force : panel.dataset.open !== "true";
-      panel.dataset.open = open ? "true" : "false";
-      panel.classList.toggle("is-open", open);
-      panel.setAttribute("aria-hidden", open ? "false" : "true");
-      if (open) {
-        panel.removeAttribute("hidden");
-        setActive(panel.dataset.active || defaultSection.id);
-      } else {
-        panel.setAttribute("hidden", "hidden");
-      }
-      panel.dispatchEvent(new CustomEvent("btfw:addmedia:state", { detail: { open } }));
-      return open;
-    };
-
-    if (!panel._btfwWired) {
-      tabs.addEventListener("click", (ev) => {
-        const btn = ev.target.closest(".btfw-addmedia-tab");
-        if (!btn) return;
-        ev.preventDefault();
-        setActive(btn.dataset.target);
-      });
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => toggle(false));
-      }
-      panel._btfwWired = true;
-    }
-
-    setActive(panel.dataset.active || defaultSection.id);
-
-    panel._btfwToggle = toggle;
-    panel._btfwSetActive = setActive;
-
-    const wireLegacyTriggers = () => {
-      const triggers = [
-        { id: "showsearch", target: "searchcontrol" }
-      ];
-
-      triggers.forEach(({ id, target }) => {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-        if (btn.dataset.btfwAddmedia === target) return;
-
-        btn.dataset.btfwAddmedia = target;
-        btn.setAttribute("aria-controls", "btfw-addmedia-panel");
-        btn.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          setActive(target);
-          toggle(true);
-          btn.blur();
-        });
-      });
-    };
-
-    wireLegacyTriggers();
-
-    return { panel, toggle, setActive };
-  }
-
-  
   function ensureStack(){
     const left=document.getElementById("btfw-leftpad");
     if(!left) return null;
@@ -298,281 +129,18 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   //   return el.getAttribute("data-title")||el.getAttribute("title")||el.id; 
   // }
   
-  function normalizeMotdStructure(force = false) {
-    const motdwrap = document.getElementById("motdwrap");
-    if (!motdwrap) return null;
-    if (!force && motdwrap.dataset.btfwMotdNormalized === "1") {
-      const motd = motdwrap.querySelector(":scope > #motd");
-      return motd ? { motdwrap, motd } : null;
-    }
-
-    const toggle = document.getElementById("togglemotd");
-    if (toggle && toggle.closest("#motd")) {
-      motdwrap.insertBefore(toggle, motdwrap.firstChild);
-    }
-
-    const extraParts = [];
-    motdwrap.querySelectorAll(".btfw-motd-editrow").forEach((row) => {
-      const text = (row.textContent || "").trim();
-      if (text) extraParts.push(`<p>${text}</p>`);
-      row.remove();
-    });
-
-    motdwrap.querySelectorAll(".col-lg-12, .col-md-12, .clear").forEach((el) => {
-      if (el.contains(motdwrap) || el === motdwrap) return;
-      if (el.querySelector("#motd") || el.classList.contains("btfw-motd-editrow")) {
-        el.querySelectorAll("#motd").forEach((inner) => {
-          if ((inner.innerHTML || "").trim()) extraParts.push(inner.innerHTML);
-        });
-      }
-      el.remove();
-    });
-
-    let motd = motdwrap.querySelector(":scope > #motd");
-    if (!motd) {
-      motd = document.createElement("div");
-      motd.id = "motd";
-      motdwrap.appendChild(motd);
-    }
-
-    motdwrap.querySelectorAll("#motd").forEach((node) => {
-      if (node === motd) return;
-      if ((node.innerHTML || "").trim()) extraParts.push(node.innerHTML);
-      node.remove();
-    });
-
-    motd.querySelectorAll("#togglemotd, .clear, .col-lg-12, .col-md-12, .btfw-motd-editrow").forEach((el) => {
-      el.remove();
-    });
-    motd.querySelectorAll("#motd").forEach((inner) => {
-      if ((inner.innerHTML || "").trim()) extraParts.push(inner.innerHTML);
-      inner.remove();
-    });
-
-    document.querySelectorAll("#togglemotd").forEach((btn, index) => {
-      if (index === 0) return;
-      btn.remove();
-    });
-
-    if (extraParts.length) {
-      const merged = extraParts.join("").trim();
-      if (merged && isMotdHtmlEmpty(motd.innerHTML)) {
-        motd.innerHTML = sanitizeHtml(merged);
-      } else if (merged) {
-        motd.innerHTML += sanitizeHtml(merged);
-      }
-    }
-
-    motdwrap.dataset.btfwMotdNormalized = "1";
-    return { motdwrap, motd };
-  }
-  
-  function mergePlaylistControls() {
-    const plBar = document.getElementById("btfw-plbar");
-    if (plBar?.dataset.btfwMerged === "1") return;
-    const controlsRow = document.getElementById("controlsrow");
-    const rightControls = document.getElementById("rightcontrols");
-    const playlistWrap = document.getElementById("playlistwrap");
-    const queueContainer = document.getElementById("queuecontainer");
-    const playlistRow = document.getElementById("playlistrow");
-    const stackPlaylist = document.querySelector('#btfw-stack .btfw-stack-item[data-bind="playlist-group"] .btfw-stack-item__body');
-
-    // Find any floating controls row (legacy CyTube layout)
-    const controlsRows = document.querySelectorAll(".btfw-controls-row");
-
-    // Find the main playlist container
-    let mainContainer = playlistRow || playlistWrap || queueContainer || stackPlaylist;
-    if (!mainContainer) return;
-
-    // Create or enhance the playlist bar
-    let controlsBar = plBar;
-    if (!controlsBar) {
-      controlsBar = document.createElement("div");
-      controlsBar.id = "btfw-plbar";
-      controlsBar.className = "btfw-plbar";
-    } else {
-      controlsBar.classList.add("btfw-plbar");
-    }
-
-    // Build a modern layout scaffold once
-    let layout = controlsBar.querySelector(".btfw-plbar__layout");
-    let primary; // search + playlist tools
-    let aside;   // playlist actions from rightcontrols
-    if (!layout) {
-      layout = document.createElement("div");
-      layout.className = "btfw-plbar__layout";
-
-      primary = document.createElement("div");
-      primary.className = "btfw-plbar__primary";
-
-      aside = document.createElement("div");
-      aside.className = "btfw-plbar__aside";
-
-      layout.append(primary, aside);
-
-      while (controlsBar.firstChild) {
-        primary.appendChild(controlsBar.firstChild);
-      }
-      controlsBar.appendChild(layout);
-
-      const searchBlock = primary.querySelector(".field.has-addons");
-      if (searchBlock) searchBlock.classList.add("btfw-plbar__search");
-
-      const countBadge = primary.querySelector("#btfw-pl-count");
-      if (countBadge) {
-        countBadge.classList.add("btfw-plbar__count");
-        aside.appendChild(countBadge);
-      }
-    } else {
-      primary = layout.querySelector(".btfw-plbar__primary") || layout;
-      aside = layout.querySelector(".btfw-plbar__aside") || layout;
-    }
-
-    // Drop legacy controls that conflict with the modern bar
-    controlsBar.querySelectorAll("#showmediaurl, #btfw-pl-poll").forEach(btn => btn.remove());
-
-    // Ensure we have an actions cluster for playlist controls
-    let actionsCluster = controlsBar.querySelector(".btfw-plbar__actions");
-    if (!actionsCluster) {
-      actionsCluster = document.createElement("div");
-      actionsCluster.className = "btfw-plbar__actions";
-      (aside || controlsBar).appendChild(actionsCluster);
-    }
-
-    let addMediaBtn = document.getElementById("btfw-addmedia-btn");
-
-    const styleActionButton = (btn) => {
-      if (!btn) return;
-      btn.classList.add("btfw-plbar__action-btn");
-      if (btn.tagName === "BUTTON" || btn.tagName === "A") {
-        btn.classList.add("button", "is-dark", "is-small");
-      } else if (btn.tagName === "INPUT") {
-        const type = (btn.type || "").toLowerCase();
-        if (type === "button" || type === "submit" || type === "reset") {
-          btn.classList.add("button", "is-dark", "is-small");
-        } else {
-          btn.classList.remove("button", "is-dark", "is-small");
-        }
-      }
-    };
-
-    if (controlsBar.parentElement !== mainContainer) {
-      mainContainer.insertBefore(controlsBar, mainContainer.firstChild);
-    }
-
-    const addMedia = ensureAddMediaUI(mainContainer, controlsBar, actionsCluster);
-    if (addMedia) {
-      if (!addMediaBtn || !document.body.contains(addMediaBtn)) {
-        addMediaBtn = document.createElement("button");
-        addMediaBtn.id = "btfw-addmedia-btn";
-        addMediaBtn.type = "button";
-        addMediaBtn.className = "button is-small";
-        addMediaBtn.innerHTML = stackTpl.addMediaButtonHtml();
-        actionsCluster.prepend(addMediaBtn);
-      } else if (!actionsCluster.contains(addMediaBtn)) {
-        actionsCluster.prepend(addMediaBtn);
-      }
-    } else if (addMediaBtn) {
-      if (addMediaBtn.parentElement) addMediaBtn.parentElement.removeChild(addMediaBtn);
-      addMediaBtn = null;
-    }
-
-    const moveControls = (root) => {
-      if (!root) return;
-      const elements = Array.from(root.children || []);
-      elements.forEach(el => {
-        if (!el) return;
-        el.classList.add("btfw-plbar__control");
-        actionsCluster.appendChild(el);
-      });
-    };
-
-    // Move rightcontrols buttons into the enhanced bar
-    if (rightControls) {
-      moveControls(rightControls);
-      rightControls.remove();
-    }
-
-    // Move any remaining legacy controls into the bar
-    if (controlsRow) {
-      moveControls(controlsRow);
-      controlsRow.remove();
-    }
-
-    actionsCluster.querySelectorAll("button, a.btn, input[type=button], input[type=submit], input[type=reset], select").forEach(styleActionButton);
-
-    if (addMedia && addMediaBtn) {
-      addMediaBtn.classList.remove("is-dark");
-      addMediaBtn.classList.add("is-primary");
-      if (!addMediaBtn.dataset.iconified) {
-        addMediaBtn.innerHTML = stackTpl.addMediaButtonHtml();
-        addMediaBtn.dataset.iconified = "1";
-      }
-      addMediaBtn.setAttribute("aria-controls", "btfw-addmedia-panel");
-
-      const syncState = (open) => {
-        addMediaBtn.setAttribute("aria-expanded", open ? "true" : "false");
-      };
-
-      if (!addMediaBtn.dataset.btfwBound) {
-        addMediaBtn.dataset.btfwBound = "1";
-        addMediaBtn.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          const panel = document.getElementById("btfw-addmedia-panel");
-          const toggleFn = panel && panel._btfwToggle;
-          const open = typeof toggleFn === "function" ? toggleFn() : false;
-          syncState(open);
-        });
-      }
-
-      const panel = addMedia.panel || document.getElementById("btfw-addmedia-panel");
-      if (panel) {
-        syncState(panel.dataset.open === "true");
-        if (!panel._btfwButtonSync) {
-          panel.addEventListener("btfw:addmedia:state", (ev) => {
-            syncState(!!(ev.detail && ev.detail.open));
-          });
-          panel._btfwButtonSync = true;
-        }
-      }
-    }
-
-    // Move any floating controls rows into the playlist container
-    controlsRows.forEach(row => {
-      if (row && !mainContainer.contains(row)) {
-        row.style.cssText += `
-          margin-top: 8px;
-          position: relative !important;
-          bottom: auto !important;
-          left: auto !important;
-          right: auto !important;
-          width: auto !important;
-        `;
-        row.remove();
-        mainContainer.appendChild(row);
-        console.log('[stack] Moved floating controls row into playlist container');
-      }
-    });
-
-    // Hide the legacy controls row if it no longer contains useful content
-    // Ensure the bar is at the top of the playlist container
-    if (!mainContainer.contains(controlsBar)) {
-      mainContainer.insertBefore(controlsBar, mainContainer.firstChild);
-    }
-    controlsBar.dataset.btfwMerged = "1";
-  }
   
   function createGroupItem(group, elements) {
     // Special handling for MOTD group
     if (group.id === "motd-group") {
-      normalizeMotdStructure();
+      motd.normalizeMotdStructure();
       elements = [document.getElementById("motdwrap")].filter(Boolean);
     }
     
     // Special handling for playlist group
     if (group.id === "playlist-group") {
-      detachPollWrapFromPlaylist();
-      mergePlaylistControls();
+      poll.detachPollWrapFromPlaylist();
+      playlist.mergePlaylistControls();
       // Re-get elements after merging; never absorb poll UI into playlist
       elements = elements
         .filter((el) => el && el.id !== "rightcontrols" && el.id !== "pollwrap")
@@ -580,8 +148,8 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     }
 
     if (group.id === "poll-group") {
-      detachPollWrapFromPlaylist();
-      movePollButton();
+      poll.detachPollWrapFromPlaylist();
+      poll.movePollButton();
       const pollWrap = document.getElementById("pollwrap");
       elements = [pollWrap, document.getElementById("btfw-poll-history")]
         .filter(Boolean);
@@ -642,35 +210,13 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     
     return wrapper;
   }
-  
-  function isInlineStackEmpty(){
-    const items = document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']");
-    if (!items.length) return true;
-    return Array.from(items).every((el) => el.dataset.docked === "true");
-  }
-
-  function preparePanelForDrawer(item){
-    if (!item) return;
-    item.classList.add("btfw-stack-item--in-drawer");
-    item.dataset.btfwInDrawer = "true";
-
-    const bind = item.dataset.bind;
-    if (bind === "poll-group") {
-      const pollWrap = item.querySelector("#pollwrap");
-      if (pollWrap && hasPollContent()) {
-        pollWrap.classList.remove("btfw-poll-idle");
-        pollWrap.removeAttribute("hidden");
-        pollWrap.setAttribute("aria-hidden", "false");
-      }
-    }
-  }
 
   function clearPanelDrawerMode(item){
     if (!item) return;
     item.classList.remove("btfw-stack-item--in-drawer");
     delete item.dataset.btfwInDrawer;
     item.classList.toggle("is-open", item.dataset.open !== "false");
-    syncPollWrapVisibility();
+    poll.syncPollWrapVisibility();
   }
 
   function restorePanelToStack(item){
@@ -747,66 +293,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     return btn;
   }
 
-  function getQueueEntryUid(entry){
-    if (!entry) return null;
-    const pluid = Array.from(entry.classList).find((cls) => cls.startsWith("pluid-"));
-    if (pluid) return pluid.slice("pluid-".length);
-    const jq = window.jQuery || window.$;
-    if (jq) {
-      const uid = jq(entry).data("uid");
-      if (uid != null && uid !== "") return uid;
-    }
-    return entry.dataset.uid || null;
-  }
-
-  function playQueueEntry(uid){
-    if (uid == null || uid === "") return false;
-    const sock = window.socket;
-    if (sock && typeof sock.emit === "function") {
-      sock.emit("jumpTo", uid);
-      return true;
-    }
-    const entry = document.querySelector(`#queue > .queue_entry.pluid-${uid}`);
-    const nativePlay = entry?.querySelector(".qbtn-play");
-    if (nativePlay) {
-      nativePlay.click();
-      return true;
-    }
-    return false;
-  }
-
-  function queueMediaLink(url){
-    const trimmed = (url || "").trim();
-    if (!trimmed) return false;
-
-    const mediaurl = document.getElementById("mediaurl");
-    const queueNext = document.getElementById("queue_next");
-    if (mediaurl && queueNext) {
-      mediaurl.value = trimmed;
-      if (!queueNext.disabled) {
-        queueNext.click();
-        return true;
-      }
-    }
-
-    if (typeof window.queue === "function" && mediaurl) {
-      mediaurl.value = trimmed;
-      window.queue("next", "url");
-      return true;
-    }
-
-    const sock = window.socket;
-    if (sock && typeof parseMediaLink === "function") {
-      try {
-        const data = parseMediaLink(trimmed);
-        if (data?.id != null && data?.type) {
-          sock.emit("queue", { id: data.id, type: data.type, pos: "next", temp: false });
-          return true;
-        }
-      } catch (_) {}
-    }
-    return false;
-  }
 
   function undockPanelFromMenu(groupId){
     ensureStack();
@@ -823,7 +309,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
       delete el.dataset.btfwFlyoutLocked;
     });
     document.documentElement.classList.remove("btfw-panels-flyout-open");
-    disconnectQueuePreviewObserver();
+    playlist.disconnectQueuePreviewObserver();
 
     setPanelDocked(wrapper, false);
     requestAnimationFrame(() => {
@@ -849,7 +335,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
       if (playBtn) {
         ev.preventDefault();
         ev.stopPropagation();
-        playQueueEntry(playBtn.dataset.queueUid);
+        playlist.playQueueEntry(playBtn.dataset.queueUid);
         return;
       }
 
@@ -873,94 +359,16 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
       ev.stopPropagation();
       const input = form.querySelector(".btfw-panel-playlist__link-input");
       const url = input?.value?.trim();
-      if (!url || !queueMediaLink(url)) return;
+      if (!url || !playlist.queueMediaLink(url)) return;
       input.value = "";
       form.hidden = true;
       form.closest(".btfw-panel-container")?.querySelector(".btfw-panel-playlist__add")
         ?.setAttribute("aria-expanded", "false");
       const host = form.closest(".btfw-panel-container")?.querySelector(".btfw-panel-playlist__queue");
-      if (host) renderPlaylistQueuePreview(host);
+      if (host) playlist.renderPlaylistQueuePreview(host);
     });
   }
 
-  function disconnectQueuePreviewObserver(){
-    if (queuePreviewObserver) {
-      try { queuePreviewObserver.disconnect(); } catch (_) {}
-      queuePreviewObserver = null;
-    }
-    queuePreviewHost = null;
-  }
-
-  function ensureQueuePreviewObserver(hostEl){
-    if (!hostEl || queuePreviewHost === hostEl) return;
-    disconnectQueuePreviewObserver();
-    const queue = document.getElementById("queue");
-    if (!queue) return;
-    queuePreviewHost = hostEl;
-    queuePreviewObserver = new MutationObserver(() => {
-      if (hostEl.isConnected && activeFlyoutGroup === "playlist-group") {
-        renderPlaylistQueuePreview(hostEl);
-      }
-    });
-    queuePreviewObserver.observe(queue, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
-  }
-
-  function getUpcomingQueueEntries(limit = 5){
-    const queue = document.getElementById("queue");
-    if (!queue) return [];
-    const entries = Array.from(queue.querySelectorAll(":scope > .queue_entry"));
-    const activeIdx = entries.findIndex((el) =>
-      el.classList.contains("queue_active") || el.classList.contains("playing")
-    );
-    const start = activeIdx >= 0 ? activeIdx + 1 : 0;
-    return entries.slice(start, start + limit);
-  }
-
-  function renderPlaylistQueuePreview(hostEl){
-    if (!hostEl) return;
-    const entries = getUpcomingQueueEntries(5);
-    hostEl.replaceChildren();
-    if (!entries.length) {
-      const empty = document.createElement("p");
-      empty.className = "btfw-panel-playlist__empty";
-      empty.textContent = "No upcoming videos";
-      hostEl.appendChild(empty);
-      return;
-    }
-
-    entries.forEach((entry) => {
-      const item = document.createElement("div");
-      item.className = "btfw-panel-playlist__item";
-
-      const title = document.createElement("span");
-      title.className = "btfw-panel-playlist__title";
-      title.textContent = (entry.querySelector(".qe_title")?.textContent || "Untitled").trim();
-
-      const meta = document.createElement("span");
-      meta.className = "btfw-panel-playlist__meta";
-      meta.textContent = (entry.querySelector(".qe_time")?.textContent || "").trim();
-
-      const actions = document.createElement("div");
-      actions.className = "btfw-panel-playlist__actions";
-
-      const uid = getQueueEntryUid(entry);
-      if (uid != null && uid !== "") {
-        const play = document.createElement("button");
-        play.type = "button";
-        play.className = "btfw-panel-playlist__play";
-        play.textContent = "Play";
-        play.dataset.queueUid = String(uid);
-        const nativePlay = entry?.querySelector(".qbtn-play");
-        if (!nativePlay && !(window.socket && typeof window.socket.emit === "function")) {
-          play.disabled = true;
-        }
-        actions.appendChild(play);
-      }
-
-      item.append(title, meta, actions);
-      hostEl.appendChild(item);
-    });
-  }
 
   function createPanelUndockButton(groupId, meta){
     const undock = document.createElement("button");
@@ -1029,7 +437,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     document.querySelectorAll(".btfw-panel-container__host .btfw-stack-item").forEach((item) => {
       restorePanelToStack(item);
     });
-    disconnectQueuePreviewObserver();
+    playlist.disconnectQueuePreviewObserver();
     activeFlyoutGroup = null;
     document.documentElement.classList.remove("btfw-panels-flyout-open");
   }
@@ -1068,7 +476,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
       btn.classList.remove("is-active");
       if (activeFlyoutGroup === groupId) {
         activeFlyoutGroup = null;
-        disconnectQueuePreviewObserver();
+        playlist.disconnectQueuePreviewObserver();
       }
       if (!document.querySelector(".btfw-panel-btn.is-active")) {
         document.documentElement.classList.remove("btfw-panels-flyout-open");
@@ -1095,8 +503,8 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     if (groupId === "playlist-group") {
       const host = btnEl.querySelector(".btfw-panel-playlist__queue");
       if (host) {
-        renderPlaylistQueuePreview(host);
-        ensureQueuePreviewObserver(host);
+        playlist.renderPlaylistQueuePreview(host);
+        playlist.ensureQueuePreviewObserver(host);
       }
     }
   }
@@ -1127,7 +535,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
       btn.classList.remove("is-active");
       if (activeFlyoutGroup === groupId) {
         activeFlyoutGroup = null;
-        disconnectQueuePreviewObserver();
+        playlist.disconnectQueuePreviewObserver();
       }
       if (!document.querySelector(".btfw-panel-btn.is-active")) {
         document.documentElement.classList.remove("btfw-panels-flyout-open");
@@ -1313,22 +721,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     arrows.insertBefore(dockBtn, arrows.firstChild);
   }
 
-  function getStoredPlaylistVisibility(){
-    return getStoredVisibility(PLAYLIST_VISIBILITY_KEY);
-  }
-
-  function storePlaylistVisibility(isOpen){
-    storeVisibility(PLAYLIST_VISIBILITY_KEY, isOpen);
-  }
-
-  function getStoredPollVisibility(){
-    return getStoredVisibility(POLL_VISIBILITY_KEY);
-  }
-
-  function storePollVisibility(isOpen){
-    storeVisibility(POLL_VISIBILITY_KEY, isOpen);
-  }
-
   function attachStackVisibilityToggle(wrapper, options = {}) {
     const {
       storageKey,
@@ -1411,234 +803,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     attachPanelDockButton(wrapper, wrapper.dataset.bind);
   }
 
-  function detachPollWrapFromPlaylist() {
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return null;
-
-    const insidePlaylist = pollWrap.closest(
-      "#playlistrow, #playlistwrap, #queuecontainer, [data-bind=\"playlist-group\"]"
-    );
-    if (!insidePlaylist) return pollWrap;
-
-    let parking = document.getElementById("btfw-poll-parking");
-    if (!parking) {
-      parking = document.createElement("div");
-      parking.id = "btfw-poll-parking";
-      parking.hidden = true;
-      parking.setAttribute("aria-hidden", "true");
-      document.body.appendChild(parking);
-    }
-    parking.appendChild(pollWrap);
-    return pollWrap;
-  }
-
-  function ensureMotdStackPanel(refs) {
-    normalizeMotdStructure();
-
-    const motdwrap = document.getElementById("motdwrap");
-    if (!motdwrap) return;
-
-    const list = refs && refs.list;
-    if (!list) return;
-
-    let motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
-    if (!motdGroup) {
-      const group = GROUPS.find((g) => g.id === "motd-group");
-      if (!group) return;
-      motdGroup = createGroupItem(group, [motdwrap]);
-      if (motdGroup) {
-        list.appendChild(motdGroup);
-        save(list);
-      }
-    } else {
-      const body = motdGroup.querySelector(".btfw-group-body");
-      if (body && !body.contains(motdwrap)) {
-        body.appendChild(motdwrap);
-      }
-    }
-
-    syncMotdWrapVisibility(motdGroup);
-  }
-
-  function syncMotdWrapVisibility(motdGroup) {
-    const motdwrap = document.getElementById("motdwrap");
-    if (!motdwrap) return;
-
-    const hasContent = hasMotdContent();
-    motdwrap.classList.toggle("btfw-motd-empty", !hasContent);
-    motdwrap.toggleAttribute("hidden", !hasContent);
-    motdwrap.setAttribute("aria-hidden", hasContent ? "false" : "true");
-
-    if (hasContent) {
-      motdwrap.style.removeProperty("display");
-      const motd = resolveMotdHost();
-      if (motd) motd.style.removeProperty("display");
-    }
-
-    if (!motdGroup) {
-      motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
-    }
-    if (motdGroup && hasContent) {
-      const stored = getStoredVisibility(MOTD_VISIBILITY_KEY);
-      const shouldOpen = getDefaultPollOpen(stored, true);
-      if (motdGroup._btfwSetOpenState) {
-        motdGroup._btfwSetOpenState(shouldOpen, { persist: false });
-      } else {
-        motdGroup.dataset.open = shouldOpen ? "true" : "false";
-        motdGroup.classList.toggle("is-open", shouldOpen);
-      }
-    }
-  }
-
-  function scheduleMotdSync(refs) {
-    if (motdSyncTimer) clearTimeout(motdSyncTimer);
-    motdSyncTimer = setTimeout(() => {
-      motdSyncTimer = null;
-      ensureMotdStackPanel(refs);
-    }, 50);
-  }
-
-  function wireMotdObservers(refs) {
-    const motd = resolveMotdHost();
-    if (!motd) return;
-
-    if (!motdObserverWired) {
-      motdObserverWired = true;
-      const observer = new MutationObserver(() => {
-        scheduleMotdSync(refs);
-      });
-      observer.observe(motd, { childList: true, subtree: true, characterData: true });
-    }
-  }
-
-  function wireMotdSocket(refs) {
-    if (motdSocketWired || !window.socket || !window.socket.on) return;
-    motdSocketWired = true;
-    // CyTube's callbacks.js `setMotd` does `$("#motd").html(motd)` with the raw
-    // server payload. Theme socket handlers typically register after CyTube's, so
-    // by the time this runs live `#motd` already holds unsanitized HTML. Re-sanitize
-    // the painted markup so viewers are not left with the raw XSS payload.
-    window.socket.on("setMotd", (payload) => {
-      const html =
-        typeof payload === "string"
-          ? payload
-          : payload && typeof payload.motd === "string"
-            ? payload.motd
-            : null;
-      const motd = resolveMotdHost();
-      if (motd) {
-        const source = html !== null ? html : motd.innerHTML;
-        const cleaned = sanitizeHtml(source);
-        if (motd.innerHTML !== cleaned) motd.innerHTML = cleaned;
-      }
-      scheduleMotdSync(refs);
-    });
-  }
-
-  function applyMotdUpdate(html) {
-    const refs = ensureStack();
-    const motdwrap = document.getElementById("motdwrap");
-    if (motdwrap) delete motdwrap.dataset.btfwMotdNormalized;
-    const resolved = normalizeMotdStructure(true);
-    const motd = resolved?.motd || resolveMotdHost();
-    if (motd && typeof html === "string") {
-      motd.innerHTML = sanitizeHtml(html);
-    }
-    const csMotd = document.getElementById("cs-motdtext");
-    if (csMotd && typeof html === "string") csMotd.value = html;
-    if (refs) scheduleMotdSync(refs);
-  }
-
-  function ensurePollStackPanel(refs) {
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return;
-
-    const overlayState = pollWrap.dataset && pollWrap.dataset.btfwPollOverlay;
-    const attrState = pollWrap.getAttribute && pollWrap.getAttribute("data-btfw-poll-overlay");
-    if (overlayState === "video" || attrState === "video") return;
-
-    detachPollWrapFromPlaylist();
-    movePollButton();
-
-    const list = refs && refs.list;
-    if (!list) return;
-
-    let pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
-    if (!pollGroup) {
-      const group = GROUPS.find((g) => g.id === "poll-group");
-      if (!group) return;
-      pollGroup = createGroupItem(group, [pollWrap]);
-      if (pollGroup) {
-        list.appendChild(pollGroup);
-        save(list);
-      }
-      return;
-    }
-
-    const body = pollGroup.querySelector(".btfw-group-body");
-    if (body && !body.contains(pollWrap)) {
-      body.appendChild(pollWrap);
-    }
-
-    const playlistGroup = document.querySelector('.btfw-stack-item[data-bind="playlist-group"]');
-    if (playlistGroup && playlistGroup.contains(pollWrap) && body) {
-      body.appendChild(pollWrap);
-    }
-  }
-
-  function syncPollPanelVisibility(refs, options = {}) {
-    ensurePollStackPanel(refs);
-    syncPollWrapVisibility();
-
-    const group = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
-    if (!group) return;
-
-    group.hidden = false;
-    group.removeAttribute("hidden");
-
-    if (options.forceOpen && group._btfwSetOpenState) {
-      group._btfwSetOpenState(true, { persist: false });
-    } else if (options.forceOpen) {
-      group.dataset.open = "true";
-      group.classList.add("is-open");
-    }
-  }
-
-  function schedulePollSync(refs, options = {}) {
-    if (pollSyncTimer) clearTimeout(pollSyncTimer);
-    pollSyncTimer = setTimeout(() => {
-      pollSyncTimer = null;
-      syncPollPanelVisibility(refs, options);
-    }, 50);
-  }
-
-  function wirePollObservers(refs) {
-    if (pollObserverWired) return;
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return;
-    pollObserverWired = true;
-
-    const observer = new MutationObserver(() => {
-      schedulePollSync(refs, { forceOpen: hasPollContent() });
-    });
-    observer.observe(pollWrap, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
-
-    const newPollBtn = document.getElementById("newpollbtn");
-    if (newPollBtn && !newPollBtn.dataset.btfwPollSync) {
-      newPollBtn.dataset.btfwPollSync = "1";
-      newPollBtn.addEventListener("click", () => {
-        schedulePollSync(refs, { forceOpen: true });
-      });
-    }
-  }
-
-  function wirePollSocket(refs) {
-    if (pollSocketWired || !window.socket || !window.socket.on) return;
-    pollSocketWired = true;
-    window.socket.on("newPoll", () => schedulePollSync(refs, { forceOpen: true }));
-    window.socket.on("closePoll", () => schedulePollSync(refs));
-  }
-  
   function isModalScopedFooter(el){
     return !!el.closest('.modal, [role="dialog"]');
   }
@@ -1692,22 +856,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     if (btn.innerHTML !== html) btn.innerHTML = html;
   }
 
-  function syncPollWrapVisibility() {
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return;
-    const inDrawer = !!pollWrap.closest(".btfw-panel-container__host");
-    const idle = !hasPollContent();
-    if (inDrawer && !idle) {
-      pollWrap.classList.remove("btfw-poll-idle");
-      pollWrap.removeAttribute("hidden");
-      pollWrap.setAttribute("aria-hidden", "false");
-      return;
-    }
-    pollWrap.classList.toggle("btfw-poll-idle", idle);
-    pollWrap.toggleAttribute("hidden", idle);
-    pollWrap.setAttribute("aria-hidden", idle ? "true" : "false");
-  }
-
   function relocateStackHeaderActions() {
     const pollSlot = ensureStackHeaderActionsSlot("poll-group");
     const pollBtn = document.getElementById("newpollbtn");
@@ -1728,34 +876,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     }
   }
 
-  function movePollButton() {
-    // Move poll button from leftcontrols to pollwrap
-    const leftControls = document.getElementById("leftcontrols");
-    const pollWrap = document.getElementById("pollwrap");
-    
-    if (leftControls && pollWrap) {
-      // Find poll-related buttons
-      const pollButtons = leftControls.querySelectorAll('button[onclick*="poll"], button[title*="poll"], .poll-btn, #newpollbtn');
-      
-      pollButtons.forEach(btn => {
-        // Create a container if pollwrap doesn't have one
-        let btnContainer = pollWrap.querySelector('.poll-controls');
-        if (!btnContainer) {
-          btnContainer = document.createElement('div');
-          btnContainer.className = 'poll-controls';
-          pollWrap.insertBefore(btnContainer, pollWrap.firstChild);
-        }
-        
-        if (btn.parentElement !== btnContainer) btnContainer.appendChild(btn);
-      });
-      
-      // Remove leftcontrols if it's empty
-      if (leftControls.children.length === 0) {
-        leftControls.remove();
-      }
-    }
-  }
-  
   function stackGroupsSatisfied(list) {
     return GROUPS.every((group) => {
       const hasDom = group.selectors.some((sel) => {
@@ -1782,17 +902,17 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     const footer = refs.footer;
 
     if (stackGroupsSatisfied(list) && list.children.length > 0) {
-      ensureMotdStackPanel(refs);
-      ensurePollStackPanel(refs);
-      syncPollWrapVisibility();
+      motd.ensureMotdStackPanel(refs);
+      poll.ensurePollStackPanel(refs);
+      poll.syncPollWrapVisibility();
       relocateStackHeaderActions();
       attachFooter(footer);
       return;
     }
     
     // Move poll button first, then decouple poll from playlist DOM
-    movePollButton();
-    detachPollWrapFromPlaylist();
+    poll.movePollButton();
+    poll.detachPollWrapFromPlaylist();
     
     // Group elements
     const groupedElements = new Map();
@@ -1865,9 +985,9 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     });
     
     save(list);
-    ensureMotdStackPanel(refs);
-    ensurePollStackPanel(refs);
-    syncPollWrapVisibility();
+    motd.ensureMotdStackPanel(refs);
+    poll.ensurePollStackPanel(refs);
+    poll.syncPollWrapVisibility();
     relocateStackHeaderActions();
     attachFooter(footer);
     } finally {
@@ -1879,10 +999,10 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   const refs=ensureStack();
   if(!refs) return;
   populate(refs);
-  wireMotdObservers(refs);
-  wireMotdSocket(refs);
-  wirePollObservers(refs);
-  wirePollSocket(refs);
+  motd.wireMotdObservers(refs);
+  motd.wireMotdSocket(refs);
+  poll.wirePollObservers(refs);
+  poll.wirePollSocket(refs);
   if (bootWired) return;
   bootWired = true;
     const observer=new MutationObserver(() => {
@@ -1926,7 +1046,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     ensurePanelsMenuShell();
     ensurePanelsMenuButton();
     syncPanelBar();
-    syncPollPanelVisibility(refs);
+    poll.syncPollPanelVisibility(refs);
     dispatchStackVisibility();
   }, 1000);
   let n=0;
@@ -1954,14 +1074,14 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   document.addEventListener("btfw:motd:updated", (event) => {
     const html = event?.detail?.html;
     if (typeof html !== "string") return;
-    applyMotdUpdate(html);
+    motd.applyMotdUpdate(html);
   });
 
   return {
     name: "feature:stack",
     hasMotdContent,
-    resolveMotdHost,
-    normalizeMotdStructure,
-    applyMotdUpdate,
+    resolveMotdHost: motd.resolveMotdHost,
+    normalizeMotdStructure: motd.normalizeMotdStructure,
+    applyMotdUpdate: motd.applyMotdUpdate,
   };
 });

@@ -25,6 +25,9 @@
     "src/lib/can-load-admin-bundle.ts",
     "src/lib/apply-chat-typography.ts",
     "src/lib/defer-feature-open.ts",
+    "src/btfw-globals.d.ts",
+    "src/lib/stack-core.ts",
+    "src/modules/stack/stack-poll.ts",
     "src/lib/btfw-constants.js"
   ],
   "exclude": ["dist", "node_modules", "src/workers"]
