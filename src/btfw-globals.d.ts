@@ -30,7 +30,16 @@ interface CytubeClientLike {
 
 interface CytubeSocketLike {
   on(event: string, handler: (...args: unknown[]) => void): unknown;
+  emit?(event: string, ...args: unknown[]): unknown;
 }
+
+/** Minimal jQuery facade used by stack code (data lookups only). */
+interface JQueryLike {
+  (element: Element): { data(key: string): unknown };
+}
+
+/** CyTube media link parser (global from CyTube's util.js). */
+declare function parseMediaLink(url: string): { id: unknown; type: string } | null;
 
 interface Window {
   BTFW: BtfwRegistryApi;
@@ -39,4 +48,7 @@ interface Window {
   RANK?: Record<string, number>;
   Ranks?: Record<string, number>;
   socket?: CytubeSocketLike;
+  jQuery?: JQueryLike;
+  $?: JQueryLike;
+  queue?: (pos: string, type: string) => unknown;
 }
