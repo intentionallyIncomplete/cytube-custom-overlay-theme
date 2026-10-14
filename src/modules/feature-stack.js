@@ -1,6 +1,7 @@
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
 import { createStackMotd } from "./stack/stack-motd.js";
 import { createStackPlaylist } from "./stack/stack-playlist.js"; // resolves to stack-playlist.ts
+import { createStackPoll } from "./stack/stack-poll.js"; // resolves to stack-poll.ts
 import {
   MOTD_VISIBILITY_KEY,
   PLAYLIST_VISIBILITY_KEY,
@@ -58,9 +59,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     }
   };
 
-  let pollSyncTimer = null;
-  let pollObserverWired = false;
-  let pollSocketWired = false;
   let populateActive = false;
   let populateTimer = null;
   let bootWired = false;
@@ -80,6 +78,13 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   const playlist = createStackPlaylist({
     tpl: stackTpl,
     getActiveFlyoutGroup: () => activeFlyoutGroup
+  });
+
+  // Poll sub-domain (#228 Phase 2): pollwrap decoupling from the playlist DOM,
+  // poll button relocation, panel adoption, visibility sync, observers, and
+  // the newPoll/closePoll socket handlers now live in ./stack/stack-poll.ts.
+  const poll = createStackPoll({
+    createGroupItem
   });
   
   // Define what should be grouped together
@@ -134,7 +139,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     
     // Special handling for playlist group
     if (group.id === "playlist-group") {
-      detachPollWrapFromPlaylist();
+      poll.detachPollWrapFromPlaylist();
       playlist.mergePlaylistControls();
       // Re-get elements after merging; never absorb poll UI into playlist
       elements = elements
@@ -143,8 +148,8 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     }
 
     if (group.id === "poll-group") {
-      detachPollWrapFromPlaylist();
-      movePollButton();
+      poll.detachPollWrapFromPlaylist();
+      poll.movePollButton();
       const pollWrap = document.getElementById("pollwrap");
       elements = [pollWrap, document.getElementById("btfw-poll-history")]
         .filter(Boolean);
@@ -205,35 +210,13 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     
     return wrapper;
   }
-  
-  function isInlineStackEmpty(){
-    const items = document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']");
-    if (!items.length) return true;
-    return Array.from(items).every((el) => el.dataset.docked === "true");
-  }
-
-  function preparePanelForDrawer(item){
-    if (!item) return;
-    item.classList.add("btfw-stack-item--in-drawer");
-    item.dataset.btfwInDrawer = "true";
-
-    const bind = item.dataset.bind;
-    if (bind === "poll-group") {
-      const pollWrap = item.querySelector("#pollwrap");
-      if (pollWrap && hasPollContent()) {
-        pollWrap.classList.remove("btfw-poll-idle");
-        pollWrap.removeAttribute("hidden");
-        pollWrap.setAttribute("aria-hidden", "false");
-      }
-    }
-  }
 
   function clearPanelDrawerMode(item){
     if (!item) return;
     item.classList.remove("btfw-stack-item--in-drawer");
     delete item.dataset.btfwInDrawer;
     item.classList.toggle("is-open", item.dataset.open !== "false");
-    syncPollWrapVisibility();
+    poll.syncPollWrapVisibility();
   }
 
   function restorePanelToStack(item){
@@ -738,22 +721,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     arrows.insertBefore(dockBtn, arrows.firstChild);
   }
 
-  function getStoredPlaylistVisibility(){
-    return getStoredVisibility(PLAYLIST_VISIBILITY_KEY);
-  }
-
-  function storePlaylistVisibility(isOpen){
-    storeVisibility(PLAYLIST_VISIBILITY_KEY, isOpen);
-  }
-
-  function getStoredPollVisibility(){
-    return getStoredVisibility(POLL_VISIBILITY_KEY);
-  }
-
-  function storePollVisibility(isOpen){
-    storeVisibility(POLL_VISIBILITY_KEY, isOpen);
-  }
-
   function attachStackVisibilityToggle(wrapper, options = {}) {
     const {
       storageKey,
@@ -836,117 +803,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     attachPanelDockButton(wrapper, wrapper.dataset.bind);
   }
 
-  function detachPollWrapFromPlaylist() {
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return null;
-
-    const insidePlaylist = pollWrap.closest(
-      "#playlistrow, #playlistwrap, #queuecontainer, [data-bind=\"playlist-group\"]"
-    );
-    if (!insidePlaylist) return pollWrap;
-
-    let parking = document.getElementById("btfw-poll-parking");
-    if (!parking) {
-      parking = document.createElement("div");
-      parking.id = "btfw-poll-parking";
-      parking.hidden = true;
-      parking.setAttribute("aria-hidden", "true");
-      document.body.appendChild(parking);
-    }
-    parking.appendChild(pollWrap);
-    return pollWrap;
-  }
-
-  function ensurePollStackPanel(refs) {
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return;
-
-    const overlayState = pollWrap.dataset && pollWrap.dataset.btfwPollOverlay;
-    const attrState = pollWrap.getAttribute && pollWrap.getAttribute("data-btfw-poll-overlay");
-    if (overlayState === "video" || attrState === "video") return;
-
-    detachPollWrapFromPlaylist();
-    movePollButton();
-
-    const list = refs && refs.list;
-    if (!list) return;
-
-    let pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
-    if (!pollGroup) {
-      const group = GROUPS.find((g) => g.id === "poll-group");
-      if (!group) return;
-      pollGroup = createGroupItem(group, [pollWrap]);
-      if (pollGroup) {
-        list.appendChild(pollGroup);
-        save(list);
-      }
-      return;
-    }
-
-    const body = pollGroup.querySelector(".btfw-group-body");
-    if (body && !body.contains(pollWrap)) {
-      body.appendChild(pollWrap);
-    }
-
-    const playlistGroup = document.querySelector('.btfw-stack-item[data-bind="playlist-group"]');
-    if (playlistGroup && playlistGroup.contains(pollWrap) && body) {
-      body.appendChild(pollWrap);
-    }
-  }
-
-  function syncPollPanelVisibility(refs, options = {}) {
-    ensurePollStackPanel(refs);
-    syncPollWrapVisibility();
-
-    const group = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
-    if (!group) return;
-
-    group.hidden = false;
-    group.removeAttribute("hidden");
-
-    if (options.forceOpen && group._btfwSetOpenState) {
-      group._btfwSetOpenState(true, { persist: false });
-    } else if (options.forceOpen) {
-      group.dataset.open = "true";
-      group.classList.add("is-open");
-    }
-  }
-
-  function schedulePollSync(refs, options = {}) {
-    if (pollSyncTimer) clearTimeout(pollSyncTimer);
-    pollSyncTimer = setTimeout(() => {
-      pollSyncTimer = null;
-      syncPollPanelVisibility(refs, options);
-    }, 50);
-  }
-
-  function wirePollObservers(refs) {
-    if (pollObserverWired) return;
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return;
-    pollObserverWired = true;
-
-    const observer = new MutationObserver(() => {
-      schedulePollSync(refs, { forceOpen: hasPollContent() });
-    });
-    observer.observe(pollWrap, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
-
-    const newPollBtn = document.getElementById("newpollbtn");
-    if (newPollBtn && !newPollBtn.dataset.btfwPollSync) {
-      newPollBtn.dataset.btfwPollSync = "1";
-      newPollBtn.addEventListener("click", () => {
-        schedulePollSync(refs, { forceOpen: true });
-      });
-    }
-  }
-
-  function wirePollSocket(refs) {
-    if (pollSocketWired || !window.socket || !window.socket.on) return;
-    pollSocketWired = true;
-    window.socket.on("newPoll", () => schedulePollSync(refs, { forceOpen: true }));
-    window.socket.on("closePoll", () => schedulePollSync(refs));
-  }
-  
   function isModalScopedFooter(el){
     return !!el.closest('.modal, [role="dialog"]');
   }
@@ -1000,22 +856,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     if (btn.innerHTML !== html) btn.innerHTML = html;
   }
 
-  function syncPollWrapVisibility() {
-    const pollWrap = document.getElementById("pollwrap");
-    if (!pollWrap) return;
-    const inDrawer = !!pollWrap.closest(".btfw-panel-container__host");
-    const idle = !hasPollContent();
-    if (inDrawer && !idle) {
-      pollWrap.classList.remove("btfw-poll-idle");
-      pollWrap.removeAttribute("hidden");
-      pollWrap.setAttribute("aria-hidden", "false");
-      return;
-    }
-    pollWrap.classList.toggle("btfw-poll-idle", idle);
-    pollWrap.toggleAttribute("hidden", idle);
-    pollWrap.setAttribute("aria-hidden", idle ? "true" : "false");
-  }
-
   function relocateStackHeaderActions() {
     const pollSlot = ensureStackHeaderActionsSlot("poll-group");
     const pollBtn = document.getElementById("newpollbtn");
@@ -1036,34 +876,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     }
   }
 
-  function movePollButton() {
-    // Move poll button from leftcontrols to pollwrap
-    const leftControls = document.getElementById("leftcontrols");
-    const pollWrap = document.getElementById("pollwrap");
-    
-    if (leftControls && pollWrap) {
-      // Find poll-related buttons
-      const pollButtons = leftControls.querySelectorAll('button[onclick*="poll"], button[title*="poll"], .poll-btn, #newpollbtn');
-      
-      pollButtons.forEach(btn => {
-        // Create a container if pollwrap doesn't have one
-        let btnContainer = pollWrap.querySelector('.poll-controls');
-        if (!btnContainer) {
-          btnContainer = document.createElement('div');
-          btnContainer.className = 'poll-controls';
-          pollWrap.insertBefore(btnContainer, pollWrap.firstChild);
-        }
-        
-        if (btn.parentElement !== btnContainer) btnContainer.appendChild(btn);
-      });
-      
-      // Remove leftcontrols if it's empty
-      if (leftControls.children.length === 0) {
-        leftControls.remove();
-      }
-    }
-  }
-  
   function stackGroupsSatisfied(list) {
     return GROUPS.every((group) => {
       const hasDom = group.selectors.some((sel) => {
@@ -1091,16 +903,16 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
 
     if (stackGroupsSatisfied(list) && list.children.length > 0) {
       motd.ensureMotdStackPanel(refs);
-      ensurePollStackPanel(refs);
-      syncPollWrapVisibility();
+      poll.ensurePollStackPanel(refs);
+      poll.syncPollWrapVisibility();
       relocateStackHeaderActions();
       attachFooter(footer);
       return;
     }
     
     // Move poll button first, then decouple poll from playlist DOM
-    movePollButton();
-    detachPollWrapFromPlaylist();
+    poll.movePollButton();
+    poll.detachPollWrapFromPlaylist();
     
     // Group elements
     const groupedElements = new Map();
@@ -1174,8 +986,8 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     
     save(list);
     motd.ensureMotdStackPanel(refs);
-    ensurePollStackPanel(refs);
-    syncPollWrapVisibility();
+    poll.ensurePollStackPanel(refs);
+    poll.syncPollWrapVisibility();
     relocateStackHeaderActions();
     attachFooter(footer);
     } finally {
@@ -1189,8 +1001,8 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   populate(refs);
   motd.wireMotdObservers(refs);
   motd.wireMotdSocket(refs);
-  wirePollObservers(refs);
-  wirePollSocket(refs);
+  poll.wirePollObservers(refs);
+  poll.wirePollSocket(refs);
   if (bootWired) return;
   bootWired = true;
     const observer=new MutationObserver(() => {
@@ -1234,7 +1046,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     ensurePanelsMenuShell();
     ensurePanelsMenuButton();
     syncPanelBar();
-    syncPollPanelVisibility(refs);
+    poll.syncPollPanelVisibility(refs);
     dispatchStackVisibility();
   }, 1000);
   let n=0;
