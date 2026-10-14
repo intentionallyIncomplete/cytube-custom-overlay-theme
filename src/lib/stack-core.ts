@@ -7,36 +7,58 @@
  * (tests/e2e/smoke/stack-sync.spec.js).
  */
 
+export type StackGroupId = "motd-group" | "playlist-group" | "poll-group";
+
+export interface StackGroup {
+  id: StackGroupId;
+  title: string;
+  selectors: string[];
+  priority: number;
+}
+
+/** One serialized entry of the saved stack order. */
+export interface StackOrderEntry {
+  id?: string | undefined;
+  isGroup: boolean;
+}
+
+/** A stack group wrapper element with the open-state hook wired by the shell. */
+export interface StackPanelElement extends HTMLElement {
+  _btfwSetOpenState?: (open: boolean, opts?: { persist?: boolean }) => void;
+}
+
+export type GetDefaultOpen = (stored: boolean | null) => boolean;
+
 export const SKEY = "btfw-stack-order";
 export const MOTD_VISIBILITY_KEY = "btfw-stack-motd-open";
 export const PLAYLIST_VISIBILITY_KEY = "btfw-stack-playlist-open";
 export const POLL_VISIBILITY_KEY = "btfw-stack-poll-open";
 
-export const DOCKED_KEYS = {
+export const DOCKED_KEYS: Record<StackGroupId, string> = {
   "motd-group": "btfw-stack-motd-docked",
   "playlist-group": "btfw-stack-playlist-docked",
   "poll-group": "btfw-stack-poll-docked"
 };
 
-export const GROUP_LABELS = {
+export const GROUP_LABELS: Record<StackGroupId, { short: string; title: string }> = {
   "motd-group": { short: "MOTD", title: "Message of the Day" },
   "playlist-group": { short: "PL", title: "Playlist" },
   "poll-group": { short: "Poll", title: "Polls & Voting" }
 };
 
-export const PANEL_BAR_LABELS = {
+export const PANEL_BAR_LABELS: Record<StackGroupId, string> = {
   "motd-group": "MD",
   "playlist-group": "PL",
   "poll-group": "PV"
 };
 
-export const PANEL_GROUP_ORDER = {
+export const PANEL_GROUP_ORDER: Record<StackGroupId, number> = {
   "motd-group": 1,
   "poll-group": 2,
   "playlist-group": 3
 };
 
-export const GROUPS = [
+export const GROUPS: StackGroup[] = [
   {
     id: "motd-group",
     title: "Message of the Day",
@@ -58,43 +80,47 @@ export const GROUPS = [
 ];
 
 // Skip these - they're either empty or handled elsewhere
-export const SKIP_SELECTORS = ["#main", "#mainpage", "#mainpane"];
+export const SKIP_SELECTORS: string[] = ["#main", "#mainpage", "#mainpane"];
 
-export function saveStackOrder(list) {
+export function saveStackOrder(list: HTMLElement): void {
   try {
-    const items = Array.from(list.children).map(n => ({
+    const items: StackOrderEntry[] = (Array.from(list.children) as HTMLElement[]).map((n) => ({
       id: n.dataset.bind,
       isGroup: n.dataset.group === "true"
     }));
     localStorage.setItem(SKEY, JSON.stringify(items));
-  } catch (e) {}
+  } catch {
+    // storage unavailable (private mode / quota) — stack order simply not persisted
+  }
 }
 
-export function loadStackOrder() {
+export function loadStackOrder(): StackOrderEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(SKEY) || "[]");
-  } catch (e) {
+    return JSON.parse(localStorage.getItem(SKEY) || "[]") as StackOrderEntry[];
+  } catch {
     return [];
   }
 }
 
-export function getStoredVisibility(key) {
+export function getStoredVisibility(key: string): boolean | null {
   try {
     const stored = localStorage.getItem(key);
     if (stored === null) return null;
     return stored === "true";
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-export function storeVisibility(key, isOpen) {
+export function storeVisibility(key: string, isOpen: boolean): void {
   try {
     localStorage.setItem(key, isOpen ? "true" : "false");
-  } catch (e) {}
+  } catch {
+    // storage unavailable — visibility preference simply not persisted
+  }
 }
 
-export function getStoredDocked(key) {
+export function getStoredDocked(key: string): boolean {
   try {
     const docked = localStorage.getItem(key);
     if (docked !== null) return docked === "true";
@@ -102,24 +128,30 @@ export function getStoredDocked(key) {
     const hidden = localStorage.getItem(legacy);
     if (hidden !== null) return hidden === "true";
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
 
-export function storeDocked(key, isDocked) {
+export function storeDocked(key: string, isDocked: boolean): void {
   try {
     localStorage.setItem(key, isDocked ? "true" : "false");
-  } catch (e) {}
+  } catch {
+    // storage unavailable — docked preference simply not persisted
+  }
 }
 
-export function isPanelInDrawer(item) {
+export function isPanelInDrawer(item?: Element | null): boolean {
   return !!item?.closest(".btfw-panel-container__host");
 }
 
-export function applyStoredPanelOpenState(wrapper, storageKey, getDefaultOpen) {
+export function applyStoredPanelOpenState(
+  wrapper?: StackPanelElement | null,
+  storageKey?: string,
+  getDefaultOpen?: GetDefaultOpen
+): void {
   if (!wrapper || isPanelInDrawer(wrapper)) return;
-  const stored = getStoredVisibility(storageKey);
+  const stored = getStoredVisibility(storageKey ?? "");
   const shouldOpen = typeof getDefaultOpen === "function"
     ? getDefaultOpen(stored)
     : (stored !== null ? !!stored : true);
@@ -131,8 +163,10 @@ export function applyStoredPanelOpenState(wrapper, storageKey, getDefaultOpen) {
   }
 }
 
-export function dispatchStackVisibility() {
-  const items = Array.from(document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']"));
+export function dispatchStackVisibility(): void {
+  const items = Array.from(
+    document.querySelectorAll<HTMLElement>("#btfw-stack .btfw-stack-item[data-group='true']")
+  );
   const inlineItems = items.filter((el) => el.dataset.docked !== "true");
   const allDocked = items.length > 0 && inlineItems.length === 0;
   const stack = document.getElementById("btfw-stack");

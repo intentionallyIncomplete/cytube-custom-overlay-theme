@@ -19,7 +19,7 @@ import {
   isPanelInDrawer,
   applyStoredPanelOpenState,
   dispatchStackVisibility
-} from "../lib/stack-core.js";
+} from "../lib/stack-core.js"; // resolves to stack-core.ts (see scripts/build.js)
 
 BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
