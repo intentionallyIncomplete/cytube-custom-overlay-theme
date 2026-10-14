@@ -1,5 +1,5 @@
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
-import { sanitizeHtml } from "../lib/escape-html.js";
+import { createStackMotd } from "./stack/stack-motd.js";
 import {
   MOTD_VISIBILITY_KEY,
   PLAYLIST_VISIBILITY_KEY,
@@ -62,47 +62,19 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   let pollSyncTimer = null;
   let pollObserverWired = false;
   let pollSocketWired = false;
-  let motdSyncTimer = null;
-  let motdObserverWired = false;
-  let motdSocketWired = false;
   let populateActive = false;
   let populateTimer = null;
   let bootWired = false;
 
-  // Regex-based tag strip, deliberately not `probe.innerHTML = raw` + read `.textContent`.
-  // MOTD content is admin-authored HTML, and setting innerHTML on a live-document element
-  // still triggers resource-loading event handlers like `<img src=x onerror=...>` even when
-  // that element is never attached to the visible DOM — "detached" is not the same as "inert".
-  // This is a same-behavior, environment-independent replacement (previously branched on
-  // `typeof document`); the entity handling here mirrors tests/unit/motd-stack.test.js.
-  function isMotdHtmlEmpty(html = "") {
-    const raw = String(html || "").trim();
-    if (!raw) return true;
-    const text = raw
-      .replace(/<br\s*\/?>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/\u00a0/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return !text;
-  }
-
-  function hasMotdContent(doc = document) {
-    if (!doc || typeof doc.querySelector !== "function") return false;
-    const motd = resolveMotdHost(doc);
-    if (!motd) return false;
-    return !isMotdHtmlEmpty(motd.innerHTML || "");
-  }
-
-  function resolveMotdHost(doc = document) {
-    if (!doc || typeof doc.getElementById !== "function") return null;
-    const motdwrap = doc.getElementById("motdwrap");
-    if (!motdwrap) return doc.getElementById("motd");
-    const direct = motdwrap.querySelector(":scope > #motd");
-    if (direct) return direct;
-    return motdwrap.querySelector("#motd") || doc.getElementById("motd");
-  }
+  // MOTD sub-domain (#228 Phase 2): structure normalization, content detection,
+  // panel adoption, visibility sync, observers, and the setMotd socket handler
+  // now live in ./stack/stack-motd.ts. Function declarations below are hoisted,
+  // so referencing createGroupItem/ensureStack here is safe.
+  const motd = createStackMotd({
+    createGroupItem,
+    ensureStackRefs: () => ensureStack()
+  });
+  const hasMotdContent = motd.hasMotdContent;
   
   // Define what should be grouped together
   const ADD_MEDIA_SECTIONS = [
@@ -297,75 +269,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   // function titleOf(el){ 
   //   return el.getAttribute("data-title")||el.getAttribute("title")||el.id; 
   // }
-  
-  function normalizeMotdStructure(force = false) {
-    const motdwrap = document.getElementById("motdwrap");
-    if (!motdwrap) return null;
-    if (!force && motdwrap.dataset.btfwMotdNormalized === "1") {
-      const motd = motdwrap.querySelector(":scope > #motd");
-      return motd ? { motdwrap, motd } : null;
-    }
-
-    const toggle = document.getElementById("togglemotd");
-    if (toggle && toggle.closest("#motd")) {
-      motdwrap.insertBefore(toggle, motdwrap.firstChild);
-    }
-
-    const extraParts = [];
-    motdwrap.querySelectorAll(".btfw-motd-editrow").forEach((row) => {
-      const text = (row.textContent || "").trim();
-      if (text) extraParts.push(`<p>${text}</p>`);
-      row.remove();
-    });
-
-    motdwrap.querySelectorAll(".col-lg-12, .col-md-12, .clear").forEach((el) => {
-      if (el.contains(motdwrap) || el === motdwrap) return;
-      if (el.querySelector("#motd") || el.classList.contains("btfw-motd-editrow")) {
-        el.querySelectorAll("#motd").forEach((inner) => {
-          if ((inner.innerHTML || "").trim()) extraParts.push(inner.innerHTML);
-        });
-      }
-      el.remove();
-    });
-
-    let motd = motdwrap.querySelector(":scope > #motd");
-    if (!motd) {
-      motd = document.createElement("div");
-      motd.id = "motd";
-      motdwrap.appendChild(motd);
-    }
-
-    motdwrap.querySelectorAll("#motd").forEach((node) => {
-      if (node === motd) return;
-      if ((node.innerHTML || "").trim()) extraParts.push(node.innerHTML);
-      node.remove();
-    });
-
-    motd.querySelectorAll("#togglemotd, .clear, .col-lg-12, .col-md-12, .btfw-motd-editrow").forEach((el) => {
-      el.remove();
-    });
-    motd.querySelectorAll("#motd").forEach((inner) => {
-      if ((inner.innerHTML || "").trim()) extraParts.push(inner.innerHTML);
-      inner.remove();
-    });
-
-    document.querySelectorAll("#togglemotd").forEach((btn, index) => {
-      if (index === 0) return;
-      btn.remove();
-    });
-
-    if (extraParts.length) {
-      const merged = extraParts.join("").trim();
-      if (merged && isMotdHtmlEmpty(motd.innerHTML)) {
-        motd.innerHTML = sanitizeHtml(merged);
-      } else if (merged) {
-        motd.innerHTML += sanitizeHtml(merged);
-      }
-    }
-
-    motdwrap.dataset.btfwMotdNormalized = "1";
-    return { motdwrap, motd };
-  }
   
   function mergePlaylistControls() {
     const plBar = document.getElementById("btfw-plbar");
@@ -565,7 +468,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   function createGroupItem(group, elements) {
     // Special handling for MOTD group
     if (group.id === "motd-group") {
-      normalizeMotdStructure();
+      motd.normalizeMotdStructure();
       elements = [document.getElementById("motdwrap")].filter(Boolean);
     }
     
@@ -1432,123 +1335,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     return pollWrap;
   }
 
-  function ensureMotdStackPanel(refs) {
-    normalizeMotdStructure();
-
-    const motdwrap = document.getElementById("motdwrap");
-    if (!motdwrap) return;
-
-    const list = refs && refs.list;
-    if (!list) return;
-
-    let motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
-    if (!motdGroup) {
-      const group = GROUPS.find((g) => g.id === "motd-group");
-      if (!group) return;
-      motdGroup = createGroupItem(group, [motdwrap]);
-      if (motdGroup) {
-        list.appendChild(motdGroup);
-        save(list);
-      }
-    } else {
-      const body = motdGroup.querySelector(".btfw-group-body");
-      if (body && !body.contains(motdwrap)) {
-        body.appendChild(motdwrap);
-      }
-    }
-
-    syncMotdWrapVisibility(motdGroup);
-  }
-
-  function syncMotdWrapVisibility(motdGroup) {
-    const motdwrap = document.getElementById("motdwrap");
-    if (!motdwrap) return;
-
-    const hasContent = hasMotdContent();
-    motdwrap.classList.toggle("btfw-motd-empty", !hasContent);
-    motdwrap.toggleAttribute("hidden", !hasContent);
-    motdwrap.setAttribute("aria-hidden", hasContent ? "false" : "true");
-
-    if (hasContent) {
-      motdwrap.style.removeProperty("display");
-      const motd = resolveMotdHost();
-      if (motd) motd.style.removeProperty("display");
-    }
-
-    if (!motdGroup) {
-      motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
-    }
-    if (motdGroup && hasContent) {
-      const stored = getStoredVisibility(MOTD_VISIBILITY_KEY);
-      const shouldOpen = getDefaultPollOpen(stored, true);
-      if (motdGroup._btfwSetOpenState) {
-        motdGroup._btfwSetOpenState(shouldOpen, { persist: false });
-      } else {
-        motdGroup.dataset.open = shouldOpen ? "true" : "false";
-        motdGroup.classList.toggle("is-open", shouldOpen);
-      }
-    }
-  }
-
-  function scheduleMotdSync(refs) {
-    if (motdSyncTimer) clearTimeout(motdSyncTimer);
-    motdSyncTimer = setTimeout(() => {
-      motdSyncTimer = null;
-      ensureMotdStackPanel(refs);
-    }, 50);
-  }
-
-  function wireMotdObservers(refs) {
-    const motd = resolveMotdHost();
-    if (!motd) return;
-
-    if (!motdObserverWired) {
-      motdObserverWired = true;
-      const observer = new MutationObserver(() => {
-        scheduleMotdSync(refs);
-      });
-      observer.observe(motd, { childList: true, subtree: true, characterData: true });
-    }
-  }
-
-  function wireMotdSocket(refs) {
-    if (motdSocketWired || !window.socket || !window.socket.on) return;
-    motdSocketWired = true;
-    // CyTube's callbacks.js `setMotd` does `$("#motd").html(motd)` with the raw
-    // server payload. Theme socket handlers typically register after CyTube's, so
-    // by the time this runs live `#motd` already holds unsanitized HTML. Re-sanitize
-    // the painted markup so viewers are not left with the raw XSS payload.
-    window.socket.on("setMotd", (payload) => {
-      const html =
-        typeof payload === "string"
-          ? payload
-          : payload && typeof payload.motd === "string"
-            ? payload.motd
-            : null;
-      const motd = resolveMotdHost();
-      if (motd) {
-        const source = html !== null ? html : motd.innerHTML;
-        const cleaned = sanitizeHtml(source);
-        if (motd.innerHTML !== cleaned) motd.innerHTML = cleaned;
-      }
-      scheduleMotdSync(refs);
-    });
-  }
-
-  function applyMotdUpdate(html) {
-    const refs = ensureStack();
-    const motdwrap = document.getElementById("motdwrap");
-    if (motdwrap) delete motdwrap.dataset.btfwMotdNormalized;
-    const resolved = normalizeMotdStructure(true);
-    const motd = resolved?.motd || resolveMotdHost();
-    if (motd && typeof html === "string") {
-      motd.innerHTML = sanitizeHtml(html);
-    }
-    const csMotd = document.getElementById("cs-motdtext");
-    if (csMotd && typeof html === "string") csMotd.value = html;
-    if (refs) scheduleMotdSync(refs);
-  }
-
   function ensurePollStackPanel(refs) {
     const pollWrap = document.getElementById("pollwrap");
     if (!pollWrap) return;
@@ -1782,7 +1568,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     const footer = refs.footer;
 
     if (stackGroupsSatisfied(list) && list.children.length > 0) {
-      ensureMotdStackPanel(refs);
+      motd.ensureMotdStackPanel(refs);
       ensurePollStackPanel(refs);
       syncPollWrapVisibility();
       relocateStackHeaderActions();
@@ -1865,7 +1651,7 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     });
     
     save(list);
-    ensureMotdStackPanel(refs);
+    motd.ensureMotdStackPanel(refs);
     ensurePollStackPanel(refs);
     syncPollWrapVisibility();
     relocateStackHeaderActions();
@@ -1879,8 +1665,8 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   const refs=ensureStack();
   if(!refs) return;
   populate(refs);
-  wireMotdObservers(refs);
-  wireMotdSocket(refs);
+  motd.wireMotdObservers(refs);
+  motd.wireMotdSocket(refs);
   wirePollObservers(refs);
   wirePollSocket(refs);
   if (bootWired) return;
@@ -1954,14 +1740,14 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   document.addEventListener("btfw:motd:updated", (event) => {
     const html = event?.detail?.html;
     if (typeof html !== "string") return;
-    applyMotdUpdate(html);
+    motd.applyMotdUpdate(html);
   });
 
   return {
     name: "feature:stack",
     hasMotdContent,
-    resolveMotdHost,
-    normalizeMotdStructure,
-    applyMotdUpdate,
+    resolveMotdHost: motd.resolveMotdHost,
+    normalizeMotdStructure: motd.normalizeMotdStructure,
+    applyMotdUpdate: motd.applyMotdUpdate,
   };
 });
