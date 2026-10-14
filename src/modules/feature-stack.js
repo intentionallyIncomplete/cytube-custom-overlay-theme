@@ -1,40 +1,29 @@
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
 import { sanitizeHtml } from "../lib/escape-html.js";
+import {
+  MOTD_VISIBILITY_KEY,
+  PLAYLIST_VISIBILITY_KEY,
+  POLL_VISIBILITY_KEY,
+  DOCKED_KEYS,
+  GROUP_LABELS,
+  PANEL_BAR_LABELS,
+  PANEL_GROUP_ORDER,
+  GROUPS,
+  SKIP_SELECTORS,
+  saveStackOrder as save,
+  loadStackOrder as load,
+  getStoredVisibility,
+  storeVisibility,
+  getStoredDocked,
+  storeDocked,
+  isPanelInDrawer,
+  applyStoredPanelOpenState,
+  dispatchStackVisibility
+} from "../lib/stack-core.js";
 
 BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
   const { stack: stackTpl } = templates;
-  const SKEY="btfw-stack-order";
-  const MOTD_VISIBILITY_KEY = "btfw-stack-motd-open";
-  const PLAYLIST_VISIBILITY_KEY = "btfw-stack-playlist-open";
-  const POLL_VISIBILITY_KEY = "btfw-stack-poll-open";
-
-  const DOCKED_KEYS = {
-    "motd-group": "btfw-stack-motd-docked",
-    "playlist-group": "btfw-stack-playlist-docked",
-    "poll-group": "btfw-stack-poll-docked"
-  };
-
-  /** @deprecated migrated to DOCKED_KEYS */
-  const HIDDEN_KEYS = DOCKED_KEYS;
-
-  const GROUP_LABELS = {
-    "motd-group": { short: "MOTD", title: "Message of the Day" },
-    "playlist-group": { short: "PL", title: "Playlist" },
-    "poll-group": { short: "Poll", title: "Polls & Voting" }
-  };
-
-  const PANEL_BAR_LABELS = {
-    "motd-group": "MD",
-    "playlist-group": "PL",
-    "poll-group": "PV"
-  };
-
-  const PANEL_GROUP_ORDER = {
-    "motd-group": 1,
-    "poll-group": 2,
-    "playlist-group": 3
-  };
 
   let panelBarWired = false;
   let activeFlyoutGroup = null;
@@ -116,30 +105,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   }
   
   // Define what should be grouped together
-  const GROUPS = [
-    {
-      id: "motd-group",
-      title: "Message of the Day",
-      selectors: ["#motdwrap", "#motdrow", "#motd", "#announcements"],
-      priority: 1
-    },
-    {
-      id: "playlist-group",
-      title: "Playlist",
-      selectors: ["#playlistrow", "#playlistwrap", "#queuecontainer", "#queue"],
-      priority: 2
-    },
-    {
-      id: "poll-group",
-      title: "Polls & Voting",
-      selectors: ["#pollwrap", "#btfw-poll-parking", "#btfw-poll-history"],
-      priority: 3
-    }
-  ];
-  
-  // Skip these - they're either empty or handled elsewhere
-  const SKIP_SELECTORS = ["#main", "#mainpage", "#mainpane"];
-
   const ADD_MEDIA_SECTIONS = [
     { id: "addfromurl", title: "From URL", default: true },
     { id: "searchcontrol", title: "Library & YouTube" }
@@ -678,67 +643,10 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     return wrapper;
   }
   
-  function save(list){ 
-    try{ 
-      const items = Array.from(list.children).map(n => ({
-        id: n.dataset.bind,
-        isGroup: n.dataset.group === "true"
-      }));
-      localStorage.setItem(SKEY, JSON.stringify(items)); 
-    }catch(e){} 
-  }
-  
-  function load(){
-    try{
-      return JSON.parse(localStorage.getItem(SKEY)||"[]");
-    }catch(e){
-      return [];
-    }
-  }
-
-  function getStoredVisibility(key){
-    try{
-      const stored = localStorage.getItem(key);
-      if (stored === null) return null;
-      return stored === "true";
-    }catch(e){
-      return null;
-    }
-  }
-
-  function storeVisibility(key, isOpen){
-    try{
-      localStorage.setItem(key, isOpen ? "true" : "false");
-    }catch(e){}
-  }
-
-  function getStoredDocked(key){
-    try {
-      const docked = localStorage.getItem(key);
-      if (docked !== null) return docked === "true";
-      const legacy = key.replace("-docked", "-hidden");
-      const hidden = localStorage.getItem(legacy);
-      if (hidden !== null) return hidden === "true";
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function storeDocked(key, isDocked){
-    try {
-      localStorage.setItem(key, isDocked ? "true" : "false");
-    } catch (e) {}
-  }
-
   function isInlineStackEmpty(){
     const items = document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']");
     if (!items.length) return true;
     return Array.from(items).every((el) => el.dataset.docked === "true");
-  }
-
-  function isPanelInDrawer(item){
-    return !!item?.closest(".btfw-panel-container__host");
   }
 
   function preparePanelForDrawer(item){
@@ -770,43 +678,6 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
     const list = document.querySelector("#btfw-stack .btfw-stack-list");
     if (!list || !item) return;
     if (item.parentElement !== list) list.appendChild(item);
-  }
-
-  function applyStoredPanelOpenState(wrapper, storageKey, getDefaultOpen){
-    if (!wrapper || isPanelInDrawer(wrapper)) return;
-    const stored = getStoredVisibility(storageKey);
-    const shouldOpen = typeof getDefaultOpen === "function"
-      ? getDefaultOpen(stored)
-      : (stored !== null ? !!stored : true);
-    if (wrapper._btfwSetOpenState) {
-      wrapper._btfwSetOpenState(shouldOpen, { persist: false });
-    } else {
-      wrapper.dataset.open = shouldOpen ? "true" : "false";
-      wrapper.classList.toggle("is-open", shouldOpen);
-    }
-  }
-
-  function dispatchStackVisibility(){
-    const items = Array.from(document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']"));
-    const inlineItems = items.filter((el) => el.dataset.docked !== "true");
-    const allDocked = items.length > 0 && inlineItems.length === 0;
-    const stack = document.getElementById("btfw-stack");
-    const leftpad = document.getElementById("btfw-leftpad");
-    const grid = document.getElementById("btfw-grid");
-    if (stack) {
-      stack.classList.toggle("btfw-stack--all-hidden", allDocked);
-      stack.classList.toggle("btfw-stack--all-docked", allDocked);
-    }
-    if (leftpad) leftpad.classList.toggle("btfw-leftpad--stack-hidden", allDocked);
-    if (grid) grid.classList.toggle("btfw-grid--stack-hidden", allDocked);
-    document.dispatchEvent(new CustomEvent("btfw:layout:stackVisibility", {
-      detail: {
-        allHidden: allDocked,
-        allDocked,
-        visibleCount: inlineItems.length,
-        totalCount: items.length
-      }
-    }));
   }
 
   function ensurePanelsMenuShell(){
