@@ -26,6 +26,8 @@ interface CytubeClientLike {
   hasPermission?: (permission: string) => boolean;
   rank?: number;
   login?: string;
+  /** Channel name fallback used by theme-admin branding. */
+  channel?: string;
 }
 
 interface CytubeSocketLike {
@@ -51,4 +53,9 @@ interface Window {
   jQuery?: JQueryLike;
   $?: JQueryLike;
   queue?: (pos: string, type: string) => unknown;
+  /** CyTube channel globals consumed by theme-admin. */
+  CHANNEL?: { name?: string };
+  BTFW_CONFIG?: Record<string, unknown>;
+  BTFW_THEME_ADMIN?: unknown;
+  __btfwModuleWatcherCleanupRegistered?: boolean;
 }
