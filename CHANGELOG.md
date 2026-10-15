@@ -1,3 +1,5 @@
+## [1.30.4](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.3...v1.30.4) (2026-10-15)
+
 ## [1.30.3](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.2...v1.30.3) (2026-10-14)
 
 ## [1.30.2](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.1...v1.30.2) (2026-10-14)
