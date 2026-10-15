@@ -28,6 +28,128 @@ interface CytubeClientLike {
   login?: string;
 }
 
+/** Minimal video.js player facade used by the audio engine. */
+interface VideoJsPlayerLike {
+  currentSrc(): string;
+  crossOrigin(value?: string | null): unknown;
+  src(source: { src: string; type: string }): void;
+  load(): void;
+  play(): Promise<void>;
+  pause(): void;
+  paused(): boolean;
+  currentTime(time?: number): number;
+  one(event: string, handler: () => void): void;
+  on(event: string, handler: () => void): void;
+  off(event: string, handler: () => void): void;
+  ready(callback: () => void): unknown;
+  readyState(): number;
+  tech_?: {
+    el_?: HTMLMediaElement | null;
+    el?: (() => Element) | Element;
+  };
+}
+
+/** Normalization compressor preset. */
+interface BtfwNormPreset {
+  threshold: number;
+  knee: number;
+  ratio: number;
+  attack: number;
+  release: number;
+  label: string;
+}
+
+/** BTFW audio engine singleton (from src/modules/audio/audio-engine.ts). */
+interface BtfwAudioEngine {
+  audioContext: AudioContext | null;
+  sourceNode: MediaElementAudioSourceNode | null;
+  _sourceMediaElement: HTMLMediaElement | null;
+  compressorNode: DynamicsCompressorNode | null;
+  gainNode: GainNode | null;
+  splitterNode: ChannelSplitterNode | null;
+  monoMixGain: GainNode | null;
+  mergerNode: ChannelMergerNode | null;
+  player: VideoJsPlayerLike | null;
+  originalSrc: string | null;
+  proxiedSrc: string | null;
+  isProxied: boolean;
+  boostEnabled: boolean;
+  normalizationEnabled: boolean;
+  monoEnabled: boolean;
+  readonly CORS_PROXY: string;
+  BOOST_MULTIPLIER: number;
+  currentNormPreset: string;
+  NORM_PRESETS: Record<string, BtfwNormPreset>;
+
+  // Watchdog/rebuild internals retained on the singleton.
+  _watchdogInterval: ReturnType<typeof setInterval> | null;
+  _mutationObserver: MutationObserver | null;
+  _sourceObserver: MutationObserver | null;
+  _watchdogPlayerHandlers: Record<string, () => void> | null;
+  _visibilityHandler: (() => void) | null;
+  _lastKnownSrc: string | null;
+  _lastInternalSrcSetAt: number;
+  _lastAutoReapplyAt: number;
+  _rebuildInFlight: Promise<boolean> | null;
+
+  // Core utilities
+  _getCorsProxyOrigin(): string;
+  _isTrusted(urlStr: string): boolean;
+  _unwrapProxiedUrl(urlStr: string): string;
+  _markInternalSrcSet(): void;
+  _isInsideInternalWindow(): boolean;
+  _shouldForceProxy(): boolean;
+  _hasAnonymousCrossOrigin(): boolean;
+  _ensureAnonymousCrossOrigin(): boolean;
+  _clearMediaElementForCorsSwap(): void;
+  _same(a: unknown, b: unknown): boolean;
+  _getMediaElement(): HTMLMediaElement | null;
+  _hasIframeOnlyMedia(): boolean;
+
+  // Chain lifecycle
+  disconnectChain(): void;
+  resetMediaBinding(): void;
+  _swapVideoTechElement(videoEl: HTMLMediaElement): HTMLMediaElement | null;
+  _syncFromRegistry(videoEl: HTMLMediaElement): MediaElementAudioSourceNode | null;
+  _getOrCreateSourceNode(videoEl: HTMLMediaElement): MediaElementAudioSourceNode;
+  _connectPassthrough(): boolean;
+  _clearCrossOriginAttribute(): void;
+  cleanup(): void;
+  _disableAllProcessing(): Promise<boolean>;
+  _restorePlayerSrc(
+    src: string,
+    opts?: { currentTime?: number; wasPlaying?: boolean; clearCrossOrigin?: boolean }
+  ): Promise<boolean>;
+
+  // Watchdog
+  startWatchdog(): void;
+  _startWatchdogInterval(): void;
+  _stopWatchdogInterval(): void;
+  _onVisibilityChange(): void;
+  stopWatchdog(): void;
+  _checkAndReapply(reason: string): void;
+  _forceProxyPreservingState(currentSrc: string): Promise<boolean>;
+
+  // Proxy/application + toggles
+  ensureProxy(): Promise<boolean>;
+  rebuildAudioChain(): Promise<boolean>;
+  _rebuildAudioChainImpl(): Promise<boolean>;
+  enableBoost(): Promise<boolean>;
+  disableBoost(): Promise<boolean>;
+  enableNormalization(): Promise<boolean>;
+  setNormPreset(presetKey: string): Promise<boolean>;
+  setBoostMultiplier(multiplier: number): Promise<boolean>;
+  disableNormalization(): Promise<boolean>;
+  enableMono(): Promise<boolean>;
+  disableMono(): Promise<boolean>;
+}
+
+/** Theme config injected by the loader. */
+interface BtfwConfig {
+  corsVideoProxy?: string;
+  integrations?: { corsVideoProxy?: string };
+}
+
 interface CytubeSocketLike {
   on(event: string, handler: (...args: unknown[]) => void): unknown;
   emit?(event: string, ...args: unknown[]): unknown;
@@ -51,4 +173,12 @@ interface Window {
   jQuery?: JQueryLike;
   $?: JQueryLike;
   queue?: (pos: string, type: string) => unknown;
+  BTFW_AUDIO?: BtfwAudioEngine;
+  BTFW_CONFIG?: BtfwConfig;
+  __btfwMediaSourceNodes?: WeakMap<object, MediaElementAudioSourceNode>;
+}
+
+/** Media-source node cache tag written by the audio engine. */
+interface HTMLMediaElement {
+  __btfwSourceNode?: MediaElementAudioSourceNode;
 }
