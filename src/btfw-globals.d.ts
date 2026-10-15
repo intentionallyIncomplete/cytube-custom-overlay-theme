@@ -26,6 +26,8 @@ interface CytubeClientLike {
   hasPermission?: (permission: string) => boolean;
   rank?: number;
   login?: string;
+  /** Channel name fallback used by theme-admin branding. */
+  channel?: string;
 }
 
 /** Minimal video.js player facade used by the audio engine. */
@@ -173,8 +175,12 @@ interface Window {
   jQuery?: JQueryLike;
   $?: JQueryLike;
   queue?: (pos: string, type: string) => unknown;
-  BTFW_AUDIO?: BtfwAudioEngine;
+  /** CyTube channel globals consumed by theme-admin. */
+  CHANNEL?: { name?: string };
   BTFW_CONFIG?: BtfwConfig;
+  BTFW_THEME_ADMIN?: unknown;
+  __btfwModuleWatcherCleanupRegistered?: boolean;
+  BTFW_AUDIO?: BtfwAudioEngine;
   __btfwMediaSourceNodes?: WeakMap<object, MediaElementAudioSourceNode>;
 }
 

@@ -28,6 +28,9 @@
     "src/btfw-globals.d.ts",
     "src/lib/stack-core.ts",
     "src/modules/stack/stack-poll.ts",
+    "src/modules/theme-admin/theme-config.ts",
+    "src/modules/theme-admin/theme-runtime.ts",
+    "src/modules/theme-admin/module-fields.ts",
     "src/modules/audio/audio-engine.ts",
     "src/lib/btfw-constants.js"
   ],

@@ -3,14 +3,20 @@ import {
   CSS_START_MARKERS,
   JS_END_MARKERS,
   JS_START_MARKERS,
-  buildJsConfigBlock,
   hasBrokenThemeAdminJsMarkers,
   hasThemeAdminCssBlock,
   hasThemeAdminJsBlock,
-  parseThemeAdminConfig,
-  replaceThemeAdminBlock,
-  wrapCssThemeBlock
+  replaceThemeAdminBlock
 } from "../lib/theme-admin-blocks.js";
+import { createThemeConfigDomain } from "./theme-admin/theme-config.js"; // resolves to theme-config.ts
+import { createThemeRuntimeDomain } from "./theme-admin/theme-runtime.js"; // resolves to theme-runtime.ts
+import {
+  bindModuleFieldWatcher,
+  ensureModuleFieldAvailability,
+  getModuleContainer,
+  readModuleValues,
+  renderModuleInputs
+} from "./theme-admin/module-fields.js";
 
 BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"], async ({ init }) => {
   const templates = await init("util:templates");
@@ -26,9 +32,19 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     applyRuntimeTypography
   } = themeRuntime;
 
-  const $  = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const themeConfig = createThemeConfigDomain({
+    DEFAULT_APPEARANCE,
+    FONT_DEFAULT_ID,
+    FONT_FALLBACK_FAMILY,
+    normalizeFontId,
+    resolveTypographyConfig
+  });
+  const themeRuntimeDomain = createThemeRuntimeDomain(themeConfig, {
+    applyRuntimeColors,
+    applyRuntimeTypography
+  });
 
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const JS_FIELD_SELECTORS = [
     "#cs-jstext",
     "#chanjs", "#channel-js", "#channeljs", "#customjs", "#customJS",
@@ -45,302 +61,9 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     "textarea[name='css']", ".channel-css-field"
   ];
 
-  const DEFAULT_CONFIG = {
-    version: 8,
-    tint: DEFAULT_APPEARANCE.tint,
-    colors: { ...DEFAULT_APPEARANCE.colors },
-    typography: { ...DEFAULT_APPEARANCE.typography },
-    integrations: {
-      enabled: true,
-      movieInfo: {
-        enabled: false
-      }
-    },
-    resources: {
-      scripts: [],
-      styles: [],
-      modules: []
-    },
-    branding: {
-      headerName: "CyTube",
-      faviconUrl: "",
-      posterUrl: ""
-    }
-  };
 
   const STYLE_ID = "btfw-theme-admin-style";
   let themeAdminSheetAdopted = false;
-  const MODULE_FIELD_MIN = 3;
-  const MODULE_FIELD_MAX = 10;
-  const MODULE_INPUT_SELECTOR = '[data-role="module-inputs"]';
-  const moduleWatcherRegistry = new WeakMap();
-  const activeModuleWatchers = new Set();
-
-  function removeRuntimeAsset(id){
-    if (typeof document === "undefined") return;
-    const existing = document.getElementById(id);
-    if (existing?.parentElement) {
-      existing.parentElement.removeChild(existing);
-    } else {
-      existing?.remove?.();
-    }
-  }
-
-  function ensureRuntimeAsset(id, url, kind){
-    if (typeof document === "undefined" || !document.head) return;
-    if (!url) {
-      removeRuntimeAsset(id);
-      return;
-    }
-
-    const attr = kind === "style" ? "href" : "src";
-    const existing = document.getElementById(id);
-
-    if (existing) {
-      const current = existing.getAttribute(attr) || "";
-      if (kind === "style" && existing.tagName === "LINK") {
-        if (current === url) return existing;
-        existing.setAttribute(attr, url);
-        return existing;
-      }
-      if (kind !== "style" && existing.tagName === "SCRIPT" && current === url) {
-        return existing;
-      }
-      removeRuntimeAsset(id);
-    }
-
-    if (kind === "style") {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = url;
-      link.id = id;
-      document.head.appendChild(link);
-      return link;
-    }
-
-    const script = document.createElement("script");
-    script.src = url;
-    script.async = true;
-    script.defer = true;
-    script.id = id;
-    document.head.appendChild(script);
-    return script;
-  }
-
-  function pruneRuntimeAssets(prefix, keepCount){
-    if (typeof document === "undefined") return;
-    const nodes = Array.from(document.querySelectorAll(`[id^="${prefix}"]`));
-    nodes.forEach(node => {
-      const match = node.id.match(/(\d+)$/);
-      if (!match) return;
-      const index = Number(match[1]);
-      if (Number.isNaN(index) || index < keepCount) return;
-      if (node.parentElement) {
-        node.parentElement.removeChild(node);
-      } else {
-        node.remove?.();
-      }
-    });
-  }
-
-  function applyRuntimeResources(theme){
-    if (!theme || typeof theme !== "object") return;
-    const resources = (theme.resources && typeof theme.resources === "object") ? theme.resources : {};
-    const styles = Array.isArray(resources.styles) ? resources.styles : [];
-    styles.forEach((url, idx) => ensureRuntimeAsset(`btfw-theme-style-${idx}`, url, "style"));
-    pruneRuntimeAssets("btfw-theme-style-", styles.length);
-
-    const scripts = Array.isArray(resources.scripts) ? resources.scripts : [];
-    scripts.forEach((url, idx) => ensureRuntimeAsset(`btfw-theme-script-${idx}`, url, "script"));
-    pruneRuntimeAssets("btfw-theme-script-", scripts.length);
-
-    const modules = normalizeModuleUrls(collectModuleCandidates(theme));
-    modules.forEach((url, idx) => ensureRuntimeAsset(`btfw-theme-module-${idx}`, url, "script"));
-    pruneRuntimeAssets("btfw-theme-module-", modules.length);
-    theme.resources = theme.resources || {};
-    theme.resources.styles = styles.slice();
-    theme.resources.scripts = scripts.slice();
-    theme.resources.modules = modules;
-    if (typeof window !== "undefined") {
-      const global = window.BTFW = window.BTFW || {};
-      global.channelThemeModules = modules.slice();
-    }
-  }
-
-  function applyRuntimeBranding(theme){
-    if (!theme || typeof theme !== "object") return;
-    const branding = (theme.branding && typeof theme.branding === "object") ? theme.branding : (theme.branding = {});
-    const channelName = (
-      (typeof window !== "undefined" && window.CHANNEL?.name) ||
-      (typeof window !== "undefined" && window.CLIENT?.channel) ||
-      ""
-    ).trim();
-    let name = channelName;
-    if (!name) {
-      name = typeof branding.headerName === "string" ? branding.headerName.trim() : "";
-    }
-    if (!name && typeof theme.headerName === "string") {
-      name = theme.headerName.trim();
-    }
-    if (!name) name = "CyTube";
-    branding.headerName = name;
-
-    const selectors = [
-      "#nav-collapsible .navbar-brand",
-      ".navbar .navbar-brand",
-      ".navbar-brand",
-      "#navbrand"
-    ];
-    selectors.forEach(sel => {
-      const anchor = document?.querySelector?.(sel);
-      if (!anchor) return;
-      let holder = anchor.querySelector('[data-btfw-brand-text]');
-      if (holder) {
-        holder.textContent = name;
-      } else {
-        let replaced = false;
-        Array.from(anchor.childNodes || []).forEach(node => {
-          if (node && node.nodeType === 3) {
-            const text = (node.textContent || "").trim();
-            if (!text) return;
-            if (!replaced) {
-              node.textContent = name;
-              replaced = true;
-            } else {
-              node.textContent = "";
-            }
-          }
-        });
-        if (!replaced) {
-          holder = document.createElement("span");
-          holder.dataset.btfwBrandText = "1";
-          if (anchor.childNodes.length > 0) {
-            anchor.appendChild(document.createTextNode(" "));
-          }
-          holder.textContent = name;
-          anchor.appendChild(holder);
-        }
-      }
-      anchor.setAttribute("title", name);
-      anchor.setAttribute("aria-label", name);
-    });
-
-    let faviconUrl = typeof branding.faviconUrl === "string" ? branding.faviconUrl.trim() : "";
-    if (!faviconUrl && typeof branding.favicon === "string") {
-      faviconUrl = branding.favicon.trim();
-    }
-    branding.faviconUrl = faviconUrl || "";
-    branding.favicon = branding.faviconUrl;
-    if (faviconUrl && typeof document !== "undefined") {
-      const linkSelectors = 'link[rel*="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]';
-      const links = Array.from(document.querySelectorAll(linkSelectors));
-      if (!links.length) {
-        const created = document.createElement("link");
-        created.rel = "icon";
-        document.head?.appendChild(created);
-        links.push(created);
-      }
-      links.forEach(link => {
-        try { link.href = faviconUrl; } catch (_) {}
-      });
-    }
-
-    let poster = typeof branding.posterUrl === "string" ? branding.posterUrl.trim() : "";
-    if (!poster && typeof theme.branding?.posterUrl === "string") {
-      poster = theme.branding.posterUrl.trim();
-    }
-    branding.posterUrl = poster || "";
-    if (typeof window !== "undefined") {
-      const global = window.BTFW = window.BTFW || {};
-      global.channelPosterUrl = poster || "";
-    }
-  }
-
-  function applyRuntimeIntegrations(theme){
-    if (!theme || typeof theme !== "object") return;
-    const integrations = (theme.integrations && typeof theme.integrations === "object") ? theme.integrations : (theme.integrations = {});
-    if (typeof integrations.enabled !== "boolean") {
-      integrations.enabled = true;
-    }
-    delete integrations.tmdb;
-    delete integrations.autoSubs;
-    delete integrations.ratings;
-    delete integrations.audioEnhancer;
-
-    if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
-      integrations.movieInfo = { enabled: false };
-    }
-    const movieInfoEnabled = Boolean(integrations.movieInfo.enabled);
-    integrations.movieInfo.enabled = movieInfoEnabled;
-
-    if (typeof window !== "undefined") {
-      window.BTFW_CONFIG = window.BTFW_CONFIG || {};
-      window.BTFW_CONFIG.integrationsEnabled = integrations.enabled;
-      if (typeof window.BTFW_CONFIG.integrations !== "object") {
-        window.BTFW_CONFIG.integrations = {};
-      }
-      window.BTFW_CONFIG.integrations.movieInfo = window.BTFW_CONFIG.integrations.movieInfo || {};
-      window.BTFW_CONFIG.integrations.movieInfo.enabled = movieInfoEnabled;
-      window.BTFW_CONFIG.movieInfo = window.BTFW_CONFIG.movieInfo || {};
-      window.BTFW_CONFIG.movieInfo.enabled = movieInfoEnabled;
-      window.BTFW_CONFIG.movieInfoEnabled = movieInfoEnabled;
-      window.BTFW_CONFIG.shouldLoadMovieInfo = movieInfoEnabled;
-      try {
-        if (document?.body) {
-          if (movieInfoEnabled) {
-            document.body.dataset.btfwMovieInfoEnabled = "1";
-          } else if (document.body.dataset?.btfwMovieInfoEnabled) {
-            delete document.body.dataset.btfwMovieInfoEnabled;
-          }
-        }
-      } catch (_) {}
-    }
-    try {
-      document?.dispatchEvent?.(new CustomEvent("btfw:channelIntegrationsChanged", {
-        detail: {
-          enabled: integrations.enabled,
-          movieInfoEnabled
-        }
-      }));
-    } catch (_) {}
-  }
-
-  function syncRuntimeThemeConfig(source){
-    if (!source || typeof source !== "object" || typeof window === "undefined") return null;
-    const normalized = normalizeConfig(source);
-    const global = window.BTFW = window.BTFW || {};
-    window.BTFW_THEME_ADMIN = normalized;
-    global.channelTheme = normalized;
-    applyRuntimeResources(normalized);
-    applyRuntimeBranding(normalized);
-    applyRuntimeColors(normalized);
-    applyRuntimeIntegrations(normalized);
-    applyRuntimeTypography(normalized);
-    if (typeof BTFW !== "undefined" && typeof BTFW.init === "function") {
-      BTFW.init("util:themePresets")
-        .then((presets) => presets.applyActivePreset())
-        .catch(() => {});
-    }
-    return normalized;
-  }
-
-  function bootstrapRuntimeThemeSync(){
-    if (typeof window === "undefined" || typeof document === "undefined") return;
-    const apply = () => {
-      try {
-        const cfg = window.BTFW_THEME_ADMIN;
-        if (cfg && typeof cfg === "object") {
-          syncRuntimeThemeConfig(cfg);
-        }
-      } catch (error) {
-        console.warn("[theme-admin] Failed to sync runtime theme config", error);
-      }
-    };
-    apply();
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", apply, { once: true });
-    }
-  }
 
   function supportsConstructableStylesheets(){
     return typeof CSSStyleSheet === "function" &&
@@ -473,506 +196,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     document.head.appendChild(style);
   }
 
-  function cloneDefaults(){
-    return structuredClone(DEFAULT_CONFIG);
-  }
-
-  function overwriteConfig(target, source){
-    if (!target || typeof target !== "object") return target;
-    Object.keys(target).forEach(key => {
-      delete target[key];
-    });
-    if (!source || typeof source !== "object") return target;
-    const copy = structuredClone(source);
-    Object.keys(copy).forEach(key => {
-      target[key] = copy[key];
-    });
-    return target;
-  }
-
-  function coerceModuleValue(value){
-    if (typeof value === "string") {
-      return value.trim();
-    }
-    if (!value || typeof value !== "object") return "";
-
-    if (Array.isArray(value)) {
-      if (!value.length) return "";
-      return coerceModuleValue(value[0]);
-    }
-
-    for (const key of ["url", "href", "src", "value"]) {
-      if (typeof value[key] === "string") {
-        return value[key].trim();
-      }
-    }
-
-    return "";
-  }
-
-  function collectModuleCandidates(source){
-    if (!source || typeof source !== "object") return [];
-
-    const seen = typeof WeakSet === "function" ? new WeakSet() : null;
-    const candidates = [];
-
-    const traverse = (value) => {
-      if (!value || typeof value !== "object") return;
-      if (seen) {
-        if (seen.has(value)) return;
-        seen.add(value);
-      }
-
-      if (Array.isArray(value)) {
-        value.forEach(item => {
-          if (item && typeof item === "object") {
-            traverse(item);
-          }
-        });
-        return;
-      }
-
-      Object.keys(value).forEach(key => {
-        const child = value[key];
-        if (/module/i.test(key)) {
-          if (typeof child !== "undefined" && child !== null) {
-            candidates.push(child);
-          }
-        }
-        if (child && typeof child === "object") {
-          traverse(child);
-        }
-      });
-    };
-
-    traverse(source);
-    return candidates;
-  }
-
-  function normalizeModuleUrls(values){
-    const urls = [];
-    const seenObjects = typeof WeakSet === "function" ? new WeakSet() : null;
-
-    const walk = (value) => {
-      if (typeof value === "undefined" || value === null) return;
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (trimmed) {
-          urls.push(trimmed);
-        }
-        return;
-      }
-      if (Array.isArray(value)) {
-        value.forEach(item => walk(item));
-        return;
-      }
-      if (typeof value === "object") {
-        if (seenObjects) {
-          if (seenObjects.has(value)) return;
-          seenObjects.add(value);
-        }
-        const direct = coerceModuleValue(value);
-        if (direct) {
-          urls.push(direct);
-        }
-        const skipKeys = ["url", "href", "src", "value"];
-        Object.keys(value).forEach(key => {
-          if (direct && skipKeys.includes(key)) return;
-          walk(value[key]);
-        });
-      }
-    };
-
-    walk(values);
-
-    const normalized = [];
-    const seen = new Set();
-    urls.forEach(url => {
-      if (!url || seen.has(url)) return;
-      seen.add(url);
-      normalized.push(url);
-    });
-    return normalized;
-  }
-
-  function getModuleContainer(panel){
-    if (!panel) return null;
-    return panel.querySelector(MODULE_INPUT_SELECTOR);
-  }
-
-  function createModuleInput(index, value){
-    const wrapper = document.createElement("div");
-    wrapper.className = "module-input__row";
-    const input = document.createElement("input");
-    input.type = "url";
-    input.className = "module-input__control";
-    input.id = `btfw-theme-module-${index}`;
-    input.name = `btfw-theme-module-${index}`;
-    input.placeholder = "https://example.com/module.js";
-    input.dataset.role = "module-input";
-    input.value = value || "";
-    wrapper.appendChild(input);
-    return { wrapper, input };
-  }
-
-  function appendModuleInput(container, index, value){
-    if (!container) return null;
-    const { wrapper, input } = createModuleInput(index, value);
-    container.appendChild(wrapper);
-    return input;
-  }
-
-  function renderModuleInputs(panel, values){
-    const container = getModuleContainer(panel);
-    if (!container) return;
-    const normalized = normalizeModuleUrls(values);
-    const limited = normalized.slice(0, MODULE_FIELD_MAX);
-    const rows = [];
-    limited.forEach((value, index) => {
-      const { wrapper } = createModuleInput(index, value);
-      rows.push(wrapper);
-    });
-    let count = limited.length;
-    while (count < MODULE_FIELD_MIN && count < MODULE_FIELD_MAX) {
-      const { wrapper } = createModuleInput(count, "");
-      rows.push(wrapper);
-      count++;
-    }
-    const canExtend = count < MODULE_FIELD_MAX && normalized.length === limited.length;
-    if (canExtend && count === limited.length) {
-      const { wrapper } = createModuleInput(count, "");
-      rows.push(wrapper);
-    }
-
-    if (typeof container.replaceChildren === "function") {
-      container.replaceChildren(...rows);
-    } else {
-      while (container.firstChild) container.removeChild(container.firstChild);
-      rows.forEach(row => container.appendChild(row));
-    }
-  }
-
-  function trimModuleInputs(panel){
-    const container = getModuleContainer(panel);
-    if (!container) return;
-    container.querySelectorAll('.module-input__row').forEach(row => {
-      if (!row.querySelector('input[data-role="module-input"]')) {
-        row.remove();
-      }
-    });
-    let inputs = Array.from(container.querySelectorAll('input[data-role="module-input"]'));
-    while (inputs.length > MODULE_FIELD_MIN) {
-      const last = inputs[inputs.length - 1];
-      if (last && !last.value.trim()) {
-        const precedingHasEmpty = inputs.slice(0, inputs.length - 1).some(input => !input.value.trim());
-        if (precedingHasEmpty) {
-          const wrapper = last.closest('.module-input__row');
-          if (wrapper && wrapper.parentElement === container) {
-            container.removeChild(wrapper);
-          } else {
-            last.remove();
-          }
-          inputs = Array.from(container.querySelectorAll('input[data-role="module-input"]'));
-          continue;
-        }
-      }
-      break;
-    }
-  }
-
-  function ensureModuleFieldAvailability(panel){
-    const container = getModuleContainer(panel);
-    if (!container) return;
-    container.querySelectorAll('.module-input__row').forEach(row => {
-      if (!row.querySelector('input[data-role="module-input"]')) {
-        row.remove();
-      }
-    });
-    let inputs = Array.from(container.querySelectorAll('input[data-role="module-input"]'));
-    if (!inputs.length) {
-      renderModuleInputs(panel, []);
-      inputs = Array.from(container.querySelectorAll('input[data-role="module-input"]'));
-    }
-    if (inputs.length < MODULE_FIELD_MIN) {
-      let index = inputs.length;
-      while (index < MODULE_FIELD_MIN && index < MODULE_FIELD_MAX) {
-        appendModuleInput(container, index, "");
-        index++;
-      }
-      inputs = Array.from(container.querySelectorAll('input[data-role="module-input"]'));
-    }
-    const hasEmpty = inputs.some(input => !input.value.trim());
-    if (!hasEmpty && inputs.length < MODULE_FIELD_MAX) {
-      appendModuleInput(container, inputs.length, "");
-      inputs = Array.from(container.querySelectorAll('input[data-role="module-input"]'));
-    }
-    trimModuleInputs(panel);
-  }
-
-  function finalizeModuleWatcher(container, watcher){
-    if (watcher.timeoutId !== null) {
-      clearTimeout(watcher.timeoutId);
-      watcher.timeoutId = null;
-    }
-    if (watcher.observer) {
-      watcher.observer.disconnect();
-      watcher.observer = null;
-    }
-    activeModuleWatchers.delete(watcher);
-    if (moduleWatcherRegistry.get(container) === watcher) {
-      moduleWatcherRegistry.delete(container);
-    }
-    if (container) {
-      delete container._btfwModuleHandlerBound;
-      if (container.dataset && container.dataset.btfwModuleWatcher) {
-        delete container.dataset.btfwModuleWatcher;
-      }
-    }
-  }
-
-  function cleanupModuleWatcher(container, expectedWatcher){
-    if (!container) return;
-    const watcher = moduleWatcherRegistry.get(container);
-    if (!watcher || (expectedWatcher && watcher !== expectedWatcher)) {
-      return;
-    }
-    if (!watcher.controller.signal.aborted) {
-      watcher.controller.abort();
-      return;
-    }
-    finalizeModuleWatcher(container, watcher);
-  }
-
-  if (typeof window !== "undefined" && !window.__btfwModuleWatcherCleanupRegistered) {
-    window.addEventListener('beforeunload', () => {
-      const watchers = Array.from(activeModuleWatchers);
-      for (const watcher of watchers) {
-        cleanupModuleWatcher(watcher.container, watcher);
-      }
-    });
-    window.__btfwModuleWatcherCleanupRegistered = true;
-  }
-
-  function bindModuleFieldWatcher(panel, onChange){
-    const container = getModuleContainer(panel);
-    if (!container) {
-      console.warn('[theme-admin] Module container not found for binding');
-      return;
-    }
-
-    cleanupModuleWatcher(container);
-
-    const controller = new AbortController();
-    const watcherRecord = {
-      container,
-      controller,
-      timeoutId: null,
-      observer: null
-    };
-
-    moduleWatcherRegistry.set(container, watcherRecord);
-    activeModuleWatchers.add(watcherRecord);
-
-    controller.signal.addEventListener('abort', () => {
-      if (moduleWatcherRegistry.get(container) === watcherRecord) {
-        finalizeModuleWatcher(container, watcherRecord);
-      }
-    });
-
-    const handler = (event) => {
-      if (event?.target?.dataset?.role === 'module-input') {
-        if (watcherRecord.timeoutId !== null) {
-          clearTimeout(watcherRecord.timeoutId);
-        }
-        watcherRecord.timeoutId = setTimeout(() => {
-          if (!controller.signal.aborted) {
-            ensureModuleFieldAvailability(panel);
-            if (typeof onChange === "function") onChange();
-          }
-          watcherRecord.timeoutId = null;
-        }, 10);
-      }
-    };
-
-    container.addEventListener('input', handler, { signal: controller.signal });
-    container.addEventListener('change', handler, { signal: controller.signal });
-
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.removedNodes) {
-          const hasContains = typeof node?.contains === 'function';
-          if (
-            node === panel ||
-            node === container ||
-            (hasContains && (node.contains(panel) || node.contains(container)))
-          ) {
-            cleanupModuleWatcher(container, watcherRecord);
-            return;
-          }
-        }
-      }
-    });
-
-    watcherRecord.observer = observer;
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    container._btfwModuleHandlerBound = true;
-    if (container.dataset) {
-      container.dataset.btfwModuleWatcher = "1";
-    }
-  }
-
-  function readModuleValues(panel){
-    const container = getModuleContainer(panel);
-    if (!container) return [];
-    const seen = new Set();
-    const values = [];
-    container.querySelectorAll('input[data-role="module-input"]').forEach(input => {
-      const value = (input.value || "").trim();
-      if (!value || seen.has(value)) return;
-      seen.add(value);
-      values.push(value);
-    });
-    return values;
-  }
-
-  function deepMerge(target, source){
-    if (!source || typeof source !== "object") return target;
-    Object.keys(source).forEach(key => {
-      const value = source[key];
-      if (value && typeof value === "object" && !Array.isArray(value)) {
-        target[key] = deepMerge(target[key] ? { ...target[key] } : {}, value);
-      } else {
-        target[key] = Array.isArray(value) ? value.slice() : value;
-      }
-    });
-    return target;
-  }
-
-  function parseConfig(jsText){
-    return parseThemeAdminConfig(jsText);
-  }
-
-  function normalizeConfig(cfg){
-    const defaults = cloneDefaults();
-    const normalized = cloneDefaults();
-    deepMerge(normalized, cfg || {});
-
-    delete normalized.slider;
-    delete normalized.sliderEnabled;
-    delete normalized.sliderJson;
-
-    if (!normalized.integrations || typeof normalized.integrations !== "object") {
-      normalized.integrations = structuredClone(defaults.integrations);
-    }
-    if (typeof normalized.integrations.enabled !== "boolean") {
-      normalized.integrations.enabled = true;
-    }
-    delete normalized.integrations.tmdb;
-    delete normalized.integrations.ratings;
-    delete normalized.integrations.autoSubs;
-    delete normalized.integrations.audioEnhancer;
-    if (!normalized.integrations.movieInfo || typeof normalized.integrations.movieInfo !== "object") {
-      normalized.integrations.movieInfo = { enabled: false };
-    } else {
-      normalized.integrations.movieInfo.enabled = Boolean(normalized.integrations.movieInfo.enabled);
-    }
-
-    if (normalized.features && typeof normalized.features === "object") {
-      delete normalized.features.videoOverlayPoll;
-      if (Object.keys(normalized.features).length === 0) {
-        delete normalized.features;
-      }
-    }
-
-    if (!normalized.resources || typeof normalized.resources !== "object") {
-      normalized.resources = structuredClone(defaults.resources);
-    }
-    if (!Array.isArray(normalized.resources.styles)) {
-      normalized.resources.styles = [];
-    }
-    if (!Array.isArray(normalized.resources.scripts)) {
-      normalized.resources.scripts = [];
-    }
-    const normalizedModules = normalizeModuleUrls(collectModuleCandidates(normalized));
-    normalized.resources.modules = normalizedModules;
-    delete normalized.resources.moduleUrls;
-    delete normalized.resources.externalModules;
-    delete normalized.moduleUrls;
-    delete normalized.externalModules;
-    delete normalized.modules;
-
-    if (!normalized.branding || typeof normalized.branding !== "object") {
-      normalized.branding = structuredClone(defaults.branding);
-    }
-    if (typeof normalized.branding.favicon === "string" && !normalized.branding.faviconUrl) {
-      normalized.branding.faviconUrl = normalized.branding.favicon;
-    }
-    if (typeof normalized.headerName === "string" && !normalized.branding.headerName) {
-      normalized.branding.headerName = normalized.headerName;
-    }
-    if (typeof normalized.branding.header === "string" && !normalized.branding.headerName) {
-      normalized.branding.headerName = normalized.branding.header;
-    }
-    if (typeof normalized.faviconUrl === "string" && !normalized.branding.faviconUrl) {
-      normalized.branding.faviconUrl = normalized.faviconUrl;
-    }
-    if (typeof normalized.posterUrl === "string" && !normalized.branding.posterUrl) {
-      normalized.branding.posterUrl = normalized.posterUrl;
-    }
-    if (typeof normalized.branding.posterUrl !== "string") {
-      normalized.branding.posterUrl = "";
-    }
-
-    if (!normalized.typography || typeof normalized.typography !== "object") {
-      normalized.typography = structuredClone(defaults.typography);
-    }
-
-    return normalized;
-  }
-
-  function sanitizeConfigForOutput(cfg){
-    const cleaned = structuredClone(cfg || {});
-    delete cleaned.slider;
-    delete cleaned.sliderEnabled;
-    delete cleaned.sliderJson;
-    delete cleaned.headerName;
-    delete cleaned.faviconUrl;
-    delete cleaned.posterUrl;
-    if (cleaned.branding && typeof cleaned.branding === "object") {
-      delete cleaned.branding.favicon;
-    }
-    if (cleaned.integrations && typeof cleaned.integrations === "object") {
-      delete cleaned.integrations.tmdb;
-      delete cleaned.integrations.autoSubs;
-      delete cleaned.integrations.ratings;
-      delete cleaned.integrations.audioEnhancer;
-    }
-    return cleaned;
-  }
-
-
-  function buildConfigBlock(cfg){
-    const normalized = normalizeConfig(cfg);
-    const cleaned = sanitizeConfigForOutput(normalized);
-    const json = JSON.stringify(cleaned, null, 2);
-    return buildJsConfigBlock(json);
-  }
-
-  function buildCssBlock(cfg){
-    const colors = cfg.colors || {};
-    const typography = resolveTypographyConfig(cfg.typography || {});
-    const bg = colors.background || "#05060d";
-    const surface = colors.surface || colors.panel || "#0b111d";
-    const panel = colors.panel || "#141f36";
-    const textColor = colors.text || "#e8ecfb";
-    const chatText = colors.chatText || textColor;
-    const accent = colors.accent || "#6d4df6";
-    const fontFamily = typography.family || FONT_FALLBACK_FAMILY;
-
-    return wrapCssThemeBlock(`:root {\n  --btfw-theme-bg: ${bg};\n  --btfw-theme-surface: ${surface};\n  --btfw-theme-panel: ${panel};\n  --btfw-theme-text: ${textColor};\n  --btfw-theme-chat-text: ${chatText};\n  --btfw-theme-accent: ${accent};\n  --btfw-theme-font-family: ${fontFamily};\n}`);
-  }
-
   function canManageChannel(){
     try {
       if (typeof window.hasPermission === "function") {
@@ -1074,7 +297,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     if (!panel || !cfg || typeof cfg !== "object") return;
     const integrations = cfg.integrations = cfg.integrations && typeof cfg.integrations === "object"
       ? cfg.integrations
-      : (cfg.integrations = structuredClone(DEFAULT_CONFIG.integrations));
+      : (cfg.integrations = structuredClone(themeConfig.DEFAULT_CONFIG.integrations));
     if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
       integrations.movieInfo = { enabled: false };
     }
@@ -1122,7 +345,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     const resetBtn = panel.querySelector('#btfw-theme-reset');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        const defaults = cloneDefaults();
+        const defaults = themeConfig.cloneDefaults();
         cfg.integrations = structuredClone(defaults.integrations);
         cfg.branding = structuredClone(defaults.branding);
         cfg.resources = structuredClone(defaults.resources);
@@ -1174,7 +397,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
       root.classList.add("btfw-poll-overlay-enabled");
       root.classList.remove("btfw-poll-overlay-disabled");
     }
-    const modules = normalizeModuleUrls(collectModuleCandidates(cfg));
+    const modules = themeConfig.normalizeModuleUrls(themeConfig.collectModuleCandidates(cfg));
     renderModuleInputs(panel, modules);
     ensureModuleFieldAvailability(panel);
     syncMovieInfoToggle(panel, cfg);
@@ -1192,8 +415,8 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
   }
 
   function collectConfig(panel, cfg){
-    const updated = cloneDefaults();
-    deepMerge(updated, cfg);
+    const updated = themeConfig.cloneDefaults();
+    themeConfig.deepMerge(updated, cfg);
     $$('[data-btfw-bind]', panel).forEach(input => {
       const path = input.dataset.btfwBind;
       let value;
@@ -1211,9 +434,9 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
       setValueAtPath(updated, path, value);
     });
     if (!updated.resources || typeof updated.resources !== "object") {
-      updated.resources = cloneDefaults().resources;
+      updated.resources = themeConfig.cloneDefaults().resources;
     }
-    updated.resources.modules = normalizeModuleUrls(readModuleValues(panel));
+    updated.resources.modules = themeConfig.normalizeModuleUrls(readModuleValues(panel));
     delete updated.resources.moduleUrls;
     delete updated.resources.externalModules;
     delete updated.moduleUrls;
@@ -1222,7 +445,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     delete updated.sliderEnabled;
     delete updated.sliderJson;
     if (!updated.integrations || typeof updated.integrations !== "object") {
-      updated.integrations = cloneDefaults().integrations;
+      updated.integrations = themeConfig.cloneDefaults().integrations;
     }
     if (typeof updated.integrations.enabled !== "boolean") {
       updated.integrations.enabled = true;
@@ -1242,10 +465,10 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
       }
     }
     if (!updated.typography || typeof updated.typography !== "object") {
-      updated.typography = cloneDefaults().typography;
+      updated.typography = themeConfig.cloneDefaults().typography;
     }
     if (!updated.branding || typeof updated.branding !== "object") {
-      updated.branding = cloneDefaults().branding;
+      updated.branding = themeConfig.cloneDefaults().branding;
     }
     if (typeof updated.branding.headerName !== "string") {
       updated.branding.headerName = "";
@@ -1271,7 +494,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
       customFamily: typo.customFamily || ''
     };
     if (!updated.branding || typeof updated.branding !== "object") {
-      updated.branding = cloneDefaults().branding;
+      updated.branding = themeConfig.cloneDefaults().branding;
     }
     if (typeof updated.branding.favicon === "string" && !updated.branding.faviconUrl) {
       updated.branding.faviconUrl = updated.branding.favicon;
@@ -1279,7 +502,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     updated.branding.favicon = updated.branding.faviconUrl || '';
     updated.branding.posterUrl = (updated.branding.posterUrl || '').trim();
     updated.branding.headerName = (updated.branding.headerName || '').trim();
-    updated.version = DEFAULT_CONFIG.version;
+    updated.version = themeConfig.DEFAULT_CONFIG.version;
     return updated;
   }
 
@@ -1328,34 +551,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     });
 
     return submitted;
-  }
-
-  function stripLegacySliderGlobals(jsText){
-    const source = typeof jsText === 'string' ? jsText : '';
-    if (!source) return '';
-
-    const lines = source.split(/\r?\n/);
-    const cleaned = [];
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      if (/^(?:var|let|const)?\s*UI_ChannelList\s*=/.test(trimmed)) continue;
-      if (/^window\.UI_ChannelList\s*=/.test(trimmed)) continue;
-      if (/^(?:var|let|const)?\s*Channel_JSON\s*=/.test(trimmed)) continue;
-      if (/^window\.Channel_JSON\s*=/.test(trimmed)) continue;
-      cleaned.push(line);
-    }
-
-    while (cleaned.length && cleaned[0].trim() === '') {
-      cleaned.shift();
-    }
-    for (let i = cleaned.length - 1; i > 0; i--) {
-      if (cleaned[i].trim() === '' && cleaned[i - 1].trim() === '') {
-        cleaned.splice(i, 1);
-      }
-    }
-
-    return cleaned.join('\n');
   }
 
   function ensureTab(modal){
@@ -1425,10 +620,10 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     const existingCss = cssField.value || "";
 
     const mergedConfig = collectConfig(panel, cfg);
-    const jsBlock = buildConfigBlock(mergedConfig);
-    const cssBlock = buildCssBlock(mergedConfig);
+    const jsBlock = themeConfig.buildConfigBlock(mergedConfig);
+    const cssBlock = themeConfig.buildCssBlock(mergedConfig);
 
-    const cleanedJs = stripLegacySliderGlobals(existingJs);
+    const cleanedJs = themeConfig.stripLegacySliderGlobals(existingJs);
     jsField.value = replaceThemeAdminBlock(cleanedJs, jsBlock, JS_START_MARKERS, JS_END_MARKERS);
 
     cssField.value = replaceThemeAdminBlock(existingCss, cssBlock, CSS_START_MARKERS, CSS_END_MARKERS);
@@ -1442,7 +637,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
       } catch (_) {}
     });
 
-    const runtimeConfig = syncRuntimeThemeConfig(mergedConfig) || mergedConfig;
+    const runtimeConfig = themeRuntimeDomain.syncRuntimeThemeConfig(mergedConfig) || mergedConfig;
 
     if (status) {
       if (mode === 'manual') {
@@ -1465,17 +660,17 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
 
     const jsField = ensureField(modal, JS_FIELD_SELECTORS, "chanjs");
     const cssField = ensureField(modal, CSS_FIELD_SELECTORS, "chancss");
-    const storedConfig = parseConfig(jsField?.value || "");
-    const cfg = deepMerge(cloneDefaults(), storedConfig || {});
+    const storedConfig = themeConfig.parseConfig(jsField?.value || "");
+    const cfg = themeConfig.deepMerge(themeConfig.cloneDefaults(), storedConfig || {});
     const storedVersion = Number(cfg.version) || 0;
-    cfg.version = DEFAULT_CONFIG.version;
+    cfg.version = themeConfig.DEFAULT_CONFIG.version;
 
     delete cfg.slider;
     delete cfg.sliderEnabled;
     delete cfg.sliderJson;
 
     if (!cfg.integrations || typeof cfg.integrations !== "object") {
-      cfg.integrations = cloneDefaults().integrations;
+      cfg.integrations = themeConfig.cloneDefaults().integrations;
     }
     if (typeof cfg.integrations.enabled !== "boolean") {
       cfg.integrations.enabled = true;
@@ -1490,7 +685,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     cfg.integrations.movieInfo.enabled = Boolean(cfg.integrations.movieInfo.enabled);
 
     if (!cfg.branding || typeof cfg.branding !== "object") {
-      cfg.branding = cloneDefaults().branding;
+      cfg.branding = themeConfig.cloneDefaults().branding;
     }
     if (typeof cfg.branding.favicon === "string" && !cfg.branding.faviconUrl) {
       cfg.branding.faviconUrl = cfg.branding.favicon;
@@ -1512,7 +707,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     }
 
     if (!cfg.resources || typeof cfg.resources !== "object") {
-      cfg.resources = cloneDefaults().resources;
+      cfg.resources = themeConfig.cloneDefaults().resources;
     }
     if (!Array.isArray(cfg.resources.styles)) {
       cfg.resources.styles = [];
@@ -1520,7 +715,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"]
     if (!Array.isArray(cfg.resources.scripts)) {
       cfg.resources.scripts = [];
     }
-    const resourceModules = normalizeModuleUrls(collectModuleCandidates(cfg));
+    const resourceModules = themeConfig.normalizeModuleUrls(themeConfig.collectModuleCandidates(cfg));
     cfg.resources.modules = resourceModules;
     delete cfg.resources.moduleUrls;
     delete cfg.resources.externalModules;
@@ -1533,7 +728,7 @@ updateInputs(panel, cfg);
 initializing = false;
 
 setTimeout(() => {
-  const modules = normalizeModuleUrls(collectModuleCandidates(cfg));
+  const modules = themeConfig.normalizeModuleUrls(themeConfig.collectModuleCandidates(cfg));
   renderModuleInputs(panel, modules);
   ensureModuleFieldAvailability(panel);
 }, 50);
@@ -1544,7 +739,7 @@ setTimeout(() => {
     const markDirty = () => {
       if (initializing) return;
       const latest = collectConfig(panel, cfg);
-      overwriteConfig(cfg, latest);
+      themeConfig.overwriteConfig(cfg, latest);
       dirty = true;
       if (status) {
         status.textContent = "Changes pending. Click Apply in the channel settings footer…";
@@ -1573,7 +768,7 @@ setTimeout(() => {
     if (applyBtn) {
       applyBtn.addEventListener('click', () => {
         const latest = collectConfig(panel, cfg);
-        overwriteConfig(cfg, latest);
+        themeConfig.overwriteConfig(cfg, latest);
         const result = applyConfigToFields(panel, cfg, modal, { mode: 'manual' });
         if (!result) return;
         dirty = false;
@@ -1607,8 +802,8 @@ setTimeout(() => {
     const hasCssBlock = hasThemeAdminCssBlock(existingCss);
     const currentVersion = storedVersion;
     let needsInit = !hasJsBlock || !hasCssBlock;
-    if (currentVersion < DEFAULT_CONFIG.version) {
-      cfg.version = DEFAULT_CONFIG.version;
+    if (currentVersion < themeConfig.DEFAULT_CONFIG.version) {
+      cfg.version = themeConfig.DEFAULT_CONFIG.version;
       needsInit = true;
     }
     if (needsInit) {
@@ -1680,7 +875,7 @@ setTimeout(() => {
     };
   })();
 
-  bootstrapRuntimeThemeSync();
+  themeRuntimeDomain.bootstrapRuntimeThemeSync();
   bindModalEvents();
 
   return { name: "feature:channelThemeAdmin" };
