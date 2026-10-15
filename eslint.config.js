@@ -68,6 +68,7 @@ const esmModuleFiles = [
   "src/modules/feature-notify.js",
   "src/modules/feature-playlist-tools.js",
   "src/modules/feature-movie-suggestions.js",
+  "src/modules/feature-audio.js",
   "src/modules/feature-theme-icons.js",
   "src/modules/util-imdb-card.js",
   "src/modules/util-letterboxd.js",
