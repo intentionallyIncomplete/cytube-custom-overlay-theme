@@ -626,7 +626,7 @@ import { BTFW_AUDIO } from "./audio/audio-engine.js";
         if (!playerElement) { setTimeout(initializePlayer, 500); return; }
 
         sharedAudio.player = videojs('ytapiplayer');
-        sharedAudio.originalSrc = sharedAudio.player.currentSrc();
+        sharedAudio.originalSrc = sharedAudio._readCurrentSrc();
         sharedAudio.startWatchdog();
         // console.log('[audioboost] Player initialized');
       }

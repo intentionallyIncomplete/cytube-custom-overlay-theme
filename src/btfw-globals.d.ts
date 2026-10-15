@@ -106,6 +106,7 @@ interface BtfwAudioEngine {
   _clearMediaElementForCorsSwap(): void;
   _same(a: unknown, b: unknown): boolean;
   _getMediaElement(): HTMLMediaElement | null;
+  _readCurrentSrc(): string;
   _hasIframeOnlyMedia(): boolean;
 
   // Chain lifecycle

@@ -12,4 +12,19 @@ test.describe("E2E fixture target", () => {
     await expect(page.getByTestId("cytube-messagebuffer")).toBeVisible();
     await expect(page.getByTestId("cytube-videowrap")).toBeVisible();
   });
+
+  // Regression guard for the pre-existing fixture-page error where the audio
+  // engine's player binding called player.currentSrc() unguarded on the stub
+  // videojs player (no currentSrc method) — surfacing as the minified
+  // "o.player.currentSrc is not a function" on every watchdog tick.
+  test("fixture boot logs no uncaught page errors", async ({ page }) => {
+    const pageErrors = [];
+    page.on("pageerror", (err) => pageErrors.push(err.message));
+
+    await gotoFixtureAndBoot(page);
+    // Allow late async work (audio watchdog, movie-suggestion boot, etc.) to run.
+    await page.waitForTimeout(1500);
+
+    expect(pageErrors).toEqual([]);
+  });
 });

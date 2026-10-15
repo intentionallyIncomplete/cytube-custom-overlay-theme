@@ -145,7 +145,7 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
     // (MEDIA_ERR_SRC_NOT_SUPPORTED) when the CDN omits Access-Control-Allow-Origin.
     _ensureAnonymousCrossOrigin() {
       if (this._hasAnonymousCrossOrigin()) return false;
-      const current = this.player?.currentSrc?.() || this._getMediaElement()?.currentSrc || '';
+      const current = this._readCurrentSrc();
       if (current && !this._isTrusted(current)) return false;
       try {
         this.player?.crossOrigin('anonymous');
@@ -169,6 +169,17 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
     _same(a, b) {
       // video.js may normalize encodings; compare decoded when proxied
       return String(a || '') === String(b || '');
+    },
+
+    // Defensive currentSrc read: player may be a stub/mock without currentSrc
+    // (e2e fixture), or tech may be mid-swap. Falls back to the raw media
+    // element's currentSrc property. Returns '' when nothing is readable.
+    _readCurrentSrc() {
+      try {
+        const fromPlayer = this.player?.currentSrc?.() || '';
+        if (fromPlayer) return fromPlayer;
+      } catch {}
+      return this._getMediaElement()?.currentSrc || '';
     },
 
     _getMediaElement() {
@@ -309,7 +320,7 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
         const freshEl = this._swapVideoTechElement(videoEl);
         if (!freshEl) throw err;
 
-        const src = this.player?.currentSrc();
+        const src = this._readCurrentSrc();
         if (src && this.player) {
           this._markInternalSrcSet();
           this.player.src({ src, type: 'video/mp4' });
@@ -379,7 +390,7 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
       // swapping tech.el_ (which freezes Video.js controls).
       this.cleanup();
 
-      const liveSrc = this.player?.currentSrc?.() || '';
+      const liveSrc = this._readCurrentSrc();
       if (this.sourceNode && liveSrc && !this._isTrusted(liveSrc)) {
         await this.ensureProxy();
         this._connectPassthrough();
@@ -490,7 +501,7 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
       }
 
       // Prime last known
-      this._lastKnownSrc = player.currentSrc();
+      this._lastKnownSrc = this._readCurrentSrc();
     },
 
     _startWatchdogInterval() {
@@ -542,7 +553,7 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
 
     _checkAndReapply(_reason) {
       if (!this.player) return;
-      const current = this.player.currentSrc();
+      const current = this._readCurrentSrc();
       if (!current) return;
 
       this._lastKnownSrc = current;
@@ -649,7 +660,7 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
       if (!this.player) return false;
       const player = this.player;
 
-      const currentSrc = player.currentSrc();
+      const currentSrc = this._readCurrentSrc();
       if (!currentSrc) return false;
 
       if (this._isTrusted(currentSrc)) {
@@ -712,10 +723,10 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
       if (this._shouldForceProxy()) {
         // Always key off live currentSrc — stale isProxied after CyTube reverts
         // the URL used to call crossOrigin on the bare movie CDN and brick the player.
-        const liveSrc = this.player.currentSrc();
+        const liveSrc = this._readCurrentSrc();
         if (!this._isTrusted(liveSrc)) {
           const proxied = await this.ensureProxy();
-          if (!proxied || !this._isTrusted(this.player.currentSrc())) {
+          if (!proxied || !this._isTrusted(this._readCurrentSrc())) {
             console.error('[BTFW_AUDIO] Proxy required but currentSrc is not CORS-safe');
             return false;
           }
