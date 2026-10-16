@@ -73,7 +73,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
-          path: .
+          path: dist/
 
       - name: Install Playwright browser
         run: npm run test:e2e:install
