@@ -23,6 +23,13 @@ test.describe("feature-stack characterization (#228 Phase 0)", () => {
     await expect(page.locator(STACK_ITEM("motd-group"))).toBeAttached();
     await expect(page.locator(STACK_ITEM("playlist-group"))).toBeAttached();
     await expect(page.locator(STACK_ITEM("poll-group"))).toBeAttached();
+    // Boot keeps settling for ~2.1s after the items attach (1000ms stored-state
+    // pass + the 700ms populate interval x3). Interacting inside that window
+    // races the boot writers — toggle clicks can be overwritten or read
+    // mid-flight (flake, verified 2026-10-16). Wait it out before any test
+    // interacts with the stack.
+    await page.waitForFunction(() => localStorage.getItem("btfw-stack-order") !== null);
+    await page.waitForTimeout(2300);
   });
 
   test("boot creates the three stack groups in priority order and adopts the panels", async ({ page }) => {
@@ -100,6 +107,94 @@ test.describe("feature-stack characterization (#228 Phase 0)", () => {
     await toggle.click();
     await expect(page.locator(STACK_ITEM("motd-group"))).toHaveAttribute("data-open", "false");
     const stored = await page.evaluate(() => localStorage.getItem("btfw-stack-motd-open"));
+    expect(stored).toBe("false");
+  });
+
+  test("playlist toggle click persists the closed preference", async ({ page }) => {
+    const toggle = page.locator(`${STACK_ITEM("playlist-group")} .btfw-playlist-toggle`).first();
+    await expect(toggle).toBeAttached();
+    await toggle.click();
+    await expect(page.locator(STACK_ITEM("playlist-group"))).toHaveAttribute("data-open", "false");
+    const stored = await page.evaluate(() => localStorage.getItem("btfw-stack-playlist-open"));
+    expect(stored).toBe("false");
+  });
+
+  test("poll toggle click flips the panel state and persists the new value", async ({ page }) => {
+    // The poll group's boot state is nondeterministic on the fixture:
+    // getDefaultPollOpen(stored, hasPollContent()) depends on whether other
+    // modules have injected poll UI into #pollwrap by the time boot reads it
+    // (observed both open and closed across runs). Pin the contract, not the
+    // direction: the toggle flips data-open and persists the flipped value.
+    const item = page.locator(STACK_ITEM("poll-group"));
+    const initial = await item.getAttribute("data-open");
+    const flipped = initial === "true" ? "false" : "true";
+    const toggle = page.locator(`${STACK_ITEM("poll-group")} .btfw-poll-toggle`).first();
+    await expect(toggle).toBeAttached();
+    await toggle.click();
+    await expect(item).toHaveAttribute("data-open", flipped);
+    const stored = await page.evaluate(() => localStorage.getItem("btfw-stack-poll-open"));
+    expect(stored).toBe(flipped);
+  });
+
+  test("down arrow reorder persists the new stack order", async ({ page }) => {
+    const down = page.locator(`${STACK_ITEM("motd-group")} .btfw-down`).first();
+    await expect(down).toBeAttached();
+    await down.click();
+    const binds = await page.$$eval(
+      '#btfw-stack .btfw-stack-item[data-group="true"]',
+      (els) => els.map((e) => e.dataset.bind)
+    );
+    expect(binds).toEqual(["playlist-group", "motd-group", "poll-group"]);
+    const savedOrder = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("btfw-stack-order") || "[]")
+    );
+    expect(savedOrder.map((e) => e.id)).toEqual(["playlist-group", "motd-group", "poll-group"]);
+  });
+
+  test("dock button pins the panel to the panels menu bar", async ({ page }) => {
+    const dockBtn = page.locator(`${STACK_ITEM("playlist-group")} .btfw-stack-dock-btn`).first();
+    await expect(dockBtn).toBeAttached();
+    await dockBtn.click();
+
+    await expect(page.locator(STACK_ITEM("playlist-group"))).toHaveAttribute("data-docked", "true");
+    await expect(page.locator(STACK_ITEM("playlist-group"))).toHaveClass(/btfw-stack-item--docked/);
+    const stored = await page.evaluate(() => localStorage.getItem("btfw-stack-playlist-docked"));
+    expect(stored).toBe("true");
+
+    // Panel bar button for the docked group exists; menu button becomes visible
+    await expect(page.locator('#btfw-panel-bar .btfw-panel-btn[data-group="playlist-group"]')).toBeAttached();
+    await expect(page.locator("#btfw-panels-menu-btn")).toBeVisible();
+  });
+
+  test("panels menu button opens the bar and a docked panel click opens its flyout", async ({ page }) => {
+    await page.locator(`${STACK_ITEM("playlist-group")} .btfw-stack-dock-btn`).first().click();
+    const menuBtn = page.locator("#btfw-panels-menu-btn");
+    await expect(menuBtn).toBeVisible();
+    await menuBtn.click();
+
+    await expect(page.locator("#btfw-panel-bar")).toHaveClass(/open/);
+    await expect(page.locator("html")).toHaveClass(/btfw-panels-bar-open/);
+
+    const panelBtn = page.locator('.btfw-panel-btn[data-group="playlist-group"]');
+    await panelBtn.click();
+    await expect(panelBtn).toHaveClass(/is-active/);
+    await expect(page.locator("html")).toHaveClass(/btfw-panels-flyout-open/);
+  });
+
+  test("undock returns the docked panel to the stack", async ({ page }) => {
+    await page.locator(`${STACK_ITEM("playlist-group")} .btfw-stack-dock-btn`).first().click();
+    const menuBtn = page.locator("#btfw-panels-menu-btn");
+    await expect(menuBtn).toBeVisible();
+    await menuBtn.click();
+
+    const panelBtn = page.locator('.btfw-panel-btn[data-group="playlist-group"]');
+    await panelBtn.click();
+    await expect(panelBtn).toHaveClass(/is-active/);
+
+    await page.locator('.btfw-panel-btn[data-group="playlist-group"] .btfw-panel-undock').click();
+    await expect(page.locator(STACK_ITEM("playlist-group"))).toHaveAttribute("data-docked", "false");
+    await expect(page.locator('#btfw-stack .btfw-stack-item[data-bind="playlist-group"]')).toBeAttached();
+    const stored = await page.evaluate(() => localStorage.getItem("btfw-stack-playlist-docked"));
     expect(stored).toBe("false");
   });
 });
