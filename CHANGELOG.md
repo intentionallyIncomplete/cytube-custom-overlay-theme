@@ -1,3 +1,10 @@
+## [1.30.7](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.6...v1.30.7) (2026-10-16)
+
+
+### Bug Fixes
+
+* **229:** normalize innerHTML sink documentation and add escaping regression tests ([#241](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/241)) ([c1c2f07](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/c1c2f07619d5bf4c2b9b968d140148f6972ccc8a)), closes [#229](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/229)
+
 ## [1.30.6](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.5...v1.30.6) (2026-10-16)
 
 
