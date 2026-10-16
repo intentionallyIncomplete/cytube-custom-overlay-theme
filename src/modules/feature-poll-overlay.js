@@ -215,6 +215,7 @@ BTFW.define("feature:poll-overlay", [], async () => {
 
     const overlay = document.createElement("div");
     overlay.id = "btfw-poll-video-overlay";
+    // eslint-disable-next-line no-restricted-syntax -- safe: static first-party overlay markup, no interpolation; see docs/INNERHTML-AUDIT.md
     overlay.innerHTML = `
       <div class="btfw-poll-video-content">
         <div class="btfw-poll-video-header">

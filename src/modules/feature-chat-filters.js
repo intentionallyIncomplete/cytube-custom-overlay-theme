@@ -163,7 +163,7 @@ const customFilters = [
     );
   }
 
-  // Re-audited for issue #201 Phase 3 (see .github/INNERHTML-AUDIT.md MEDIUM table): `html` here
+  // Re-audited for issue #201 Phase 3 (see docs/INNERHTML-AUDIT.md MEDIUM table): `html` here
   // is CyTube's own already-rendered chat message markup (passed through CyTube's server-side
   // `sanitize-html`, per the CHAT_IMGUR_REFERRER_ATTR note above), already live in `span` before
   // this function runs. The letterboxd/tmdb/imdb card renderers it calls now escape all

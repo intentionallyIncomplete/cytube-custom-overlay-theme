@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 // Regex-based tag strip, deliberately not `probe.innerHTML = raw` + read `.textContent` (see
-// .github/INNERHTML-AUDIT.md MEDIUM table, issue #201 Phase 3). This mirrors the implementation
+// docs/INNERHTML-AUDIT.md MEDIUM table, issue #201 Phase 3). This mirrors the implementation
 // in feature-stack.js and feature-motd-editor.js exactly — both previously used a `<div>`-based DOM
 // probe in the browser — that DOM probe could still fire `<img src=x onerror=...>` even though
 // the probe element was never attached to the visible page, because "detached from the DOM" is
