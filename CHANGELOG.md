@@ -1,3 +1,10 @@
+## [1.30.6](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.5...v1.30.6) (2026-10-16)
+
+
+### Bug Fixes
+
+* guard player.currentSrc reads in audio engine for stub players ([#239](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/239)) ([5319f77](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/5319f7741fe62db4b21623758123c6629cd703bb))
+
 ## [1.30.5](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.4...v1.30.5) (2026-10-15)
 
 ## [1.30.4](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.3...v1.30.4) (2026-10-15)
