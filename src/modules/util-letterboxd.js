@@ -182,6 +182,7 @@ BTFW.define("util:letterboxd", ["util:tmdb-proxy"], async ({ init }) => {
         console.warn("[BTFW letterboxd] Card render failed:", slug, err);
       }
     }
+    // eslint-disable-next-line no-restricted-syntax -- safe: card markup fully escaped in renderCardHtml (escapeHtml on all API-derived fields); see docs/INNERHTML-AUDIT.md
     if (out !== container.innerHTML) container.innerHTML = out;
   }
 
