@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 // Mirrors feature-notification-sounds.js's plainText() — a regex-based tag strip + entity
 // decode used instead of `element.innerHTML = html` for untrusted chat message text. See
-// .github/INNERHTML-AUDIT.md MEDIUM table (issue #201 Phase 3): setting innerHTML on a
+// docs/INNERHTML-AUDIT.md MEDIUM table (issue #201 Phase 3): setting innerHTML on a
 // live-document element (even one never attached to the visible DOM) can still fire
 // `<img src=x onerror=...>`, so this never hands attacker-controlled text to an HTML parser.
 function decodeNumericEntity(code) {
