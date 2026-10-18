@@ -157,7 +157,9 @@ export function createStackAssembly(ctx: StackAssemblyContext): StackAssemblyDom
     // Special handling for MOTD group
     if (group.id === "motd-group") {
       motd.normalizeMotdStructure();
-      elements = [document.getElementById("motdwrap")].filter(Boolean);
+      elements = [document.getElementById("motdwrap")].filter(
+        (el): el is HTMLElement => Boolean(el)
+      );
     }
 
     // Special handling for playlist group
@@ -173,7 +175,9 @@ export function createStackAssembly(ctx: StackAssemblyContext): StackAssemblyDom
       poll.detachPollWrapFromPlaylist();
       poll.movePollButton();
       const pollWrap = document.getElementById("pollwrap");
-      elements = [pollWrap, document.getElementById("btfw-poll-history")].filter(Boolean);
+      elements = [pollWrap, document.getElementById("btfw-poll-history")].filter(
+        (el): el is HTMLElement => Boolean(el)
+      );
     }
 
     if (elements.length === 0) return null;
@@ -358,8 +362,9 @@ export function createStackAssembly(ctx: StackAssemblyContext): StackAssemblyDom
       else panelbar.clearActiveFlyoutIf(groupId as string);
     } else {
       panelbar.restorePanelToStack(wrapper);
-      if ((wrapper as StackPanelElement)._btfwSetOpenState) {
-        (wrapper as StackPanelElement)._btfwSetOpenState(true);
+      const setOpen = (wrapper as StackPanelElement)._btfwSetOpenState;
+      if (setOpen) {
+        setOpen(true);
       } else {
         wrapper.dataset.open = "true";
         wrapper.classList.add("is-open");
