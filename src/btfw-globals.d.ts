@@ -22,6 +22,9 @@ interface BtfwRegistryApi {
   SRI?: Record<string, string>;
 }
 
+/** BTFW version, injected at build time via scripts/build-options.js. */
+declare const __BTFW_VERSION__: string;
+
 interface CytubeClientLike {
   hasPermission?: (permission: string) => boolean;
   rank?: number;

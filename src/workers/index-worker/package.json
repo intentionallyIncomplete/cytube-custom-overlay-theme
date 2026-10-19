@@ -1,0 +1,13 @@
+{
+  "name": "index-worker",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --secrets-file .dev.vars",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "wrangler": "^4.151.1"
+  }
+}

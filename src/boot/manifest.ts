@@ -86,11 +86,3 @@ export const BOOT_SETTINGS = [
   "feature:themeSettings",
   ...BOOT_SETTINGS_ADMIN
 ] as const;
-
-export const BOOT_FEATURES = [
-  ...BOOT_DOM,
-  ...BOOT_CHAT,
-  ...BOOT_NAV,
-  ...BOOT_SYNC,
-  ...BOOT_SETTINGS
-] as const;

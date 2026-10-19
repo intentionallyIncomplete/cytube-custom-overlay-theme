@@ -458,17 +458,17 @@ interface BootOverlayApi {
       });
     })
     .then(function () {
-      console.log("[BTFW v3.4f] Ready.");
+      console.log("[BTFW v__BTFW_VERSION__] Ready.");
       document.dispatchEvent(
         new CustomEvent("btfw:ready", {
-          detail: { version: "3.4f", timestamp: Date.now() }
+          detail: { version: __BTFW_VERSION__, timestamp: Date.now() }
         })
       );
       BootOverlay.hide();
     })
     .catch(function (e: unknown) {
       const err = e as { message?: string };
-      console.error("[BTFW v3.4f] boot failed:", (err && err.message) || e);
+      console.error("[BTFW v__BTFW_VERSION__] boot failed:", (err && err.message) || e);
       BootOverlay.fail((err && err.message) || "Unknown error");
     });
 })();
