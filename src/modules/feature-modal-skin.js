@@ -4,11 +4,15 @@
    - Normalizes header/footer and re-styles .btn -> .button variants
    - Adds a Bulma-like close "delete" button that hides via Bootstrap
 */
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:modal-skin", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
 
-  const CHANNEL_MODAL_SIZE_KEY = "btfw:channeloptions:size";
+  // #202: key from the canonical LS_KEYS registry.
+  const CHANNEL_MODAL_SIZE_KEY = LS_KEYS.channelOptionsSize;
   const CHANNEL_MODAL_DEFAULT_WIDTH = 736;
   const CHANNEL_MODAL_MIN_WIDTH = 520;
   const CHANNEL_MODAL_MIN_HEIGHT = 360;
@@ -23,9 +27,8 @@ BTFW.define("feature:modal-skin", [], async () => {
 
   function readChannelModalSize(){
     try {
-      const raw = localStorage.getItem(CHANNEL_MODAL_SIZE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
+      const parsed = getJsonItem(CHANNEL_MODAL_SIZE_KEY, null);
+      if (!parsed) return null;
       const width = Number(parsed?.width);
       const height = Number(parsed?.height);
       const left = Number(parsed?.left);
@@ -53,7 +56,7 @@ BTFW.define("feature:modal-skin", [], async () => {
       }
       if (Number.isFinite(left)) payload.left = Math.round(left);
       if (Number.isFinite(top)) payload.top = Math.round(top);
-      localStorage.setItem(CHANNEL_MODAL_SIZE_KEY, JSON.stringify(payload));
+      setJsonItem(CHANNEL_MODAL_SIZE_KEY, payload);
     } catch (_) {}
   }
 

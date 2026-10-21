@@ -11,6 +11,7 @@ import {
 } from "../lib/apply-chat-typography.js";
 import { confirmDialog } from "../lib/confirm-dialog.js";
 import { escapeHtml } from "../lib/escape-html.js";
+import { safeGetItem, safeSetItem, getJsonItem } from "../lib/storage.js";
 
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
@@ -22,8 +23,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-  const get = (k, d) => { try { const v = localStorage.getItem(k); return v==null? d : v; } catch(_) { return d; } };
-  const set = (k, v) => { try { localStorage.setItem(k, v); } catch(_){} };
+  // #202: guarded storage access; keys come from the canonical LS_KEYS registry.
+  const get = (k, d) => safeGetItem(k, d);
+  const set = (k, v) => { safeSetItem(k, v); };
 
   let appearanceDraft = themeRuntime.cloneAppearance(themePresets.getActiveAppearance());
   let editingPresetId = themePresets.getActivePreset()?.id || null;
@@ -257,9 +259,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
 
   function loadIgnoreNames(){
     try {
-      const raw = localStorage.getItem(LS_KEYS.chatIgnore);
-      if (!raw) return [];
-      const arr = JSON.parse(raw);
+      const arr = getJsonItem(LS_KEYS.chatIgnore, []);
       if (!Array.isArray(arr)) return [];
       return arr.map(v => normalizeName(String(v))).filter(Boolean);
     } catch(_) {
@@ -268,7 +268,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
   }
 
   function persistIgnoreNames(list){
-    try { localStorage.setItem(LS_KEYS.chatIgnore, JSON.stringify(list)); } catch(_){}
+    safeSetItem(LS_KEYS.chatIgnore, JSON.stringify(list));
   }
 
   // apply CSS variables immediately (used by chat/emote sizing)

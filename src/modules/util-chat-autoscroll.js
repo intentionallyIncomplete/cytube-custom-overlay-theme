@@ -1,3 +1,4 @@
+import { safeGetItem } from "../lib/storage.js";
 import {
   getAutoScrollEnabled as getEnabledFromStored,
   isPinnedToBottom as isPinned,
@@ -9,11 +10,7 @@ BTFW.define("util:chatAutoscroll", ["util:constants"], async ({ init }) => {
   const PIN_THRESHOLD = 48;
 
   function readStored() {
-    try {
-      return localStorage.getItem(LS_KEYS.chatAutoScroll);
-    } catch (_) {
-      return null;
-    }
+    return safeGetItem(LS_KEYS.chatAutoScroll);
   }
 
   function getAutoScrollEnabled() {

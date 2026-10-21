@@ -24,6 +24,7 @@
     "src/lib/escape-html.ts",
     "src/lib/can-load-admin-bundle.ts",
     "src/lib/apply-chat-typography.ts",
+    "src/lib/storage.ts",
     "src/lib/defer-feature-open.ts",
     "src/btfw-globals.d.ts",
     "src/lib/stack-core.ts",

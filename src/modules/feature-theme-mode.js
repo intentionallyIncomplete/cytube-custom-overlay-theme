@@ -1,7 +1,12 @@
 // UI chrome theme mode (dark / light / auto) for legacy CyTube surfaces
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
+
 BTFW.define("feature:themeMode", [], async () => {
-  const KEY = "btfw:theme:mode";
-  const KEY_OLD = "btfw:bulma:theme";
+  // #202: keys from the canonical LS_KEYS registry (themeModeLegacy is a
+  // read-only migration source).
+  const KEY = LS_KEYS.themeMode;
+  const KEY_OLD = LS_KEYS.themeModeLegacy;
   const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
 
   let styleEl;
@@ -160,14 +165,11 @@ body.modal-open { overflow: hidden; }
   }
 
   function readPref() {
-    try {
-      const v = localStorage.getItem(KEY);
-      if (v) return v;
-      const legacy = localStorage.getItem(KEY_OLD);
-      return legacy || "dark";
-    } catch (_) { return "dark"; }
+    const v = safeGetItem(KEY);
+    if (v) return v;
+    return safeGetItem(KEY_OLD) || "dark";
   }
-  function writePref(v) { try { localStorage.setItem(KEY, v); } catch(_){} }
+  function writePref(v) { safeSetItem(KEY, v); }
 
   function resolveAuto() {
     return (mq && mq.matches) ? "dark" : "light";

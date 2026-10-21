@@ -1,10 +1,12 @@
+import { safeGetItem, safeSetItem, getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ init }) => {
   const dom = await init("util:dom");
   const { LS_KEYS } = await init("util:constants");
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const AVATAR_KEY = LS_KEYS.avatarsMode;
-  const AVATAR_URL_CACHE_KEY = `${AVATAR_KEY}:urls:v1`;
+  const AVATAR_URL_CACHE_KEY = LS_KEYS.avatarUrlsCache;
   const AVATAR_URL_CACHE_LIMIT = 200;
 
   const avatarCache = new Map();
@@ -14,15 +16,13 @@ BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ ini
   let avatarUrlCacheDirty = false;
 
   function loadMode(){
-    try {
-      const stored = localStorage.getItem(AVATAR_KEY);
-      if (stored === "off" || stored === "big" || stored === "small") return stored;
-    } catch(_) {}
+    const stored = safeGetItem(AVATAR_KEY);
+    if (stored === "off" || stored === "big" || stored === "small") return stored;
     return "big";
   }
 
   function saveMode(mode){
-    try { localStorage.setItem(AVATAR_KEY, mode); } catch(_){}
+    safeSetItem(AVATAR_KEY, mode);
   }
 
   let currentMode = loadMode();
@@ -33,9 +33,7 @@ BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ ini
 
   function loadAvatarUrlCache(){
     try {
-      const raw = localStorage.getItem(AVATAR_URL_CACHE_KEY);
-      if (!raw) return new Map();
-      const parsed = JSON.parse(raw);
+      const parsed = getJsonItem(AVATAR_URL_CACHE_KEY, null);
       if (!Array.isArray(parsed)) return new Map();
       const map = new Map();
       parsed.forEach(entry => {
@@ -57,10 +55,7 @@ BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ ini
       avatarUrlCachePersistTimer = null;
       if (!avatarUrlCacheDirty) return;
       avatarUrlCacheDirty = false;
-      try {
-        const payload = JSON.stringify(Array.from(avatarUrlStore.entries()));
-        localStorage.setItem(AVATAR_URL_CACHE_KEY, payload);
-      } catch(_) {}
+      setJsonItem(AVATAR_URL_CACHE_KEY, Array.from(avatarUrlStore.entries()));
     }, 250);
   }
 

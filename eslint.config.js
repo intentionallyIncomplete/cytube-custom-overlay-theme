@@ -26,6 +26,17 @@ const sharedRules = {
   "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
   "no-empty": ["error", { allowEmptyCatch: true }],
   "no-console": "off",
+  // Issue #202 — storage keys and localStorage access must go through the
+  // canonical LS_KEYS registry (src/lib/btfw-constants.js) and the guarded
+  // wrapper (src/lib/storage.ts). Adds are allowlisted per-file below.
+  "no-restricted-globals": [
+    "warn",
+    {
+      name: "localStorage",
+      message:
+        "Access localStorage only via src/lib/storage.ts (safeGetItem/safeSetItem/…) with keys from LS_KEYS. New direct uses: add the file to the storageDirectAllowList in eslint.config.js and update scripts/check-storage-keys.js.",
+    },
+  ],
   // Issue #201 — Task 3.3: warn on direct innerHTML/outerHTML assignment to
   // prevent new raw-HTML sinks. Existing reviewed sites that intentionally use
   // innerHTML (e.g. clearing content with `= ""`, or assigning safeHtml output)
@@ -45,13 +56,43 @@ const sharedRules = {
   ],
 };
 
+// Files allowed to touch localStorage directly (checked verbatim by
+// scripts/check-storage-keys.js — keep both lists in sync):
+//   - btfw-constants.js owns the canonical key strings themselves
+//   - storage.ts is the guarded wrapper around the raw API
+//   - stack-core.ts keeps its own try/catch persistence helpers (typed,
+//     unit-covered, exported through the lib seam)
+const storageDirectAllowList = [
+  "src/lib/btfw-constants.js",
+  "src/lib/storage.ts",
+  "src/lib/stack-core.ts",
+];
+
 const esmModuleFiles = [
   "tests/**/*.js",
   "playwright.config.js",
   "scripts/**/*.js",
   "src/lib/**/*.js",
   "src/modules/util-constants.js",
+  "src/modules/util-storage.js",
   "src/modules/util-dom.js",
+  // #202: modules migrated onto LS_KEYS + storage wrapper imports
+  "src/modules/feature-chat-avatars.js",
+  "src/modules/feature-chat-ignore.js",
+  "src/modules/feature-chat-media.js",
+  "src/modules/feature-chat-timestamps.js",
+  "src/modules/feature-chat-tools.js",
+  "src/modules/feature-chat-username-colors.js",
+  "src/modules/feature-emoji-compat.js",
+  "src/modules/feature-emotes.js",
+  "src/modules/feature-gifs.js",
+  "src/modules/feature-layout.js",
+  "src/modules/feature-modal-skin.js",
+  "src/modules/feature-notification-sounds.js",
+  "src/modules/feature-notify.js",
+  "src/modules/feature-playlist-tools.js",
+  "src/modules/feature-theme-mode.js",
+  "src/modules/feature-video-overlay.js",
   "src/modules/util-state.js",
   "src/modules/util-templates.js",
   "src/modules/util-chat-autoscroll.js",
@@ -122,6 +163,13 @@ export default [
         ...globals.node,
         ...globals.browser,
       },
+    },
+  },
+  {
+    // Issue #202: allowlisted files may use the raw localStorage global.
+    files: storageDirectAllowList,
+    rules: {
+      "no-restricted-globals": "off",
     },
   },
   {

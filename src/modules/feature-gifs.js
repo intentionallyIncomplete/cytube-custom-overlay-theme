@@ -1,4 +1,7 @@
 
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ init }) => {
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -20,7 +23,9 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
   let renderedItems = [];
   let gridClickHandlerAttached = false;
 
-  const FAVORITES_KEY = "btfw:gifs:favorites";
+  // #202: key from the canonical LS_KEYS registry; access via the guarded
+  // storage wrapper.
+  const FAVORITES_KEY = LS_KEYS.gifsFavorites;
   let favorites = loadFavorites();
   let favoriteLookup = buildFavoriteLookup(favorites);
 
@@ -658,9 +663,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
 
   function loadFavorites() {
     try {
-      const raw = localStorage.getItem(FAVORITES_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
+      const parsed = getJsonItem(FAVORITES_KEY, null);
       if (Array.isArray(parsed)) {
         return parsed
           .filter(item => item && typeof item === "object" && item.urlClassic)
@@ -676,9 +679,7 @@ BTFW.define("feature:gifs", ["util:giphy-proxy", "util:klipy-proxy"], async ({ i
   }
 
   function saveFavorites() {
-    try {
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-    } catch (_) {}
+    setJsonItem(FAVORITES_KEY, favorites);
   }
 
   function buildFavoriteLookup(list) {

@@ -1,3 +1,6 @@
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
+
 BTFW.define("feature:videoOverlay", [], async () => {
   const $ = (selector, root = document) => root.querySelector(selector);
 
@@ -7,7 +10,8 @@ BTFW.define("feature:videoOverlay", [], async () => {
     "#fullscreenbtn"
   ];
 
-  const LS = { localSubs: "btfw:video:localsubs" };
+  // #202: key from the canonical LS_KEYS registry.
+  const LS = { localSubs: LS_KEYS.localSubs };
   const DEFAULT_OWNER_RANK = 5; // Cytube owners default to rank 5 when CHANNEL perms are unavailable
   const PERMISSION_KEYS = {
     owner: ["chanowner", "owner", "founder", "admin", "administrator"]
@@ -96,17 +100,9 @@ BTFW.define("feature:videoOverlay", [], async () => {
     return false;
   }
 
-  const localSubsEnabled = () => {
-    try {
-      return localStorage.getItem(LS.localSubs) !== "0";
-    } catch (_) {
-      return true;
-    }
-  };
+  const localSubsEnabled = () => safeGetItem(LS.localSubs, "1") !== "0";
   const setLocalSubs = (value) => {
-    try {
-      localStorage.setItem(LS.localSubs, value ? "1" : "0");
-    } catch (_) {}
+    safeSetItem(LS.localSubs, value ? "1" : "0");
     document.dispatchEvent(
       new CustomEvent("btfw:video:localsubs:changed", { detail: { enabled: !!value } })
     );

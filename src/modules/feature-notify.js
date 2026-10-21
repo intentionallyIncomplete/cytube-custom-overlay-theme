@@ -1,4 +1,6 @@
 import { escapeHtml, sanitizeHtml } from "../lib/escape-html.js";
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
 
 BTFW.define("feature:notify", [], async () => {
   const $  = (s, r=document) => r.querySelector(s);
@@ -22,19 +24,21 @@ BTFW.define("feature:notify", [], async () => {
     return ENTITY_DECODER.value;
   }
 
-  const LS_ENABLED     = "btfw:notify:enabled";
-  const LS_JOIN_NOTICES= "btfw:chat:joinNotices";
+  // #202: keys from the canonical LS_KEYS registry; access via the guarded
+  // storage wrapper.
+  const LS_ENABLED     = LS_KEYS.notifyEnabled;
+  const LS_JOIN_NOTICES= LS_KEYS.chatJoinNotices;
   const MAX_VISIBLE    = 3;
   const DEFAULT_TIMEOUT= 6000;
 
   let enabled = true;
-  try { const v = localStorage.getItem(LS_ENABLED); if (v !== null) enabled = v === "1"; } catch(e){}
+  { const v = safeGetItem(LS_ENABLED); if (v !== null) enabled = v === "1"; }
 
   let joinNoticesEnabled = true;
-  try {
-    const stored = localStorage.getItem(LS_JOIN_NOTICES);
+  {
+    const stored = safeGetItem(LS_JOIN_NOTICES);
     if (stored !== null) joinNoticesEnabled = stored === "1";
-  } catch(_){}
+  }
 
   document.addEventListener("btfw:chat:joinNoticesChanged", (ev)=>{
     if (!ev || !ev.detail) return;
@@ -333,7 +337,7 @@ function startAutoclose(o){
     warn   : p => notify(Object.assign({kind:"warn"},    p||{})),
     error  : p => notify(Object.assign({kind:"error"},   p||{})),
     closeAll,
-    setEnabled(v){ enabled=!!v; try{localStorage.setItem(LS_ENABLED,enabled?"1":"0");}catch(e){} if(!enabled) closeAll(); },
+    setEnabled(v){ enabled=!!v; safeSetItem(LS_ENABLED,enabled?"1":"0"); if(!enabled) closeAll(); },
     isEnabled(){ return !!enabled; }
   };
 

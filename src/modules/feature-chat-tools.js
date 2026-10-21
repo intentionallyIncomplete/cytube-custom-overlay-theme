@@ -2,14 +2,19 @@
    Mini panel above chat input: BBCode buttons, AFK/Clear, and Color tools.
    Color uses BillTube2 format: prefix 'col:#RRGGBB:' at the start of the message.
 */
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem, safeRemoveItem, getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
   const motion = await init("util:motion");
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
+  // #202: keys from the canonical LS_KEYS registry; access via the guarded
+  // storage wrapper.
   const LS = {
-    hist:       "btfw:chat:history",
-    stickColor: "btfw:chat:stickColor"
+    hist:       LS_KEYS.chatToolsHistory,
+    stickColor: LS_KEYS.chatStickColor
   };
 
   const COLORS = ["#1abc9c","#16a085","#f1c40f","#f39c12","#2ecc71","#27ae60","#e67e22",
@@ -17,7 +22,7 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
                   "#0080a5","#34495e","#2c3e50","#87724b","#7300a7","#ec87bf","#d870ad",
                   "#f69785","#9ba37e","#b49255","#a94136"];
 
-  try { localStorage.removeItem("btfw:chat:nameColor"); } catch(e){}
+  safeRemoveItem(LS_KEYS.chatNameColorRetired);
   (function clearUsernameTint(){
     $$("#messagebuffer .username, #messagebuffer .nick, #messagebuffer .name")
       .forEach(n => { try { n.style.color = ""; } catch(e){} });
@@ -72,8 +77,8 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
     l.focus(); l.setSelectionRange(pos, pos);
   }
 
-  function getStickColor(){ try { return localStorage.getItem(LS.stickColor)||""; } catch(e){ return ""; } }
-  function setStickColor(hex){ try { localStorage.setItem(LS.stickColor, normalizeHex(hex)||""); } catch(e){} }
+  function getStickColor(){ return safeGetItem(LS.stickColor, ""); }
+  function setStickColor(hex){ safeSetItem(LS.stickColor, normalizeHex(hex)||""); }
 
   function applyStickyColorBeforeSend(){
     const hex = getStickColor(); if (!hex) return;
@@ -326,8 +331,8 @@ BTFW.define("feature:chat-tools", ["feature:chat"], async ({ init }) => {
     actions.insertBefore(b, insertBefore || null);
   }
 
-  function getHist() { try { return JSON.parse(localStorage.getItem(LS.hist) || "[]"); } catch (e) { return []; } }
-  function setHist(a) { try { localStorage.setItem(LS.hist, JSON.stringify(a.slice(-50))); } catch (e) { } }
+  function getHist() { return getJsonItem(LS.hist, []); }
+  function setHist(a) { setJsonItem(LS.hist, a.slice(-50)); }
   let histIndex = -1;
   function commitToHist(text) {
     if (!text) return;

@@ -23,9 +23,23 @@ if (missing.length) {
   process.exit(1);
 }
 
+// #202: package.json version must be injected at build time — the loader
+// source placeholder must never survive into dist.
+const loaderBundle = fs.readFileSync(path.join(rootDir, "dist/billtube-fw.js"), "utf8");
+if (loaderBundle.includes("__BTFW_VERSION__")) {
+  console.error(
+    "dist/billtube-fw.js still contains __BTFW_VERSION__ — the esbuild define in scripts/build-options.js must inject the package.json version"
+  );
+  process.exit(1);
+}
+
 const coreBundle = fs.readFileSync(path.join(rootDir, "dist/core.bundle.js"), "utf8");
 if (!/util:motion/.test(coreBundle)) {
   console.error("core.bundle.js does not define util:motion (add modules/util-motion.js to core bundle)");
+  process.exit(1);
+}
+if (!/util:storage/.test(coreBundle)) {
+  console.error("core.bundle.js does not define util:storage (add modules/util-storage.js to core bundle)");
   process.exit(1);
 }
 
@@ -57,9 +71,11 @@ if (/feature:themeSettings/.test(adminBundle)) {
 
 console.log("✓ All production bundles present");
 console.log("✓ core.bundle.js includes util:motion");
+console.log("✓ core.bundle.js includes util:storage");
 console.log("✓ features.bundle.js includes feature:themeSettings");
 console.log("✓ features.bundle.js includes feature:channelOptionsApply");
 console.log("✓ admin.bundle.js is admin-only (channelThemeAdmin, no themeSettings)");
+console.log("✓ billtube-fw.js has the build-time version injected (no __BTFW_VERSION__)");
 
 if (!verifyCss()) {
   process.exit(1);

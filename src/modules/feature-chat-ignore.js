@@ -1,3 +1,5 @@
+import { getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:chat-ignore", ["util:dom", "util:constants"], async ({ init }) => {
   const dom = await init("util:dom");
   const { LS_KEYS } = await init("util:constants");
@@ -11,8 +13,7 @@ BTFW.define("feature:chat-ignore", ["util:dom", "util:constants"], async ({ init
   // Load ignored users from localStorage
   function loadIgnoredUsers() {
     try {
-      const raw = localStorage.getItem(LS);
-      const arr = raw ? JSON.parse(raw) : [];
+      const arr = getJsonItem(LS, []);
       ignoredUsers = new Set(arr.map(v => String(v).toLowerCase()));
       return ignoredUsers;
     } catch (_) {
@@ -23,9 +24,7 @@ BTFW.define("feature:chat-ignore", ["util:dom", "util:constants"], async ({ init
 
   // Save ignored users to localStorage
   function saveIgnoredUsers() {
-    try {
-      localStorage.setItem(LS, JSON.stringify(Array.from(ignoredUsers)));
-    } catch (_) {}
+    setJsonItem(LS, Array.from(ignoredUsers));
   }
 
   // Initialize

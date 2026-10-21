@@ -5,6 +5,15 @@
  * MUST be valid comments. Uncommented `==BTFW_THEME_ADMIN_*==` tokens are a
  * SyntaxError that aborts the rest of channel JS — including the loader that
  * injects billtube-fw.js — which leaves font icons and theme SVGs missing.
+ *
+ * Canonical write formats (#202) — the ONLY forms writers may emit, always
+ * through buildJsConfigBlock / wrapCssThemeBlock / replaceThemeAdminBlock:
+ *   JS:  the `JS_BLOCK_START` / `JS_BLOCK_END` comment lines
+ *   CSS: the comment-wrapped `CSS_BLOCK_START` / `CSS_BLOCK_END` lines
+ * The marker arrays below additionally recognize legacy/broken forms (raw
+ * `==…==` tokens, the stale merge artifact `=BTFW_THEME_ADMIN_END==`) so
+ * existing channel text can be read and repaired: parsers accept legacy
+ * forms, writers never emit them.
  */
 
 export const JS_BLOCK_START = "// BTFW_THEME_ADMIN_START";

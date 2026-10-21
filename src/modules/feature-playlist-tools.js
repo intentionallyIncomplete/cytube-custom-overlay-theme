@@ -1,5 +1,7 @@
 /* BTFW — feature:playlist-tools (merged helpers: search, scroll-to-current, poll add) */
 import { escapeHtml } from "../lib/escape-html.js";
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
 
 BTFW.define("feature:playlist-tools", [], async () => {
   const $ = (s, r = document) => r.querySelector(s);
@@ -441,7 +443,8 @@ BTFW.define("feature:playlist-tools", [], async () => {
     return anyBound;
   }
 
-  const tempCheckboxKey = "btfw:addfromurl:addTemp";
+  // #202: key from the canonical LS_KEYS registry.
+  const tempCheckboxKey = LS_KEYS.addFromUrlTemp;
   let addTempObserver = null;
   function ensureAddTempPreference() {
     const checkbox = document.querySelector("#addfromurl input.add-temp");
@@ -456,13 +459,12 @@ BTFW.define("feature:playlist-tools", [], async () => {
     if (checkbox._btfwTempPersistBound) return true;
 
     try {
-      const stored = localStorage.getItem(tempCheckboxKey);
+      const stored = safeGetItem(tempCheckboxKey);
       if (stored != null) checkbox.checked = stored === "true";
     } catch (_) { }
 
     checkbox.addEventListener("change", () => {
-      try { localStorage.setItem(tempCheckboxKey, checkbox.checked ? "true" : "false"); }
-      catch (_) { }
+      safeSetItem(tempCheckboxKey, checkbox.checked ? "true" : "false");
     });
 
     checkbox._btfwTempPersistBound = true;

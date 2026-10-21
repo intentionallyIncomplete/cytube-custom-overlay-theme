@@ -2,36 +2,36 @@ import {
   applyEmoteSize,
   normalizeEmoteSizeName
 } from "../lib/apply-chat-typography.js";
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
 
 BTFW.define("feature:chatMedia", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
 
-  const LS_SIZE = "btfw:chat:emoteSize";
-  const LS_AUTO = "btfw:chat:gifAutoplay"; // "1" | "0"
-  const LS_HOVER_MAGNIFY = "btfw:chat:imageHoverMagnify"; // "1" | "0"
+  // #202: keys from the canonical LS_KEYS registry; access via the guarded
+  // storage wrapper.
+  const LS_SIZE = LS_KEYS.emoteSize;
+  const LS_AUTO = LS_KEYS.gifAutoplay; // "1" | "0"
+  const LS_HOVER_MAGNIFY = LS_KEYS.imageHoverMagnify; // "1" | "0"
   const SEL = "#messagebuffer img.chat-media.chat-picture, #messagebuffer img.giphy.chat-picture, #messagebuffer img.klipy.chat-picture, #messagebuffer img.tenor.chat-picture";
 
   function getSize(){
-    try {
-      return normalizeEmoteSizeName(localStorage.getItem(LS_SIZE) || "medium");
-    } catch (_) {
-      return "medium";
-    }
+    return normalizeEmoteSizeName(safeGetItem(LS_SIZE, "medium"));
   }
   function setSize(v){
     const name = normalizeEmoteSizeName(v);
-    try { localStorage.setItem(LS_SIZE, name); } catch(_){}
+    safeSetItem(LS_SIZE, name);
     applyEmoteSize(name);
   }
-  function getAutoplay(){ try { return localStorage.getItem(LS_AUTO) ?? "1"; } catch(_) { return "1"; } }
+  function getAutoplay(){ return safeGetItem(LS_AUTO, "1"); }
   function setAutoplay(on){
-    try { localStorage.setItem(LS_AUTO, on ? "1" : "0"); } catch(_){}
+    safeSetItem(LS_AUTO, on ? "1" : "0");
     applyAutoplay();
   }
-  function getHoverMagnify(){ try { return localStorage.getItem(LS_HOVER_MAGNIFY) ?? "0"; } catch(_) { return "0"; } }
+  function getHoverMagnify(){ return safeGetItem(LS_HOVER_MAGNIFY, "0"); }
   function setHoverMagnify(on){
-    try { localStorage.setItem(LS_HOVER_MAGNIFY, on ? "1" : "0"); } catch(_){}
+    safeSetItem(LS_HOVER_MAGNIFY, on ? "1" : "0");
     applyHoverMagnify(on);
   }
 

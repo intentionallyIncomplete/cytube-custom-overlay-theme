@@ -184,9 +184,13 @@ interface BootOverlayApi {
     return u + (u.indexOf("?") >= 0 ? "&" : "?") + kv;
   }
 
+  // #202: single version source — URL ?v= pin (dev), else the build-time
+  // package.json version injected as __BTFW_VERSION__, else dev-<timestamp>.
   const BTFW_VERSION = (function () {
     const m = /[?&]v=([^&]+)/.exec(location.search);
-    return (m && m[1]) || "dev-" + Date.now();
+    return (m && m[1])
+      || (typeof __BTFW_VERSION__ === "string" && __BTFW_VERSION__)
+      || "dev-" + Date.now();
   })();
 
   const SUPPORTS_PRELOAD = (function () {
@@ -458,17 +462,17 @@ interface BootOverlayApi {
       });
     })
     .then(function () {
-      console.log("[BTFW v__BTFW_VERSION__] Ready.");
+      console.log(`[BTFW v${BTFW_VERSION}] Ready.`);
       document.dispatchEvent(
         new CustomEvent("btfw:ready", {
-          detail: { version: __BTFW_VERSION__, timestamp: Date.now() }
+          detail: { version: BTFW_VERSION, timestamp: Date.now() }
         })
       );
       BootOverlay.hide();
     })
     .catch(function (e: unknown) {
       const err = e as { message?: string };
-      console.error("[BTFW v__BTFW_VERSION__] boot failed:", (err && err.message) || e);
+      console.error(`[BTFW v${BTFW_VERSION}] boot failed:`, (err && err.message) || e);
       BootOverlay.fail((err && err.message) || "Unknown error");
     });
 })();

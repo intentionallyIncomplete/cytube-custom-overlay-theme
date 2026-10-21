@@ -1,8 +1,12 @@
 /* BTFW — feature:notification-sounds (theme modal tab with audio cues) */
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:notification-sounds", [], async () => {
   const $ = (s, r=document) => r.querySelector(s);
 
-  const STORAGE_KEY = "btfw:notify:sounds:v2";
+  // #202: key from the canonical LS_KEYS registry.
+  const STORAGE_KEY = LS_KEYS.notifySounds;
 
   const SOUND_PRESETS = [
     {
@@ -196,20 +200,13 @@ const MP3_SOUND_PRESETS = [
   }
 
   function loadSettings(){
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return cloneSettings(DEFAULTS);
-      const parsed = JSON.parse(raw);
-      return cloneSettings(parsed);
-    } catch (_) {
-      return cloneSettings(DEFAULTS);
-    }
+    const parsed = getJsonItem(STORAGE_KEY, null);
+    if (!parsed) return cloneSettings(DEFAULTS);
+    return cloneSettings(parsed);
   }
 
   function persist(settings){
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch (_) {}
+    setJsonItem(STORAGE_KEY, settings);
   }
 
   function scheduleOscStep(ctx, destination, baseTime, step, volume){

@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  CSS_BLOCK_END,
+  CSS_BLOCK_START,
   CSS_END_MARKERS,
   CSS_START_MARKERS,
   JS_BLOCK_END,
@@ -108,5 +110,39 @@ describe("theme-admin channel JS sentinels", () => {
     expect(replaced).toContain("--btfw-theme-accent: #fff");
     expect(replaced).toContain("body { color: red; }");
     expect(replaced).not.toMatch(/^==BTFW_THEME_ADMIN/m);
+  });
+});
+
+describe("#202 sentinel value formats (canonical write, legacy read)", () => {
+  it("js writer emits only the canonical comment form and it reparses", () => {
+    const js = buildJsConfigBlock('{"version":6}');
+    expect(js.startsWith(JS_BLOCK_START)).toBe(true);
+    expect(js.endsWith(JS_BLOCK_END)).toBe(true);
+    expect(hasBrokenThemeAdminJsMarkers(js)).toBe(false);
+    expect(parseThemeAdminConfig(`const a = 1;\n${js}\n`)).toEqual({ version: 6 });
+  });
+
+  it("css writer emits only the comment-wrapped canonical form", () => {
+    const css = wrapCssThemeBlock(":root { --btfw-theme-accent: #123456; }");
+    expect(css.startsWith(CSS_BLOCK_START)).toBe(true);
+    expect(css.endsWith(CSS_BLOCK_END)).toBe(true);
+    expect(hasBrokenThemeAdminJsMarkers(css)).toBe(false);
+  });
+
+  it("parser accepts legacy forms without producing them", () => {
+    const legacy = [
+      "// ==BTFW_THEME_ADMIN_START==",
+      'window.BTFW_THEME_ADMIN = {"version":5};',
+      "// ==BTFW_THEME_ADMIN_END=="
+    ].join("\n");
+    expect(parseThemeAdminConfig(legacy)).toEqual({ version: 5 });
+    expect(hasBrokenThemeAdminJsMarkers(legacy)).toBe(false);
+
+    const broken = [
+      "==BTFW_THEME_ADMIN_START==",
+      "window.BTFW_THEME_ADMIN = {};",
+      "==BTFW_THEME_ADMIN_END=="
+    ].join("\n");
+    expect(hasBrokenThemeAdminJsMarkers(broken)).toBe(true);
   });
 });

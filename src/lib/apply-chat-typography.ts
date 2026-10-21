@@ -4,6 +4,7 @@
  */
 
 import { EVENTS, LS_KEYS } from "./btfw-constants.js";
+import { safeGetItem } from "./storage.js";
 
 export type EmoteSizeName = "small" | "medium" | "big";
 
@@ -25,12 +26,8 @@ const LEGACY_EMOTE_ALIASES: Readonly<Record<string, EmoteSizeName>> = {
 };
 
 function readLocalStorage(key: string, fallback: string): string {
-  try {
-    const value = localStorage.getItem(key);
-    return value == null ? fallback : value;
-  } catch {
-    return fallback;
-  }
+  // #202: guarded read via the storage wrapper.
+  return safeGetItem(key, fallback) ?? fallback;
 }
 
 export function applyChatTextPx(px: number, root: ParentNode = document): void {

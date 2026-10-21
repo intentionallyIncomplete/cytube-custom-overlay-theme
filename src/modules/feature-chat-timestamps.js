@@ -1,14 +1,19 @@
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
+
 BTFW.define("feature:chat-timestamps", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
-  const LS_SHOW   = "btfw:chat:ts:show";
-  const LS_FORMAT = "btfw:chat:ts:fmt";
+  // #202: keys from the canonical LS_KEYS registry; access via the guarded
+  // storage wrapper (private browsing / quota safe).
+  const LS_SHOW   = LS_KEYS.chatTimestampsShow;
+  const LS_FORMAT = LS_KEYS.chatTimestampsFormat;
 
-  function getShow(){  try { return (localStorage.getItem(LS_SHOW) ?? "1")==="1"; } catch(_) { return true; } }
-  function setShow(v){ try { localStorage.setItem(LS_SHOW, v?"1":"0"); } catch(_){} applyVisibility(v); }
+  function getShow(){  return safeGetItem(LS_SHOW, "1")==="1"; }
+  function setShow(v){ safeSetItem(LS_SHOW, v?"1":"0"); applyVisibility(v); }
 
-  function getFmt(){   try { return localStorage.getItem(LS_FORMAT) || "24"; } catch(_) { return "24"; } }
-  function setFmt(f){  try { localStorage.setItem(LS_FORMAT, f); } catch(_){} reformatAll(f); }
+  function getFmt(){   return safeGetItem(LS_FORMAT, "24") || "24"; }
+  function setFmt(f){  safeSetItem(LS_FORMAT, f); reformatAll(f); }
 
   function applyVisibility(on){
     document.body.classList.toggle("btfw-ts-hide", !on);

@@ -1,4 +1,7 @@
 
+import { LS_KEYS, LS_KEY_PREFIXES, channelStorageKey } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem, getJsonItem, setJsonItem } from "../lib/storage.js";
+
 BTFW.define("feature:emotes", [], async () => {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -31,8 +34,10 @@ BTFW.define("feature:emotes", [], async () => {
   }
 
   const CHANNEL_NAME = (window.CHANNEL && window.CHANNEL.name) || "default";
-  const RECENT_KEY = `btfw:recent:emotes:${CHANNEL_NAME}`;
-  const SORT_KEY = "btfw:emotes:sort";
+  // #202: keys from the canonical LS_KEYS registry (per-channel via the
+  // prefix builder); access via the guarded storage wrapper.
+  const RECENT_KEY = channelStorageKey(LS_KEY_PREFIXES.emotesRecent, CHANNEL_NAME);
+  const SORT_KEY = LS_KEYS.emotesSort;
   const SORT_MODES = ["alpha", "added-asc", "added-desc"];
 
   let state = {
@@ -63,16 +68,14 @@ BTFW.define("feature:emotes", [], async () => {
   }
 
   function readSortMode() {
-    try {
-      const stored = localStorage.getItem(SORT_KEY);
-      if (SORT_MODES.includes(stored)) return stored;
-    } catch (_) { }
+    const stored = safeGetItem(SORT_KEY);
+    if (SORT_MODES.includes(stored)) return stored;
     return "alpha";
   }
 
   function writeSortMode(mode) {
     state.sort = SORT_MODES.includes(mode) ? mode : "alpha";
-    try { localStorage.setItem(SORT_KEY, state.sort); } catch (_) { }
+    safeSetItem(SORT_KEY, state.sort);
   }
 
   function itemSortKey(item) {
@@ -112,9 +115,8 @@ BTFW.define("feature:emotes", [], async () => {
 
   async function loadEmoji() {
     try {
-      const raw = localStorage.getItem("btfw:emoji:cache");
-      if (raw) {
-        const parsed = JSON.parse(raw);
+      const parsed = getJsonItem(LS_KEYS.emojiCache, null);
+      if (parsed) {
         state.list.emoji = parsed.map((e, index) => ({
           ...e,
           orderIndex: typeof e.orderIndex === "number" ? e.orderIndex : index
@@ -139,7 +141,7 @@ BTFW.define("feature:emotes", [], async () => {
         keywords: (e.keywords || "").toLowerCase(),
         orderIndex: index
       }));
-      localStorage.setItem("btfw:emoji:cache", JSON.stringify(state.list.emoji));
+      setJsonItem(LS_KEYS.emojiCache, state.list.emoji);
     } catch (_) {
       state.list.emoji = [
         { char: "😀", name: "grinning face", keywords: "smile happy", orderIndex: 0 },
@@ -155,8 +157,7 @@ BTFW.define("feature:emotes", [], async () => {
   }
 
   function loadRecent() {
-    try { state.list.recent = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); }
-    catch (_) { state.list.recent = []; }
+    state.list.recent = getJsonItem(RECENT_KEY, []);
   }
 
   function pushRecent(item) {
@@ -164,7 +165,7 @@ BTFW.define("feature:emotes", [], async () => {
     state.list.recent = state.list.recent.filter(x => (x.kind === "emoji" ? x.char : x.name) !== key);
     state.list.recent.unshift(item);
     state.list.recent = state.list.recent.slice(0, 24);
-    try { localStorage.setItem(RECENT_KEY, JSON.stringify(state.list.recent)); } catch (_) { }
+    setJsonItem(RECENT_KEY, state.list.recent);
   }
 
   function ensurePopover() {

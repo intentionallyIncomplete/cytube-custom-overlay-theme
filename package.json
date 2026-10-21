@@ -19,6 +19,7 @@
     "test:node": "node --test tests/unit/**/*.test.js",
     "test:vitest": "vitest run",
     "verify-dist": "node scripts/verify-dist.js",
+    "verify:keys": "node scripts/check-storage-keys.js",
     "inject-cdn": "node scripts/inject-cdn-version.js",
     "purge-cdn": "node scripts/purge-cdn.js",
     "verify:cdn": "node scripts/verify-cdn-deploy.js",

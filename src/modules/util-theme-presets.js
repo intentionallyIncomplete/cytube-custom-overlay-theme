@@ -1,10 +1,13 @@
 /* BTFW — util:themePresets (per-user named theme presets in localStorage) */
 import { applyStoredChatTypography } from "../lib/apply-chat-typography.js";
+import { LS_KEY_PREFIXES } from "../lib/btfw-constants.js";
+import { getJsonItem, setJsonItem } from "../lib/storage.js";
 
 BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
 
-  const STORAGE_PREFIX = "btfw:userThemePresets:";
+  // #202: per-channel key prefix from the canonical registry.
+  const STORAGE_PREFIX = LS_KEY_PREFIXES.userThemePresets;
   const STORAGE_SUFFIX = ":v1";
   const STORE_VERSION = 1;
   const MAX_PRESETS = 20;
@@ -18,7 +21,7 @@ BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
         const slug = raw.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
         if (slug) return slug.slice(0, 64);
       }
-    } catch (_) {}
+    } catch {} // no window.CLIENT in this context
     return "global";
   }
 
@@ -74,11 +77,11 @@ BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
   }
 
   function loadPresetStore(channelKey) {
+    const raw = getJsonItem(storageKey(channelKey), null);
+    if (!raw) return emptyStore();
     try {
-      const raw = localStorage.getItem(storageKey(channelKey));
-      if (!raw) return emptyStore();
-      return normalizePresetStore(JSON.parse(raw));
-    } catch (_) {
+      return normalizePresetStore(raw);
+    } catch {
       return emptyStore();
     }
   }
@@ -86,9 +89,9 @@ BTFW.define("util:themePresets", ["util:themeRuntime"], async ({ init }) => {
   function savePresetStore(store, channelKey) {
     try {
       const normalized = normalizePresetStore(store);
-      localStorage.setItem(storageKey(channelKey), JSON.stringify(normalized));
+      setJsonItem(storageKey(channelKey), normalized);
       return normalized;
-    } catch (_) {
+    } catch {
       return normalizePresetStore(store);
     }
   }

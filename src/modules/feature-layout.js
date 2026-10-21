@@ -1,7 +1,12 @@
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
+
 BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async () => {
-  const SPLIT_KEY = "btfw:grid:leftPx";
+  // #202: keys from the canonical LS_KEYS registry; access via the guarded
+  // storage wrapper.
+  const SPLIT_KEY = LS_KEYS.layoutGridLeftPx;
   /** "right" = video left, chat right (default). "left" = chat left, video right. */
-  const CHAT_SIDE_KEY = "btfw:layout:chatSide";
+  const CHAT_SIDE_KEY = LS_KEYS.layoutSide;
   const NAV_HOST_ID = "btfw-navhost";
   const VIDEO_MIN_PX = 520;
   const DEFAULT_VIDEO_TARGET = 680;
@@ -10,7 +15,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
   const MOBILE_THRESHOLD_MIN = 900;
   const MOBILE_THRESHOLD_MAX = 1100;
   const STACK_HYSTERESIS_PX = 40;
-  const RATIO_KEY = "btfw:grid:videoRatio";
+  const RATIO_KEY = LS_KEYS.layoutGridVideoRatio;
   const MIN_VIDEO_RATIO = 0.35;
   const MAX_VIDEO_RATIO = 0.78;
   const DEFAULT_VIDEO_RATIO = 0.62;
@@ -190,31 +195,22 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
   }
 
   function getStoredChatSide(){
-    try {
-      const stored = localStorage.getItem(CHAT_SIDE_KEY);
-      return stored === "left" ? "left" : "right";
-    } catch (_) {
-      return "right";
-    }
+    const stored = safeGetItem(CHAT_SIDE_KEY);
+    return stored === "left" ? "left" : "right";
   }
 
   function loadVideoColumnWidth(){
-    try {
-      const storedRatio = parseFloat(localStorage.getItem(RATIO_KEY) || "", 10);
-      if (!isNaN(storedRatio) && storedRatio >= MIN_VIDEO_RATIO && storedRatio <= MAX_VIDEO_RATIO) {
-        videoColumnRatio = storedRatio;
-        return;
-      }
+    const storedRatio = parseFloat(safeGetItem(RATIO_KEY, ""), 10);
+    if (!isNaN(storedRatio) && storedRatio >= MIN_VIDEO_RATIO && storedRatio <= MAX_VIDEO_RATIO) {
+      videoColumnRatio = storedRatio;
+      return;
+    }
 
-      const saved = parseInt(localStorage.getItem(SPLIT_KEY) || "", 10);
-      if (!isNaN(saved) && saved >= VIDEO_MIN_PX) {
-        videoColumnPx = saved;
-        const available = Math.max(window.innerWidth - WIDTH_BUFFER, VIDEO_MIN_PX + CHAT_MIN_PX);
-        persistVideoRatio(saved / available);
-      }
-    } catch (_) {
-      videoColumnPx = null;
-      videoColumnRatio = null;
+    const saved = parseInt(safeGetItem(SPLIT_KEY, ""), 10);
+    if (!isNaN(saved) && saved >= VIDEO_MIN_PX) {
+      videoColumnPx = saved;
+      const available = Math.max(window.innerWidth - WIDTH_BUFFER, VIDEO_MIN_PX + CHAT_MIN_PX);
+      persistVideoRatio(saved / available);
     }
   }
 
@@ -244,7 +240,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
 
   function persistVideoRatio(ratio){
     videoColumnRatio = clampRatio(ratio);
-    try { localStorage.setItem(RATIO_KEY, String(videoColumnRatio)); } catch (_) {}
+    safeSetItem(RATIO_KEY, String(videoColumnRatio));
   }
 
   function ratioToFrSegments(ratio){
@@ -284,7 +280,7 @@ BTFW.define("feature:layout", ["feature:styleCore","feature:themeMode"], async (
     const width = Math.min(Math.max(px, VIDEO_MIN_PX), available - CHAT_MIN_PX);
     videoColumnPx = width;
     persistVideoRatio(width / available);
-    try { localStorage.setItem(SPLIT_KEY, String(width)); } catch (_) {}
+    safeSetItem(SPLIT_KEY, String(width));
     applyColumnTemplate();
   }
 

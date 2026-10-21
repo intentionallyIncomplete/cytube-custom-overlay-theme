@@ -11,6 +11,7 @@
     "../../src/lib/channel-config.js",
     "../../src/lib/theme-admin-blocks.js",
     "../../src/lib/asset-paths.ts",
+    "../../src/lib/storage.ts",
     "../../vitest.config.ts"
   ]
 }

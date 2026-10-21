@@ -1,3 +1,5 @@
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
+
 BTFW.define("feature:chat-username-colors", ["util:dom", "util:constants"], async ({ init }) => {
   const dom = await init("util:dom");
   const { LS_KEYS } = await init("util:constants");
@@ -5,8 +7,8 @@ BTFW.define("feature:chat-username-colors", ["util:dom", "util:constants"], asyn
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const LS = LS_KEYS.chatUnameColors;
 
-  function getEnabled(){ try { return (localStorage.getItem(LS) ?? "1")==="1"; } catch(_) { return true; } }
-  function setEnabled(v){ try { localStorage.setItem(LS, v?"1":"0"); } catch(_){} applyAll(); }
+  function getEnabled(){ return safeGetItem(LS, "1")==="1"; }
+  function setEnabled(v){ safeSetItem(LS, v?"1":"0"); applyAll(); }
 
   const PALETTE = [
     "#6D4DF6","#2CB1BC","#F29D49","#E85D75","#5AC26A",

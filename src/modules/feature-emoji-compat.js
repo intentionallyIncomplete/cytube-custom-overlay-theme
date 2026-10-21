@@ -1,6 +1,9 @@
 
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { safeGetItem, safeSetItem } from "../lib/storage.js";
+
 BTFW.define("feature:emoji-compat", [], async () => {
-  const LS = "btfw:emoji:twemoji";
+  const LS = LS_KEYS.emojiCompat;
   const TW_VER = "14.0.2";
   const TW_JS = `https://cdn.jsdelivr.net/npm/twemoji@${TW_VER}/dist/twemoji.min.js`;
   const TW_ASSETS_BASE = `https://cdn.jsdelivr.net/npm/twemoji@${TW_VER}/assets/`;
@@ -10,11 +13,11 @@ BTFW.define("feature:emoji-compat", [], async () => {
   let mo = null;
 
   function getEnabled() {
-    try { return localStorage.getItem(LS) === "1"; } catch (_) { return false; }
+    return safeGetItem(LS, "0") === "1";
   }
   function setEnabled(v) {
     enabled = !!v;
-    try { localStorage.setItem(LS, v ? "1" : "0"); } catch (_) { }
+    safeSetItem(LS, v ? "1" : "0");
     if (enabled) { ensureTwemoji().then(() => { parsePicker(); startChatObserver(); }); }
     else { stopChatObserver(); }
   }

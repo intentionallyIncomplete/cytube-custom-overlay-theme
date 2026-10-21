@@ -1,6 +1,9 @@
 /** Pure helpers for optional chat auto-scroll (unit-tested). */
 
-export const CHAT_AUTOSCROLL_KEY = "btfw:chat:autoScroll";
+import { LS_KEYS } from "./btfw-constants.js";
+
+/** Canonical key lives in LS_KEYS (#202); re-exported for existing importers. */
+export const CHAT_AUTOSCROLL_KEY = LS_KEYS.chatAutoScroll;
 
 export function getAutoScrollEnabled(stored) {
   if (stored === null || stored === undefined) return true;

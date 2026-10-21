@@ -83,6 +83,7 @@ const bundles = [
     name: "core",
     modules: [
       "src/modules/util-constants.js",
+      "src/modules/util-storage.js",
       "src/modules/util-dom.js",
       "src/modules/util-dirty-apply.js",
       "src/modules/util-state.js",
