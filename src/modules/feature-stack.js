@@ -1,4 +1,5 @@
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
+import { waitForElement } from "../lib/dom-wait.js";
 import { createStackMotd } from "./stack/stack-motd.js";
 import { createStackPlaylist } from "./stack/stack-playlist.js"; // resolves to stack-playlist.ts
 import { createStackPoll } from "./stack/stack-poll.js"; // resolves to stack-poll.ts
@@ -1021,39 +1022,43 @@ BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init
   if (main) {
     observer.observe(main, {childList:true, subtree:false});
   }
-  setTimeout(() => {
-    const motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
-    if (motdGroup) {
-      applyStoredPanelOpenState(motdGroup, MOTD_VISIBILITY_KEY, (stored) => getDefaultPollOpen(stored, hasMotdContent()));
-    }
+  // #203: drive the stored-open-state pass off the stack DOM actually being
+  // present (waitForElement) instead of a fixed 1000ms timeout, and drop the
+  // 700ms populate retry interval — the rAF-throttled MutationObserver above
+  // owns every populate from here on.
+  waitForElement('#btfw-stack .btfw-stack-item', { root: document })
+    .then(() => {
+      const motdGroup = document.querySelector('.btfw-stack-item[data-bind="motd-group"]');
+      if (motdGroup) {
+        applyStoredPanelOpenState(motdGroup, MOTD_VISIBILITY_KEY, (stored) => getDefaultPollOpen(stored, hasMotdContent()));
+      }
 
-    const playlistGroup = document.querySelector('.btfw-stack-item[data-bind="playlist-group"]');
-    if (playlistGroup) {
-      applyStoredPanelOpenState(playlistGroup, PLAYLIST_VISIBILITY_KEY, (stored) => stored !== null ? !!stored : true);
-    }
+      const playlistGroup = document.querySelector('.btfw-stack-item[data-bind="playlist-group"]');
+      if (playlistGroup) {
+        applyStoredPanelOpenState(playlistGroup, PLAYLIST_VISIBILITY_KEY, (stored) => stored !== null ? !!stored : true);
+      }
 
-    const pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
-    if (pollGroup) {
-      applyStoredPanelOpenState(pollGroup, POLL_VISIBILITY_KEY, (stored) => getDefaultPollOpen(stored, hasPollContent()));
-    }
+      const pollGroup = document.querySelector('.btfw-stack-item[data-bind="poll-group"]');
+      if (pollGroup) {
+        applyStoredPanelOpenState(pollGroup, POLL_VISIBILITY_KEY, (stored) => getDefaultPollOpen(stored, hasPollContent()));
+      }
 
-    document.querySelectorAll('#btfw-stack .btfw-stack-item[data-group="true"]').forEach((item) => {
-      const dockKey = DOCKED_KEYS[item.dataset.bind];
-      if (!dockKey) return;
-      setPanelDocked(item, getStoredDocked(dockKey), { persist: false });
+      document.querySelectorAll('#btfw-stack .btfw-stack-item[data-group="true"]').forEach((item) => {
+        const dockKey = DOCKED_KEYS[item.dataset.bind];
+        if (!dockKey) return;
+        setPanelDocked(item, getStoredDocked(dockKey), { persist: false });
+      });
+
+      ensurePanelsMenuShell();
+      ensurePanelsMenuButton();
+      syncPanelBar();
+      poll.syncPollPanelVisibility(refs);
+      dispatchStackVisibility();
+      populate(refs);
+    })
+    .catch(() => {
+      /* stack markup never mounted; nothing to restore */
     });
-
-    ensurePanelsMenuShell();
-    ensurePanelsMenuButton();
-    syncPanelBar();
-    poll.syncPollPanelVisibility(refs);
-    dispatchStackVisibility();
-  }, 1000);
-  let n=0;
-  const iv=setInterval(()=>{
-    populate(refs);
-    if(++n>2) clearInterval(iv);
-  },700);
 }
 
   document.addEventListener("btfw:layoutReady", boot);

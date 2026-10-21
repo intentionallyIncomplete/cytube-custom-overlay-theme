@@ -1,3 +1,5 @@
+import { waitForElement } from "../lib/dom-wait.js";
+
 BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
   const dom = await init("util:dom");
   const { state } = await init("util:state");
@@ -874,20 +876,20 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
       }
     } catch(_) {}
 
-    let tries = 0;
-    const t = setInterval(()=>{
-      tries++;
-      const navUL = findNavList();
-      if (navUL) {
-        hideLogoutForm();
-        ensureThemeButtonHook();
-        pruneNavLinks();
-        renderAvatar();
-        setupAvatarAccountDropdown();
-        setupMobileNav();
-      }
-      if (tries > 10 || navUL) clearInterval(t);
-    }, 300);
+    // #203: wait for the nav list with a MutationObserver instead of a
+    // 300ms setInterval retry loop. Observer self-disconnects on match.
+    waitForElement(".navbar .nav.navbar-nav, .navbar-nav, .navbar .navbar-end ul, .btfw-navbar ul, .navbar ul", {
+      root: document
+    }).then(() => {
+      hideLogoutForm();
+      ensureThemeButtonHook();
+      pruneNavLinks();
+      renderAvatar();
+      setupAvatarAccountDropdown();
+      setupMobileNav();
+    }).catch(() => {
+      /* nav list never appeared; nothing to wire */
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

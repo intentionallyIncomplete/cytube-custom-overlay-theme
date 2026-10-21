@@ -1,6 +1,7 @@
 // BTFW — ext:movie-suggestion
 // TMDB movie requests via movies-storage worker
 import { escapeHtml } from "../lib/escape-html.js";
+import { waitForCondition, waitForElement } from "../lib/dom-wait.js";
 
 BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], async ({ init }) => {
   const tmdb = await init("util:tmdb-proxy");
@@ -737,24 +738,17 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
     buildModal();
     buildConfirmModal();
 
-    let retryCount = 0;
-    const maxRetries = 50;
-
-    const tryAddButton = () => {
-      if (addNavButton()) {
-        mlog("Button added successfully");
-        return;
-      }
-
-      retryCount += 1;
-      if (retryCount < maxRetries) {
-        setTimeout(tryAddButton, 100);
-      } else {
-        console.warn(LOG, "Failed to add button after retries", { retryCount });
-      }
-    };
-
-    tryAddButton();
+    // #203: wait for the nav container via MutationObserver instead of a
+    // 100ms setTimeout retry loop; fall back to one direct attempt on timeout.
+    waitForElement(".navbar, .navbar-nav, #nav-collapsible", { timeoutMs: 5000 })
+      .catch(() => {})
+      .then(() => {
+        if (addNavButton()) {
+          mlog("Button added successfully");
+        } else {
+          console.warn(LOG, "Failed to add nav button");
+        }
+      });
   }
 
   document.addEventListener("btfw:layoutReady", () => {

@@ -73,6 +73,8 @@ const esmModuleFiles = [
   "src/modules/util-imdb-card.js",
   "src/modules/util-letterboxd.js",
   "src/modules/util-tmdb-card.js",
+  "src/modules/feature-movie-info.js",
+  "src/modules/feature-poll-overlay.js",
 ];
 
 export default [

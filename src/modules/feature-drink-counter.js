@@ -1,3 +1,5 @@
+import { debounce } from "../lib/dom-wait.js";
+
 BTFW.define("feature:drink-counter", [], async () => {
   const $ = (s, r = document) => r.querySelector(s);
   const motion = await BTFW.init("util:motion");
@@ -450,7 +452,10 @@ BTFW.define("feature:drink-counter", [], async () => {
 
     sync();
 
-    const mo = new MutationObserver(sync);
+    // #203: body-wide observer callbacks are debounced so a busy DOM triggers
+    // one sweep per burst instead of a sync per mutation batch.
+    const debouncedSync = debounce(sync, 150);
+    const mo = new MutationObserver(() => debouncedSync());
     mo.observe(document.body, { childList: true, subtree: true });
   }
 

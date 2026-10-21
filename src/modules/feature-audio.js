@@ -3,6 +3,7 @@
 // lives in ./audio/audio-engine.ts (#228 Phase 3, step 5) and is consumed
 // here via the BTFW_AUDIO singleton import.
 import { BTFW_AUDIO } from "./audio/audio-engine.js";
+import { waitForElement, waitForCondition } from "../lib/dom-wait.js";
 // Audio controls module (boost, normalization, mono/stereo)
 (function() {
   'use strict';
@@ -606,29 +607,32 @@ import { BTFW_AUDIO } from "./audio/audio-engine.js";
         return true;
       }
 
+      // #203: wait for the overlay bar with a MutationObserver instead of a
+      // 500ms setInterval retry loop (observer self-disconnects on match;
+      // timeout falls back to a single direct attempt so boot still completes).
       function waitForOverlayBar(callback, maxAttempts = 20) {
-        let attempts = 0;
-        const interval = setInterval(() => {
-          attempts++;
-          if (addButtonsToOverlay()) {
-            clearInterval(interval);
-            callback();
-          } else if (attempts >= maxAttempts) {
-            clearInterval(interval);
-          }
-        }, 500);
+        const timeoutMs = maxAttempts * 500;
+        waitForCondition(() => ($('#btfw-vo-left') ? true : null), { timeoutMs })
+          .then(() => { addButtonsToOverlay(); callback(); })
+          .catch(() => {
+            if (addButtonsToOverlay()) callback();
+          });
       }
 
       function initializePlayer() {
-        if (typeof videojs === 'undefined') { setTimeout(initializePlayer, 500); return; }
-
-        const playerElement = $('#ytapiplayer');
-        if (!playerElement) { setTimeout(initializePlayer, 500); return; }
-
-        sharedAudio.player = videojs('ytapiplayer');
-        sharedAudio.originalSrc = sharedAudio._readCurrentSrc();
-        sharedAudio.startWatchdog();
-        // console.log('[audioboost] Player initialized');
+        // #203: wait for the videojs global and the player element via
+        // observer-driven condition checks instead of setTimeout self-retry.
+        Promise.all([
+          waitForCondition(() => (typeof videojs !== 'undefined' ? videojs : null)),
+          waitForElement('#ytapiplayer')
+        ]).then(([vjs]) => {
+          sharedAudio.player = vjs('ytapiplayer');
+          sharedAudio.originalSrc = sharedAudio._readCurrentSrc();
+          sharedAudio.startWatchdog();
+          // console.log('[audioboost] Player initialized');
+        }).catch(() => {
+          /* player never became available; watchdog covers reconnect paths */
+        });
       }
 
       function handleMediaChange() {
