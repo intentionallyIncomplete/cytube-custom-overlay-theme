@@ -75,6 +75,8 @@ const esmModuleFiles = [
   "src/modules/util-tmdb-card.js",
   "src/modules/feature-movie-info.js",
   "src/modules/feature-poll-overlay.js",
+  "src/modules/feature-drink-counter.js",
+  "src/modules/feature-footer.js",
 ];
 
 export default [
@@ -94,6 +96,8 @@ export default [
       "wiki/**",
       "scripts/.entries/**",
       "channel_config_settings.js",
+      "src/modules/feature-movie-info.js",
+      "src/modules/feature-poll-overlay.js"
     ],
   },
   js.configs.recommended,
