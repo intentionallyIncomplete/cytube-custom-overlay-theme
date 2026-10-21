@@ -1,3 +1,5 @@
+import { waitForCondition } from "../lib/dom-wait.js";
+
 /* BTFW – feature:movie-info */
 BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
   const tmdb = await init("util:tmdb-proxy");
@@ -246,14 +248,17 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
       });
       return;
     }
-    let attempts = 0;
-    const retry = () => {
-      if (!computeEnabled()) {
-        state.socketRetryTimer = null;
-        return;
-      }
+    // #203: wait for the socket via MutationObserver-driven condition checks
+    // instead of a 1000ms setTimeout retry loop. Falls back to a plain retry
+    // window (10s) via timeoutMs; the guard bails if the feature is disabled
+    // by the time the socket appears.
+    waitForCondition(() => {
+      if (!computeEnabled()) return null;
       const sock = getSocket();
-      if (sock && typeof sock.on === "function") {
+      return sock && typeof sock.on === "function" ? sock : null;
+    }, { timeoutMs: 10000 })
+      .then((sock) => {
+        state.socketRetryTimer = null;
         sock.on("changeMedia", handleMediaChange);
         registerCleanup(() => {
           try {
@@ -262,17 +267,10 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
             try { sock.removeListener?.("changeMedia", handleMediaChange); } catch (_) {}
           }
         });
+      })
+      .catch(() => {
         state.socketRetryTimer = null;
-        return;
-      }
-      attempts += 1;
-      if (attempts > 10) {
-        state.socketRetryTimer = null;
-        return;
-      }
-      state.socketRetryTimer = window.setTimeout(retry, 1000);
-    };
-    state.socketRetryTimer = window.setTimeout(retry, 1200);
+      });
     registerCleanup(() => {
       if (state.socketRetryTimer) {
         clearTimeout(state.socketRetryTimer);

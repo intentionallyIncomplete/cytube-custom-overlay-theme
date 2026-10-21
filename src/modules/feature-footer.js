@@ -1,4 +1,6 @@
 /* BTFW — feature:footer (legacy CyTube footer removal; stack footer hidden) */
+import { debounce } from "../lib/dom-wait.js";
+
 BTFW.define("feature:footer", [], async () => {
   function removeLegacyFooter() {
     document.querySelectorAll("footer#footer").forEach((legacy) => {
@@ -24,7 +26,10 @@ BTFW.define("feature:footer", [], async () => {
     maintainFooter();
 
     if (!document._btfwFooterObserver) {
-      const observer = new MutationObserver(() => maintainFooter());
+      // #203: body-wide observer callbacks are debounced so a busy DOM
+      // (chat scrollback, playlist churn) triggers one sweep per burst.
+      const debouncedMaintainFooter = debounce(maintainFooter, 150);
+      const observer = new MutationObserver(() => debouncedMaintainFooter());
       observer.observe(document.body, { childList: true, subtree: true });
       document._btfwFooterObserver = observer;
     }

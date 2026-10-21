@@ -1,4 +1,5 @@
 /* BTFW — feature:poll-overlay (video overlay display for CyTube polls) */
+import { waitForCondition } from "../lib/dom-wait.js";
 BTFW.define("feature:poll-overlay", [], async () => {
   "use strict";
 
@@ -662,28 +663,15 @@ BTFW.define("feature:poll-overlay", [], async () => {
     }
   }
 
+  // #203: wait for the socket with an observer-driven condition check instead
+  // of a 100ms setTimeout retry loop. Resolves (never rejects) after the
+  // timeout so boot proceeds with socket wiring skipped, matching the old
+  // "resolve anyway after 5s" behavior.
   function waitForSocket() {
-    return new Promise((resolve) => {
-      if (window.socket && window.socket.on) {
-        resolve();
-        return;
-      }
-
-      let attempts = 0;
-      const maxAttempts = 50;
-      const checkSocket = () => {
-        attempts++;
-        if (window.socket && window.socket.on) {
-          resolve();
-        } else if (attempts < maxAttempts) {
-          setTimeout(checkSocket, 100);
-        } else {
-          console.warn("[poll-overlay] Socket not available after 5 seconds");
-          resolve();
-        }
-      };
-
-      setTimeout(checkSocket, 100);
+    return waitForCondition(() => (window.socket && window.socket.on ? true : null), {
+      timeoutMs: 5000
+    }).catch(() => {
+      console.warn("[poll-overlay] Socket not available after 5 seconds");
     });
   }
 
