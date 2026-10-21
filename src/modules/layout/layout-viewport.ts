@@ -43,6 +43,9 @@ export function createLayoutViewportDomain(ctx: {
     isVertical: boolean;
     navAutohideActive: boolean;
     navAutohideHidden: boolean;
+    videoColumnPx: number | null;
+    videoColumnRatio: number | null;
+    chatSidePref: "left" | "right";
   };
   columns: {
     applyColumnTemplate(): void;
@@ -58,7 +61,7 @@ export function createLayoutViewportDomain(ctx: {
   }
 
   function isStackFullyHidden(): boolean {
-    const items = document.querySelectorAll("#btfw-stack .btfw-stack-item[data-group='true']");
+    const items = document.querySelectorAll<HTMLElement>("#btfw-stack .btfw-stack-item[data-group='true']");
     if (!items.length) return true;
     return Array.from(items).every((el) => el.dataset.docked === "true");
   }
@@ -191,7 +194,7 @@ export function createLayoutViewportDomain(ctx: {
     const wrap = document.getElementById("videowrap");
     if (!wrap) return;
 
-    wrap.querySelectorAll("iframe, video, .vjs-tech").forEach((el) => {
+    wrap.querySelectorAll<HTMLElement>("iframe, video, .vjs-tech").forEach((el) => {
       el.style.removeProperty("height");
       el.style.removeProperty("width");
       el.style.removeProperty("maxHeight");
@@ -203,7 +206,7 @@ export function createLayoutViewportDomain(ctx: {
       el.style.removeProperty("transform");
     });
 
-    const vjs = wrap.querySelector(".video-js");
+    const vjs = wrap.querySelector<HTMLElement>(".video-js");
     if (vjs) {
       vjs.style.removeProperty("padding-top");
       vjs.style.removeProperty("height");
