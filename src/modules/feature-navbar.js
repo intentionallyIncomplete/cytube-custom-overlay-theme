@@ -1,7 +1,7 @@
 import { waitForElement } from "../lib/dom-wait.js";
+import { findUserlistItem } from "../lib/find-userlist-item.js";
 
-BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
-  const dom = await init("util:dom");
+BTFW.define("feature:navbar", ["util:state"], async ({ init }) => {
   const { state } = await init("util:state");
   const $  = (s,r=document)=>r.querySelector(s);
 
@@ -25,7 +25,7 @@ BTFW.define("feature:navbar", ["util:dom", "util:state"], async ({ init }) => {
 
   function getProfileImgFromUserlist(name){
     try {
-      const li = dom.findUserlistItem(name);
+      const li = findUserlistItem(name);
       if (!li || !window.jQuery) return "";
       const $li = window.jQuery(li);
       const prof = $li.data && $li.data("profile");

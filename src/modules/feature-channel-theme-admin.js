@@ -8,6 +8,7 @@ import {
   hasThemeAdminJsBlock,
   replaceThemeAdminBlock
 } from "../lib/theme-admin-blocks.js";
+import * as adminTpl from "../lib/templates/channel-theme-admin.js";
 import { createThemeConfigDomain } from "./theme-admin/theme-config.js"; // resolves to theme-config.ts
 import { createThemeRuntimeDomain } from "./theme-admin/theme-runtime.js"; // resolves to theme-runtime.ts
 import {
@@ -18,9 +19,7 @@ import {
   renderModuleInputs
 } from "./theme-admin/module-fields.js";
 
-BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime", "util:templates"], async ({ init }) => {
-  const templates = await init("util:templates");
-  const { channelThemeAdmin: adminTpl } = templates;
+BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const {
     FONT_DEFAULT_ID,

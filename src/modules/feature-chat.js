@@ -1,8 +1,9 @@
-BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:dom", "util:constants", "util:state"], async ({ init }) => {
+import { SELECTORS } from "../lib/btfw-constants.js";
+import { findUserlistItem, normalizeUserIdentifier } from "../lib/find-userlist-item.js";
+
+BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:state"], async ({ init }) => {
   const motion = await init("util:motion");
   const chatAutoscroll = await init("util:chatAutoscroll");
-  const dom = await init("util:dom");
-  const { SELECTORS } = await init("util:constants");
   const { state } = await init("util:state");
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -741,10 +742,10 @@ const scheduleNormalizeChatActions = (() => {
       const target = ev.target.closest('.username');
       if (!target) return;
       const raw = target.textContent || '';
-      const name = dom.normalizeUserIdentifier(raw);
+      const name = normalizeUserIdentifier(raw);
       if (!name) return;
 
-      const item = dom.findUserlistItem(name);
+      const item = findUserlistItem(name);
       if (!item) return;
 
       const rect = target.getBoundingClientRect();

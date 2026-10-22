@@ -1,3 +1,4 @@
+import * as stackTpl from "../lib/templates/stack.js";
 import { getDefaultPollOpen, hasPollContent } from "../lib/stack-poll-visibility.js";
 import { waitForElement } from "../lib/dom-wait.js";
 import { createStackMotd } from "./stack/stack-motd.js";
@@ -24,9 +25,7 @@ import {
   dispatchStackVisibility
 } from "../lib/stack-core.js"; // resolves to stack-core.ts (see scripts/build.js)
 
-BTFW.define("feature:stack", ["feature:layout", "util:templates"], async ({ init }) => {
-  const templates = await init("util:templates");
-  const { stack: stackTpl } = templates;
+BTFW.define("feature:stack", ["feature:layout"], async ({ init }) => {
 
   let panelBarWired = false;
   let activeFlyoutGroup = null;

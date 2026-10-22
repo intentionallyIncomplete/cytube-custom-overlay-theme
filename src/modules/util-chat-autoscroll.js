@@ -1,11 +1,11 @@
+import { EVENTS, LS_KEYS } from "../lib/btfw-constants.js";
 import {
   getAutoScrollEnabled as getEnabledFromStored,
   isPinnedToBottom as isPinned,
   shouldAutoScroll as shouldScroll
 } from "../lib/chat-autoscroll.js";
 
-BTFW.define("util:chatAutoscroll", ["util:constants"], async ({ init }) => {
-  const { LS_KEYS, EVENTS } = await init("util:constants");
+BTFW.define("util:chatAutoscroll", [], async () => {
   const PIN_THRESHOLD = 48;
 
   function readStored() {

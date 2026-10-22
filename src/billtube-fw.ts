@@ -1,4 +1,5 @@
 import { createBtfwRegistry } from "./lib/btfw-registry.js";
+import { createBtfwState, installLegacyStateShims } from "./lib/btfw-state.js";
 import { resolveBtfwBase } from "./lib/resolve-btfw-base.js";
 import { patchWaitUntilDefinedForVjsPlugins } from "./lib/patch-vjs-plugin-wait.js";
 import { buildBootOverlayCard } from "./lib/templates/boot-overlay.js";
@@ -53,6 +54,23 @@ interface BootOverlayApi {
 
   const BASE = DEV_CDN;
   window.BTFW = { define, init, DEV_CDN, BASE, state: null, SRI: SRI_HASHES };
+
+  // util:state is defined by the loader itself (#230): the state bag is a
+  // per-page singleton shared across every bundle, so it must not live in a
+  // bundle-registered shim module. Body moved verbatim from
+  // src/modules/util-state.js (deleted).
+  define("util:state", [], async () => {
+    const state = createBtfwState();
+    installLegacyStateShims(state);
+    if (typeof window !== "undefined" && window.BTFW) {
+      window.BTFW.state = state;
+    }
+    return {
+      name: "util:state",
+      state,
+      installLegacyStateShims
+    };
+  });
 
   const BootOverlay: BootOverlayApi = (function () {
     let overlay: HTMLDivElement | null = null;

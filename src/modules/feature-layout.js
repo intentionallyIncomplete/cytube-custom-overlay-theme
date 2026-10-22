@@ -1,7 +1,5 @@
 /* BTFW — feature:layout (thin registration shell; all logic split into modules) */
 BTFW.define("feature:layout", ["feature:styleCore", "feature:themeMode"], async ({ init }) => {
-  const templates = await init("util:templates");
-  const { stack: stackTpl } = templates;
 
   // Shared mutable state object — one per session, passed to every domain factory.
   const state = {
