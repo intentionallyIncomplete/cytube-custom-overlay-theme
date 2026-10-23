@@ -78,6 +78,11 @@ Boot always loads `dist/*.bundle.js` from the same origin/ref as `dist/billtube-
 
 **Lint:** `npm run lint:css` (stylelint on `src/styles/**/*.scss`).
 
+**Dead-selector audit:** `npm run audit:css` (see `scripts/README.md`)
+builds, crawls the fixture (and, with `--url <channel>`, your live channel),
+and reports compiled selectors that never matched an element. Treat
+candidates as unproven dead code — review before deleting from `src/styles/`.
+
 ## Release pipeline
 
 Validation and publishing are split across two GitHub Actions workflows:

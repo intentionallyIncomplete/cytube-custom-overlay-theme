@@ -36,3 +36,6 @@ tests/test-results/
 /test-results/
 playwright-report/
 playwright/.cache/
+
+# Dead-selector audit output (issue #231)
+audit-results*.json
