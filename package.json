@@ -15,6 +15,7 @@
     "build": "node scripts/build.js",
     "build:js": "node scripts/build.js --js-only",
     "build:css": "node scripts/build-css.js",
+    "audit:css": "node scripts/audit-dead-selectors.js",
     "test": "node --test tests/unit/**/*.test.js && vitest run",
     "test:node": "node --test tests/unit/**/*.test.js",
     "test:vitest": "vitest run",
