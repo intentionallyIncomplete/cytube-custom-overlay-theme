@@ -9,7 +9,7 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 | URL ref | Points to |
 |---------|-----------|
 | `@v1.0.5` | Git tag `v1.0.5` (use in production) |
-| `@latest` | `main` branch tip (moves every push) |
+| `@latest` | `main` branch tip (moves every push) | **DEPRECATED** - use `@vX.Y.Z` for production only |
 | `@<commit-sha>` | Exact commit (only valid if that commit contains built `dist/`) |
 
 **Rule:** CyTube `CDN_BASE`, `dist/billtube-fw.js`, and all `dist/*.bundle.js` / `dist/css/*` must use the **same** ref. The loader derives its asset base from its own script URL.

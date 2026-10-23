@@ -23,7 +23,7 @@ BillTube is not a standalone app. It runs inside a CyTube channel as Custom Java
 ## Quick start (channel operator)
 
 1. Copy the latest release version number from the [latest release](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/releases).
-2. In CyTube → **Channel Settings → Admin -> External Javascript**, paste the following CDN URL: https://cdn.jsdelivr.net/gh/IntentionallyIncomplete/cytube-custom-overlay-theme@latest/channel_config_settings.js
+2. In CyTube → **Channel Settings → Admin -> External Javascript**, paste the following CDN URL with a pinned release version (replace `vX.Y.Z` with the latest release tag from [releases](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/releases)): https://cdn.jsdelivr.net/gh/IntentionallyIncomplete/cytube-custom-overlay-theme@v1.30.7/channel_config_settings.js
 3. Import chat filters (Channel Settings → Chat → Filters).
 
 ## Local development

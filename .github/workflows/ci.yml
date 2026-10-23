@@ -7,6 +7,14 @@ on:
     tags:
       - "v*"
   pull_request:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday 02:00 UTC for live E2E
+  workflow_dispatch:
+    inputs:
+      run-live-e2e:
+        description: 'Run live CyTube E2E tests against real instance'
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -51,7 +59,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  e2e:
+  e2e-smoke:
     runs-on: ubuntu-latest
     needs: verify
     env:
@@ -78,7 +86,7 @@ jobs:
       - name: Install Playwright browser
         run: npm run test:e2e:install
 
-      - name: Run Playwright E2E
+      - name: Run Playwright E2E (fixture smoke tests)
         run: npm run test:e2e
 
       - name: Upload Playwright report
@@ -92,10 +100,54 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  e2e-live:
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'schedule' || github.event.inputs.run-live-e2e == 'true'
+    env:
+      HUSKY: 0
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+      - name: Install Playwright browser
+        run: npm run test:e2e:install
+
+      - name: Run Playwright E2E (live CyTube tests)
+        run: npm run test:e2e
+        env:
+          E2E_BASE_URL: ${{ secrets.LIVE_CYTUBE_URL }}
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-live
+          path: |
+            playwright-report/
+            tests/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # Single green signal for Release (#172): lint/typecheck/unit/build.
   ci-gate:
     runs-on: ubuntu-latest
-    needs: verify
+    needs: [verify, e2e-smoke]
     steps:
       - name: CI gate passed
-        run: echo "verify succeeded"
+        run: echo "verify and smoke tests succeeded"

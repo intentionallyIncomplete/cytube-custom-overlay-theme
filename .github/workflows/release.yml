@@ -29,7 +29,7 @@ jobs:
         with:
           script: |
             const runId = context.payload.workflow_run.id;
-            const required = ["verify", "e2e", "ci-gate"];
+            const required = ["verify", "e2e-smoke", "ci-gate"];
             const jobs = await github.paginate(
               github.rest.actions.listJobsForWorkflowRun,
               {
