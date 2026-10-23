@@ -9,13 +9,13 @@ import {
   MEDIA_SCALE_MIN,
   MEDIA_SCALE_STEP
 } from "../lib/apply-chat-typography.js";
+import { EVENTS, LS_KEYS } from "../lib/btfw-constants.js";
 import { confirmDialog } from "../lib/confirm-dialog.js";
 import { escapeHtml } from "../lib/escape-html.js";
 
-BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:constants", "util:dirtyApply"], async ({ init }) => {
+BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
   const themePresets = await init("util:themePresets");
-  const { LS_KEYS, EVENTS } = await init("util:constants");
   const dirtyApplyUtil = await init("util:dirtyApply");
   const motion = await BTFW.init("util:motion");
 

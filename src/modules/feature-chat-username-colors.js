@@ -1,6 +1,7 @@
-BTFW.define("feature:chat-username-colors", ["util:dom", "util:constants"], async ({ init }) => {
-  const dom = await init("util:dom");
-  const { LS_KEYS } = await init("util:constants");
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { findUserlistItem } from "../lib/find-userlist-item.js";
+
+BTFW.define("feature:chat-username-colors", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const LS = LS_KEYS.chatUnameColors;
@@ -21,7 +22,7 @@ BTFW.define("feature:chat-username-colors", ["util:dom", "util:constants"], asyn
   }
 
   function colorFor(name){
-    const li = dom.findUserlistItem(name);
+    const li = findUserlistItem(name);
     const color = li?.getAttribute?.("data-color")
                || li?.style?.color
                || null;

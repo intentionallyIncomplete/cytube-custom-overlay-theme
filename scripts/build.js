@@ -82,11 +82,7 @@ const bundles = [
   {
     name: "core",
     modules: [
-      "src/modules/util-constants.js",
-      "src/modules/util-dom.js",
       "src/modules/util-dirty-apply.js",
-      "src/modules/util-state.js",
-      "src/modules/util-templates.js",
       "src/modules/util-motion.js",
       "src/modules/util-tmdb-proxy.js",
       "src/modules/feature-style-core.js",

@@ -1,6 +1,7 @@
-BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ init }) => {
-  const dom = await init("util:dom");
-  const { LS_KEYS } = await init("util:constants");
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { findUserlistItem } from "../lib/find-userlist-item.js";
+
+BTFW.define("feature:chat-avatars", [], async () => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const AVATAR_KEY = LS_KEYS.avatarsMode;
@@ -105,7 +106,7 @@ BTFW.define("feature:chat-avatars", ["util:dom", "util:constants"], async ({ ini
 
   function getProfileImgFromUserlist(name){
     try {
-      const li = dom.findUserlistItem(name);
+      const li = findUserlistItem(name);
       if (!li || !window.jQuery) return "";
       const $li = window.jQuery(li);
       const prof = $li.data && $li.data("profile");

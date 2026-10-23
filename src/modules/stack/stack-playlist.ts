@@ -7,12 +7,12 @@
  *
  * Extracted verbatim from src/modules/feature-stack.js — behavior-preserving.
  * Shell state the domain reads (the active flyout group) is injected via
- * context; templates come from util:templates via the shell.
+ * context; templates are the src/lib/templates/stack.js namespace (#230).
  */
 
 /** Pieces of the shared stack shell the playlist domain needs. */
 export interface StackPlaylistContext {
-  /** util:templates `stack` fragment used by the add-media UI. */
+  /** src/lib/templates/stack.js fragment used by the add-media UI. */
   tpl: {
     addMediaPanelHtml(): string;
     addMediaButtonHtml(): string;

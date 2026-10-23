@@ -1,6 +1,7 @@
-BTFW.define("feature:chat-ignore", ["util:dom", "util:constants"], async ({ init }) => {
-  const dom = await init("util:dom");
-  const { LS_KEYS } = await init("util:constants");
+import { LS_KEYS } from "../lib/btfw-constants.js";
+import { findUserlistItem } from "../lib/find-userlist-item.js";
+
+BTFW.define("feature:chat-ignore", [], async () => {
   const $ = (s, r = document) => r.querySelector(s);
   const LS = LS_KEYS.chatIgnore;
 
@@ -127,7 +128,7 @@ BTFW.define("feature:chat-ignore", ["util:dom", "util:constants"], async ({ init
 
   // Mark user in userlist as muted/unmuted
   function markUserInList(name, muted) {
-    const li = dom.findUserlistItem(name);
+    const li = findUserlistItem(name);
     if (li) {
       li.classList.toggle("btfw-muted", muted);
 
