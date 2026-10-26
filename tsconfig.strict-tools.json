@@ -27,6 +27,8 @@
     "src/lib/defer-feature-open.ts",
     "src/btfw-globals.d.ts",
     "src/lib/stack-core.ts",
+    "src/modules/stack/stack-motd.ts",
+    "src/modules/stack/stack-playlist.ts",
     "src/modules/stack/stack-poll.ts",
     "src/modules/theme-admin/theme-config.ts",
     "src/modules/theme-admin/theme-runtime.ts",
