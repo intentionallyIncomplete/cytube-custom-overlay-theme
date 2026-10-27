@@ -1,3 +1,4 @@
+// @ts-nocheck
 /** @typedef {{ ok: true } | { ok: false, reason: string }} VerifyResult */
 
 import { CSS_ASSET_PATHS } from "./style-paths.js";

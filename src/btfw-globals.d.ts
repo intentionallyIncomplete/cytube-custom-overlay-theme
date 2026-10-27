@@ -25,6 +25,13 @@ interface BtfwRegistryApi {
 /** BTFW version, injected at build time via scripts/build-options.js. */
 declare const __BTFW_VERSION__: string;
 
+/** VerifyResult type for JSDoc (supports union types in checkJs). */
+// @ts-nocheck-next-line
+interface VerifyResult {
+  ok: boolean;
+  reason?: string;
+}
+
 interface CytubeClientLike {
   hasPermission?: (permission: string) => boolean;
   rank?: number;
@@ -169,6 +176,14 @@ interface JQueryLike {
 /** CyTube media link parser (global from CyTube's util.js). */
 declare function parseMediaLink(url: string): { id: unknown; type: string } | null;
 
+/** video.js global (from videojs CDN or local bundle). */
+declare const videojs: unknown;
+
+/** video.js global on globalThis (for patch-vjs-plugin-wait.js). */
+interface GlobalScope {
+  videojs?: unknown;
+}
+
 interface Window {
   BTFW: BtfwRegistryApi;
   CLIENT?: CytubeClientLike;
@@ -186,9 +201,33 @@ interface Window {
   __btfwModuleWatcherCleanupRegistered?: boolean;
   BTFW_AUDIO?: BtfwAudioEngine;
   __btfwMediaSourceNodes?: WeakMap<object, MediaElementAudioSourceNode>;
+  /** video.js global. */
+  videojs?: unknown;
 }
 
 /** Media-source node cache tag written by the audio engine. */
 interface HTMLMediaElement {
   __btfwSourceNode?: MediaElementAudioSourceNode;
 }
+
+/** Legacy document shims installed by btfw-state.js (installLegacyStateShims). */
+interface Document {
+  _btfw_userlist_watch?: boolean;
+  _btfw_userlist_isOpen?: () => unknown;
+  _btfw_userlist_open?: (...args: unknown[]) => unknown;
+  _btfw_userlist_close?: (...args: unknown[]) => unknown;
+  _btfw_userlist_position?: (...args: unknown[]) => unknown;
+  _btfw_nav_setMobileOpen?: (...args: unknown[]) => unknown;
+  _btfw_nav_toggleMobile?: (...args: unknown[]) => unknown;
+  _btfw_nav_isMobileOpen?: (...args: unknown[]) => unknown;
+  _btfw_nav_setMenuOpen?: (...args: unknown[]) => unknown;
+  _btfw_nav_toggleMenu?: (...args: unknown[]) => unknown;
+  _btfw_openThemeSettings?: (...args: unknown[]) => unknown;
+}
+
+/** String.prototype.replaceAll (ES2021) - needed for checkJs on src/lib with ES2019 target. */
+interface String {
+  replaceAll(searchValue: string | RegExp, replaceValue: string): string;
+}
+
+

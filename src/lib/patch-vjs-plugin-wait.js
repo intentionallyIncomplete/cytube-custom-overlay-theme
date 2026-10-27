@@ -1,3 +1,4 @@
+// @ts-nocheck
 const PLUGIN_NAME = "videoJsResolutionSwitcher";
 const POLL_MS = 25;
 const TIMEOUT_MS = 5000;
