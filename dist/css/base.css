@@ -604,7 +604,7 @@ a:hover {
   height: auto;
   min-height: var(--btfw-primary-row-h);
   max-height: none;
-  overflow: visible;
+  overflow: hidden; /* Prevent playlist/video content from extending grid and causing body scroll */
   display: block;
 }
 

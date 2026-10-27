@@ -1,8 +1,51 @@
-export function channelThemeAdminPanelHtml() {
+function buildTintOptionsHtml(themeRuntime) {
+  const options = Object.entries(themeRuntime.TINT_PRESETS)
+    .map(([id, preset]) => `<option value="${id}">${preset.name}</option>`)
+    .join("");
+  return `${options}<option value="custom">Custom mix</option>`;
+}
+
+function buildColorField(key, label, bindPath) {
   return `
-      <div class="btfw-theme-admin">
+      <div class="btfw-ts-control btfw-ts-control--color">
+        <label class="btfw-input__label" for="btfw-theme-color-${key}">${label}</label>
+        <input type="color" id="btfw-theme-color-${key}" data-btfw-bind="${bindPath}">
+      </div>`;
+}
+
+export function channelThemeAdminPanelHtml(themeRuntime) {
+  const tintOptions = buildTintOptionsHtml(themeRuntime);
+  const colorFields = [
+    buildColorField("background", "Background", "colors.background"),
+    buildColorField("surface", "Surface", "colors.surface"),
+    buildColorField("panel", "Panel", "colors.panel"),
+    buildColorField("text", "Primary text", "colors.text"),
+    buildColorField("chatText", "Chat text", "colors.chatText"),
+    buildColorField("accent", "Accent", "colors.accent")
+  ].join("");
+  return `
+      <div class="btfw-theme-admin" data-btfw-theme-admin>
         <h3>Channel operations</h3>
         <p class="lead">Manage channel branding, optional resources, and BillTube integrations. Per-user colors and fonts live in each viewer's Theme settings.</p>
+
+        <details class="section" data-section="appearance">
+          <summary class="section__summary">
+            <div class="section__title">
+              <h4>Palette & tint</h4>
+              <span>Channel-wide color theme applied to all visitors.</span>
+            </div>
+            <span class="section__chevron" aria-hidden="true">></span>
+          </summary>
+          <div class="section__body">
+            <div class="field">
+              <label for="btfw-theme-tint">Preset tint</label>
+              <select class="btfw-ts-select is-small" id="btfw-theme-tint" data-btfw-bind="tint">${tintOptions}</select>
+            </div>
+            <div class="btfw-ts-color-grid">
+              ${colorFields}
+            </div>
+          </div>
+        </details>
 
         <details class="section" data-section="resources">
           <summary class="section__summary">

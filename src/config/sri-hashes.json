@@ -1,8 +1,8 @@
 {
-  "dist/admin.bundle.js": "sha384-FzdqgDCObuPeYr/OcUxA+fbBgzJ6T5EqrODMogttWmpY5iKHcuOouVYpxaBgFgC/",
+  "dist/admin.bundle.js": "sha384-rKGblMoxRdfl44S2Az5LGkauGer9hlbG3zSQ7CpVFOW8iwE181XXCKAK3rHxv9bw",
   "dist/chat.bundle.js": "sha384-ygE+f7DAvVYBNfgi1xb/2iIYSrmJvK7LbpYQ3CDpU0j3OuaV3XX+RiyFqEF9Q9J4",
   "dist/core.bundle.js": "sha384-aZL4YlFkdwcxFqFaCgVb4Oy2QPHnxMfHM8XWVVw5CfofENNvT1C4NSrQKo2ttgLY",
-  "dist/css/base.css": "sha384-KRWlZuJc65nbfdVSqPaAEDAkkqutpO+4kYWyLF01vkiaxZlwGplTFsTaSDvWtzxW",
+  "dist/css/base.css": "sha384-f2BXxn5QZlY9MbATX4M/g4mgaWMNjADW2MNq7InjjP4hr+xQ1ByDpujLDUdFYwTx",
   "dist/css/boot-overlay.css": "sha384-cUMYqZwUB7Djkz8xfUpJAt0LI6bm+EWoZ+ZelBDehMZT9rekWIhqOELrHUvlmi5U",
   "dist/css/chat.css": "sha384-sAd/CRsLDsLUYZroKi/qrRZUNorv6cMTY6DkbAX5nFHIreTa8QYPXWIA+Jrsh5/K",
   "dist/css/mobile.css": "sha384-/t3S6jDB+Kcp5kMK4hEzvyFGPQoCbgjL5JRS+ZmRmljHMpANVXMEMdG0aRkvkILX",
