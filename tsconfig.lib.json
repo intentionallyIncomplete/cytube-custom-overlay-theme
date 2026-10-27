@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "checkJs": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/lib/**/*.js", "src/lib/**/*.ts", "src/btfw-globals.d.ts"],
+  "exclude": ["dist", "node_modules", "src/workers"]
+}
