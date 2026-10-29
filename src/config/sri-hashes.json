@@ -11,7 +11,7 @@
   "dist/css/player.css": "sha384-lbeEuLvj73jFF0v4LwX5Vp06x/SwnDvCEVQ9JyhbuY5RqUac3NVRA1WUVy76Rz66",
   "dist/css/tokens.css": "sha384-C/Aq4mlLPC2+8NxiigVkJxG/sLjZoWlYMuWZcZLcICDH+ySxupD2hh4Wjw5OAWk1",
   "dist/features.bundle.js": "sha384-6jiPMraZTLKLsmLtrCF3baL3Uro0F5dgJ7Kk9EpsBvjB0VsCNH1onI4ueFvVc4/2",
-  "dist/player.bundle.js": "sha384-HRB/EOnWt9WYzeKEVJ1ddPzGRHdZZCj/sCgQf3bagG9p94nHYvAPbvT10ottP6Ag",
+  "dist/player.bundle.js": "sha384-Mt4PhNFEN6wFIxBs1hhh1cU9pCO6Fh0USzNlFzgn0s3wg38vcjxrN0Y++ktNCGWw",
   "dist/playlist.bundle.js": "sha384-sK5/m7gA5agrAejWrbrG+kg5qBX3uUyC3e4q71y57/DH8j0Bgpnwpc5NpdpwReJ0",
   "https://cdn.jsdelivr.net/npm/bootswatch@3.4.1/slate/bootstrap.min.css": "sha384-XiCBeLjnyW8fUT1Qsjw3NzEeO4AawGrU7aadPCgvNK4DiK5glSw5S66MOluKW8wc",
   "https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css": "sha384-HmYpsz2Aa9Gh3JlkCoh8kUJ2mUKJKTnkyC2Lzt8aLzpPOpnDe8KpFE2xNiBpMDou",

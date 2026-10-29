@@ -40,11 +40,8 @@ export const IGNORED_FOR_LAYOUT_CONTRACT: ReadonlySet<string> = new Set([
   "css",
   "scss",
   "assets",
-  // Relocated legacy test roots (pre-#210); leftovers must not fail audits
+  // Relocated legacy test root (pre-#210); leftovers must not fail audits
   "test",
-  "e2e",
-  // Relocated Playwright artifacts (now under tests/test-results/)
-  "test-results",
   // Local Windows / tooling leftovers (never part of the public tree)
   "Microsoft",
 ]);
@@ -145,9 +142,9 @@ export const ROOT_DIRECTORY_CATALOG: readonly RootDirectoryEntry[] = [
     decision: "keep",
     destination: "tests/",
     followUpIssue: null,
-    purpose: "Unified automated tests: unit/, e2e/, fixtures/, and test-results/.",
+    purpose: "Automated unit tests under unit/.",
     notes:
-      "Consolidated from root test/ + e2e/ (#210). Layout: tests/unit/, tests/e2e/, tests/fixtures/, tests/test-results/.",
+      "Consolidated from root test/ (#210). Layout: tests/unit/ (node:test *.test.js + vitest *.vitest.ts).",
   },
 ] as const;
 

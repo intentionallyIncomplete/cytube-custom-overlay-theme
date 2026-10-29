@@ -30,12 +30,3 @@ scripts/dev-server.js
 scripts/generate-dev-channel.js
 **/worker-configuration.d.ts
 coverage/
-
-# Playwright local artifacts (suite + config stay tracked for CI)
-tests/test-results/
-/test-results/
-playwright-report/
-playwright/.cache/
-
-# Dead-selector audit output (issue #231)
-audit-results*.json

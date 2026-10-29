@@ -40,10 +40,10 @@ npm run build
 | Command | Purpose |
 |---------|---------|
 | `npm run build` | Production bundles → `dist/` |
-| `npm run dev` | Rebuild `dist/` when `src/` changes (pair with a running `npm run e2e:server`) |
+| `npm run serve` | Serve the repo (incl. `dist/`) on `http://127.0.0.1:3099` for a local channel |
+| `npm run dev` | Rebuild `dist/` when `src/` changes (pair with a running `npm run serve`) |
 | `npm run test` | Unit tests |
 | `npm run verify-dist` | Check required bundles exist |
-| `npm run test:e2e` | Playwright suite (starts `scripts/e2e-server.js`) |
 
 Maintainer-local watch/serve helpers (`scripts/dev.js`, `dev-server.js`, `generate-dev-channel.js`) are gitignored and not in public clones — see [scripts/README.md](scripts/README.md).
 
@@ -75,7 +75,7 @@ src/
 ├── assets/         # Authored branding SVGs (KLIPY, theme icons, monkey paw)
 └── billtube-fw.ts  # Loader source → dist/billtube-fw.js
 dist/               # Built JS bundles + dist/css/ (gitignored on main)
-tests/              # unit/ + e2e/ + fixtures/ + test-results/ (Playwright)
+tests/              # unit/ (node:test + vitest)
 scripts/            # Shared build / verify / release tooling (see scripts/README.md)
 channel_config_settings.js   # Generated CyTube/jsDelivr pin (from src/config/; do not hand-edit)
 ```

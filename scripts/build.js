@@ -331,7 +331,7 @@ async function buildWatch() {
 
   console.log("🔨 Watching Quiglytube (development)...\n");
   console.log("Local dist/ assets skip SRI checks in this loader build.");
-  console.log("Leave `npm run e2e:server` running and refresh the browser after a rebuild.\n");
+  console.log("Leave `npm run serve` running and refresh the browser after a rebuild.\n");
 
   copyChannelConfig();
   generateUserReleaseNotes();

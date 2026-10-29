@@ -47,7 +47,6 @@ const sharedRules = {
 
 const esmModuleFiles = [
   "tests/**/*.js",
-  "playwright.config.js",
   "scripts/**/*.js",
   "src/lib/**/*.js",
   "src/modules/util-constants.js",

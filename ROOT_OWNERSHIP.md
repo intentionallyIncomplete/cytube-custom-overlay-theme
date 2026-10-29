@@ -11,7 +11,7 @@ Guarded by Vitest: `npm run test:vitest`.
 |-------|---------|
 | `source` | Authored code or assets edited by humans |
 | `generated` | Build/release output (often gitignored on `main`, tagged for jsDelivr) |
-| `tests` | Automated tests and fixtures |
+| `tests` | Automated unit tests |
 | `tooling` | CI, hooks, build/release scripts |
 | `deps` | Package manager install trees |
 | `local-ephemera` | Local/IDE/runtime scratch; gitignored |
@@ -28,7 +28,7 @@ Guarded by Vitest: `npm run test:vitest`.
 | `node_modules/` | deps | keep | `node_modules/` | — |
 | `scripts/` | tooling | keep | `scripts/` | #212 done |
 | `src/` | source | keep | `src/` (styles + assets + config) | #208/#209/#211 done |
-| `tests/` | tests | keep | `tests/` (`unit/` + `e2e/` + `fixtures/` + `test-results/`) | #210 done |
+| `tests/` | tests | keep | `tests/` (`unit/`) | #210 done |
 
 ### Completed relocations
 
@@ -38,10 +38,8 @@ Guarded by Vitest: `npm run test:vitest`.
 | `css/` | generated | `dist/css/` | #208 |
 | `assets/` | source | `src/assets/` | #209 |
 | `test/` | tests | `tests/unit/` | #210 |
-| `e2e/` | tests | `tests/e2e/` + `tests/fixtures/` | #210 |
-| `test-results/` | local-ephemera | `tests/test-results/` | #210 |
 
-Leftover root `scss/` / `css/` / `assets/` / `test/` / `e2e/` / `test-results/` dirs (if any) are ignored by the ownership audit contract.
+Leftover root `scss/` / `css/` / `assets/` / `test/` dirs (if any) are ignored by the ownership audit contract.
 
 ## One-off / ambiguous folders
 
@@ -59,11 +57,11 @@ cytube-custom-overlay-theme/
 ├── dist/             # generated — JS bundles + css/
 ├── scripts/          # tooling — shared build/verify/release only
 ├── src/              # source — app, styles, assets, config, workers
-├── tests/            # tests — unit/ + e2e/ + fixtures/ + test-results/
-└── [root configs]    # package.json, tsconfig*, Playwright, lint, README, BUILD.md
+├── tests/            # tests — unit/
+└── [root configs]    # package.json, tsconfig*, lint, README, BUILD.md
 ```
 
-Local-only (gitignored, not part of the public layout contract): `.cursor/`, `dev/`, `node_modules/`, `tests/test-results/`, `coverage/`, Playwright report caches.
+Local-only (gitignored, not part of the public layout contract): `.cursor/`, `dev/`, `node_modules/`, `coverage/`.
 
 ## Notable root files (ownership, not directories)
 
@@ -72,7 +70,7 @@ Encoded as `NOTABLE_ROOT_FILES` in [`scripts/root-ownership.ts`](scripts/root-ow
 | File | Ownership | Authored? | Decision | Justification |
 |------|-----------|-----------|----------|---------------|
 | `channel_config_settings.js` | generated | **No** — source is `src/config/channel_config_settings.js` | **keep** at root (#211 done) | Required jsDelivr + CyTube External JS URL shape; build copies template (`@__VERSION__`), release pins `@vX.Y.Z` |
-| `package.json`, `tsconfig*.json`, `playwright.config.js`, `stylelint.config.js`, `vitest.config.ts` | tooling | Yes | keep at root | — |
+| `package.json`, `tsconfig*.json`, `stylelint.config.js`, `vitest.config.ts` | tooling | Yes | keep at root | — |
 | `README.md`, `BUILD.md`, `CHANGELOG.md`, `ROOT_OWNERSHIP.md` | tooling/docs | Yes | keep at root (`docs/` is gitignored) | — |
 
 ### Authored vs generated (config)
@@ -97,9 +95,8 @@ Encoded as `NOTABLE_ROOT_FILES` in [`scripts/root-ownership.ts`](scripts/root-ow
 - [x] Generated CSS ships only under `dist/css/`
 - [x] Authored static assets live under `src/assets/` (ship in-tree; not generated)
 - [x] Build, CDN, CI, and docs paths updated for styles + assets
-- [x] Unit + e2e tests live under `tests/` (`unit/`, `e2e/`, `fixtures/`)
-- [x] Playwright artifacts (including `.last-run.json`) live under `tests/test-results/`
-- [x] Playwright / Node / Vitest / CI / docs paths updated for the unified tree
+- [x] Unit tests live under `tests/unit/`
+- [x] Node / Vitest / CI / docs paths updated for the unified tree
 - [x] Config source lives under `src/config/`; root `channel_config_settings.js` kept with explicit jsDelivr/CyTube justification
 - [x] Build/release pin path is reproducible from source-owned config
 - [x] `scripts/` retains shared build/verify/release tooling only; documented in `scripts/README.md`

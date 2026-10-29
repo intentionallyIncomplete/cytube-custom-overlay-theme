@@ -171,8 +171,8 @@ export const BTFW_AUDIO = window.BTFW_AUDIO = {
       return String(a || '') === String(b || '');
     },
 
-    // Defensive currentSrc read: player may be a stub/mock without currentSrc
-    // (e2e fixture), or tech may be mid-swap. Falls back to the raw media
+    // Defensive currentSrc read: player may be a stub/mock without currentSrc,
+    // or tech may be mid-swap. Falls back to the raw media
     // element's currentSrc property. Returns '' when nothing is readable.
     _readCurrentSrc() {
       try {

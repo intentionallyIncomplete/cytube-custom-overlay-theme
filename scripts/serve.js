@@ -7,9 +7,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
-const fixtureDir = path.join(rootDir, "tests", "fixtures");
-const PORT = Number(process.env.E2E_PORT || process.env.PORT || 3099);
-const HOST = process.env.E2E_HOST || "127.0.0.1";
+const PORT = Number(process.env.DEV_SERVER_PORT || process.env.PORT || 3099);
+const HOST = process.env.DEV_SERVER_HOST || "127.0.0.1";
 
 const MIME = {
   ".js": "application/javascript; charset=utf-8",
@@ -81,24 +80,15 @@ const server = http.createServer((req, res) => {
   if (urlPath === "/" || urlPath === "") {
     const indexHtml = `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><title>BillTube E2E server</title></head>
+<head><meta charset="utf-8"><title>BillTube dev server</title></head>
 <body>
-  <h1>BillTube E2E server</h1>
+  <h1>BillTube dev server</h1>
   <ul>
-    <li><a href="/tests/fixtures/channel.html">CyTube fixture page</a></li>
     <li><a href="/dist/billtube-fw.js">dist/billtube-fw.js</a></li>
   </ul>
 </body>
 </html>`;
     send(res, 200, indexHtml, { "Content-Type": "text/html; charset=utf-8" });
-    return;
-  }
-
-  if (
-    urlPath === "/tests/fixtures/channel" ||
-    urlPath === "/tests/fixtures/channel/"
-  ) {
-    serveFile(req, res, path.join(fixtureDir, "channel.html"));
     return;
   }
 
@@ -112,7 +102,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`BillTube E2E server: http://${HOST}:${PORT}/`);
-  console.log(`Fixture page: http://${HOST}:${PORT}/tests/fixtures/channel.html`);
+  console.log(`BillTube dev server: http://${HOST}:${PORT}/`);
   console.log("Cache-Control: no-store — refresh the browser after a rebuild; no restart needed.");
 });

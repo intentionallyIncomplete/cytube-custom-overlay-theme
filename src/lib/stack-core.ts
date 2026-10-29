@@ -3,8 +3,7 @@
  *
  * Pure move out of src/modules/feature-stack.js: group registry, storage keys,
  * and the localStorage persistence / panel-state helpers used by the stack
- * panels. No behavior changes — see the Phase 0 characterization suite
- * (tests/e2e/smoke/stack-sync.spec.js).
+ * panels. No behavior changes.
  */
 
 export type StackGroupId = "motd-group" | "playlist-group" | "poll-group";
