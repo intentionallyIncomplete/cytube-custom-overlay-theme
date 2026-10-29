@@ -1,6 +1,19 @@
 {
   "releases": [
     {
+      "version": "unreleased",
+      "date": "2026-10-28",
+      "summary": "Attach subtitles when you add a direct video file or a Google Drive index link.",
+      "categories": {
+        "features": [
+          "Add media: choose a .vtt or .srt file before queueing a direct video or a Google Drive index link. The captions travel with that playlist item."
+        ]
+      },
+      "highlights": [
+        "Attach subtitles while adding a direct or Drive video."
+      ]
+    },
+    {
       "version": "1.25.2",
       "date": "2026-07-15",
       "summary": "Mono and audio boost stay stable — turning them on or off no longer freezes the player or kills the sound.",

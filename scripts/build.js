@@ -5,7 +5,7 @@ import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import * as esbuild from "esbuild";
-import { buildCss } from "./build-css.js";
+import { buildCss, STYLE_SOURCE_DIR } from "./build-css.js";
 import { generateSri } from "./generate-sri.js";
 import {
   getEsbuildBaseOptions,
@@ -20,7 +20,8 @@ import {
 
 const buildFlags = {
   js: !process.argv.includes("--css-only"),
-  css: !process.argv.includes("--js-only")
+  css: !process.argv.includes("--js-only"),
+  watch: process.argv.includes("--watch")
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -128,7 +129,8 @@ const bundles = [
     modules: [
       "src/modules/feature-nowplaying.js",
       "src/modules/feature-playlist-performance.js",
-      "src/modules/feature-playlist-tools.js"
+      "src/modules/feature-playlist-tools.js",
+      "src/modules/feature-subtitle-bundle.ts"
     ]
   },
   {
@@ -162,8 +164,7 @@ const bundles = [
       "src/modules/feature-poll-overlay.js",
       "src/modules/feature-notify.js",
       "src/modules/feature-notification-sounds.js",
-      "src/modules/feature-sync-guard.js",
-      "src/modules/feature-local-subs.js"
+      "src/modules/feature-sync-guard.js"
     ]
   }
 ];
@@ -221,7 +222,75 @@ async function buildFrameworkLoader(esbuildOptions) {
   console.log(`✓ Built dist/billtube-fw.js (${sizeKb}KB)`);
 }
 
-(async function build() {
+function debounce(fn, ms) {
+  let timer = null;
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      fn();
+    }, ms);
+  };
+}
+
+// Windows directory watches often emit a second event after the rebuild has
+// already started. Fold that into one follow-up run instead of overlapping.
+function coalesce(fn, ms) {
+  let timer = null;
+  let running = false;
+  let again = false;
+  const run = () => {
+    timer = null;
+    running = true;
+    try {
+      fn();
+    } finally {
+      running = false;
+      if (again) {
+        again = false;
+        timer = setTimeout(run, ms);
+      }
+    }
+  };
+  return () => {
+    if (running) {
+      again = true;
+      return;
+    }
+    clearTimeout(timer);
+    timer = setTimeout(run, ms);
+  };
+}
+
+function rebuildLogger(label, outfile, onFirstEnd) {
+  let seen = false;
+  return {
+    name: "rebuild-logger",
+    setup(build) {
+      build.onEnd((result) => {
+        const first = !seen;
+        seen = true;
+        if (result.errors.length) {
+          console.error(`✗ ${label} failed`);
+          for (const error of result.errors) {
+            console.error(error.text || error);
+          }
+        } else {
+          let sizeNote = "";
+          try {
+            sizeNote = ` (${(fs.statSync(outfile).size / 1024).toFixed(1)}KB)`;
+          } catch {
+            /* outfile missing after a failed write */
+          }
+          console.log(`✓ ${label}${sizeNote}`);
+        }
+        if (first && onFirstEnd) onFirstEnd();
+      });
+    }
+  };
+}
+
+async function buildOnce() {
   const isDev = isDevBuild();
   const esbuildOptions = getEsbuildBaseOptions(isDev);
   const modeLabel = isDev ? "development" : "production";
@@ -252,4 +321,91 @@ async function buildFrameworkLoader(esbuildOptions) {
   } else {
     console.log("\n✨ CSS build complete!");
   }
-})();
+}
+
+async function buildWatch() {
+  const esbuildOptions = getEsbuildBaseOptions(true);
+  const loaderOptions = getEsbuildBaseOptions(true, { skipLocalSri: true });
+  const contexts = [];
+  const watchers = [];
+
+  console.log("🔨 Watching Quiglytube (development)...\n");
+  console.log("Local dist/ assets skip SRI checks in this loader build.");
+  console.log("Leave `npm run e2e:server` running and refresh the browser after a rebuild.\n");
+
+  copyChannelConfig();
+  generateUserReleaseNotes();
+
+  if (buildFlags.css) {
+    buildCss();
+    console.log("");
+    const stylesDir = path.join(rootDir, STYLE_SOURCE_DIR);
+    const rebuildCss = coalesce(() => {
+      try {
+        buildCss();
+      } catch (err) {
+        console.error(`✗ CSS build failed: ${err.message || err}`);
+      }
+    }, 100);
+    watchers.push(fs.watch(stylesDir, { recursive: true }, rebuildCss));
+  }
+
+  if (buildFlags.js) {
+    const refreshConfig = debounce(() => {
+      try {
+        copyChannelConfig();
+        generateUserReleaseNotes();
+      } catch (err) {
+        console.error(`✗ Config refresh failed: ${err.message || err}`);
+      }
+    }, 100);
+    watchers.push(fs.watch(configDir, { recursive: true }, refreshConfig));
+
+    let pendingFirstBuilds = bundles.length + 1;
+    const noteFirstBuild = () => {
+      pendingFirstBuilds -= 1;
+      if (pendingFirstBuilds === 0) {
+        console.log("\n👀 Watching src/. Ctrl+C to stop.\n");
+      }
+    };
+
+    for (const bundle of bundles) {
+      const entryPath = writeBundleEntry(bundle);
+      const outfile = path.join(distDir, `${bundle.name}.bundle.js`);
+      const ctx = await esbuild.context({
+        ...esbuildOptions,
+        entryPoints: [entryPath],
+        outfile,
+        banner: { js: `/*! Quiglytube ${bundle.name} bundle */\n${MODULE_BUNDLE_BANNER}` },
+        plugins: [rebuildLogger(`${bundle.name}.bundle.js`, outfile, noteFirstBuild)]
+      });
+      contexts.push(ctx);
+    }
+
+    const loaderOut = path.join(distDir, "billtube-fw.js");
+    const loaderCtx = await esbuild.context({
+      ...loaderOptions,
+      entryPoints: [path.join(rootDir, "src", "billtube-fw.ts")],
+      outfile: loaderOut,
+      plugins: [rebuildLogger("dist/billtube-fw.js", loaderOut, noteFirstBuild)]
+    });
+    contexts.push(loaderCtx);
+
+    await Promise.all(contexts.map((ctx) => ctx.watch()));
+  } else {
+    console.log("\n👀 Watching src/. Ctrl+C to stop.\n");
+  }
+
+  const shutdown = () => {
+    for (const watcher of watchers) watcher.close();
+    Promise.all(contexts.map((ctx) => ctx.dispose())).finally(() => process.exit(0));
+  };
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+}
+
+const run = buildFlags.watch ? buildWatch : buildOnce;
+run().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

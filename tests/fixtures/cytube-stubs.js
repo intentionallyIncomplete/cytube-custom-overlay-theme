@@ -57,11 +57,28 @@
     pause: noop
   };
 
+  const socketListeners = Object.create(null);
   window.socket = {
-    on: noop,
-    off: noop,
-    emit: noop,
-    removeListener: noop
+    on(event, handler) {
+      if (!socketListeners[event]) socketListeners[event] = [];
+      socketListeners[event].push(handler);
+      return window.socket;
+    },
+    off(event, handler) {
+      const list = socketListeners[event];
+      if (!list) return window.socket;
+      socketListeners[event] = handler ? list.filter((fn) => fn !== handler) : [];
+      return window.socket;
+    },
+    emit(event, ...args) {
+      const list = socketListeners[event] ? socketListeners[event].slice() : [];
+      list.forEach((fn) => {
+        try { fn(...args); } catch (err) { console.error(err); }
+      });
+    },
+    removeListener(event, handler) {
+      return window.socket.off(event, handler);
+    }
   };
 
   window.jQuery = function () {

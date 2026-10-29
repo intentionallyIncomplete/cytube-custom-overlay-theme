@@ -24,6 +24,9 @@ export const SPLIT_KEY = "btfw:grid:leftPx";
 /** "right" = video left, chat right (default). "left" = chat left, video right. */
 export const CHAT_SIDE_KEY = "btfw:layout:chatSide";
 export const RATIO_KEY = "btfw:grid:videoRatio";
+export const VERTICAL_RATIO_KEY = "btfw:grid:verticalVideoRatio";
+export const VERTICAL_VIDEO_MIN_PX = 180;
+export const VERTICAL_CHAT_MIN_PX = 220;
 
 export interface LayoutState {
   videoColumnPx: number | null;

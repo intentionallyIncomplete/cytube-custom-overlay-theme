@@ -38,7 +38,8 @@ npm run verify-dist    # fail if bundles missing
 
 ```bash
 npm run build          # produce dist/ + channel config template
-# Serve dist/ (and related paths) from http://127.0.0.1:3000 — e.g. any static file server.
+npm run e2e:server     # leave running; it serves the repo from disk
+npm run dev            # in a second terminal: rebuild dist/ when src/ changes, then refresh
 # Maintainer-local watch/serve helpers live in gitignored scripts/dev*.js (see scripts/README.md).
 ```
 

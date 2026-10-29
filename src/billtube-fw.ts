@@ -202,6 +202,13 @@ interface BootOverlayApi {
     return u + (u.indexOf("?") >= 0 ? "&" : "?") + kv;
   }
 
+  function sriFor(relativeKey: string): string | undefined {
+    if (__BTFW_SKIP_LOCAL_SRI__ && relativeKey.startsWith("dist/")) {
+      return undefined;
+    }
+    return (SRI_HASHES as Record<string, string>)[relativeKey];
+  }
+
   const BTFW_VERSION = (function () {
     const m = /[?&]v=([^&]+)/.exec(location.search);
     return (m && m[1]) || "dev-" + Date.now();
@@ -261,7 +268,7 @@ interface BootOverlayApi {
       }
 
       const relativeKey = href.startsWith(BASE + "/") ? href.replace(BASE + "/", "") : href;
-      const sri = (SRI_HASHES as Record<string, string>)[relativeKey];
+      const sri = sriFor(relativeKey);
       if (sri) {
         link.integrity = sri;
         link.crossOrigin = "anonymous";
@@ -291,7 +298,7 @@ interface BootOverlayApi {
       s.defer = true;
 
       const relativeKey = src.startsWith(BASE + "/") ? src.replace(BASE + "/", "") : src;
-      const sri = (SRI_HASHES as Record<string, string>)[relativeKey];
+      const sri = sriFor(relativeKey);
       if (sri) {
         s.integrity = sri;
         s.crossOrigin = "anonymous";

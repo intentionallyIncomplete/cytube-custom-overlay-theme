@@ -29,7 +29,6 @@ export const EVENTS = Object.freeze({
   chatImageHoverMagnifyChanged: "btfw:chat:imageHoverMagnifyChanged",
   chatGifAutoplayChanged: "btfw:chat:gifAutoplayChanged",
   chatJoinNoticesChanged: "btfw:chat:joinNoticesChanged",
-  videoLocalSubsChanged: "btfw:video:localsubs:changed",
   layoutChatSideChanged: "btfw:layout:chatSideChanged",
   themeSettingsOpen: "btfw:themeSettings:open"
 });
@@ -43,7 +42,6 @@ export const LS_KEYS = Object.freeze({
   chatAutoScroll: "btfw:chat:autoScroll",
   imageHoverMagnify: "btfw:chat:imageHoverMagnify",
   chatJoinNotices: "btfw:chat:joinNotices",
-  localSubs: "btfw:video:localsubs",
   layoutSide: "btfw:layout:chatSide",
   chatIgnore: "btfw:chat:ignore",
   chatUnameColors: "btfw:chat:unameColors"

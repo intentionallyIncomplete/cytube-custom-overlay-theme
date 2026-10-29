@@ -7,24 +7,10 @@ BTFW.define("feature:videoOverlay", [], async () => {
     "#fullscreenbtn"
   ];
 
-  const LS = { localSubs: "btfw:video:localsubs" };
   const DEFAULT_OWNER_RANK = 5; // Cytube owners default to rank 5 when CHANNEL perms are unavailable
   const PERMISSION_KEYS = {
     owner: ["chanowner", "owner", "founder", "admin", "administrator"]
   };
-
-  function getMediaType() {
-    try {
-      return window.PLAYER?.mediaType || null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function isDirectMedia() {
-    const type = (getMediaType() || "").toLowerCase();
-    return type === "fi" || type === "gd";
-  }
 
   function getClient() {
     try {
@@ -95,22 +81,6 @@ BTFW.define("feature:videoOverlay", [], async () => {
 
     return false;
   }
-
-  const localSubsEnabled = () => {
-    try {
-      return localStorage.getItem(LS.localSubs) !== "0";
-    } catch (_) {
-      return true;
-    }
-  };
-  const setLocalSubs = (value) => {
-    try {
-      localStorage.setItem(LS.localSubs, value ? "1" : "0");
-    } catch (_) {}
-    document.dispatchEvent(
-      new CustomEvent("btfw:video:localsubs:changed", { detail: { enabled: !!value } })
-    );
-  };
 
   let refreshClickCount = 0;
   let refreshCooldownUntil = 0;
@@ -311,7 +281,6 @@ BTFW.define("feature:videoOverlay", [], async () => {
 
     const sections = ensureOverlaySections(overlay, bar);
 
-    ensureLocalSubsButton(sections.left);
     ensureCustomButtons(sections);
     adoptNativeControls(sections);
     restyleOverlayButtons(overlay);
@@ -708,109 +677,6 @@ BTFW.define("feature:videoOverlay", [], async () => {
     }, 3000);
   }
 
-  function getHTML5Video() {
-    return $("video");
-  }
-
-  function srtToVtt(text) {
-    let s = (text || "").replace(/\r\n/g, "\n").trim() + "\n";
-    s = s.replace(/^\d+\s*$\n/gm, "");
-    s = s.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
-    s = s.replace(/(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})/g, "$1 --> $2");
-    return "WEBVTT\n\n" + s;
-  }
-
-  async function pickLocalSubs() {
-    const video = getHTML5Video();
-    if (!video) {
-      toast("Local subs only for HTML5 sources.");
-      return;
-    }
-
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = ".vtt,.srt,text/vtt,text/plain";
-    inp.style.display = "none";
-    document.body.appendChild(inp);
-
-    const done = new Promise((resolve) => {
-      inp.addEventListener(
-        "change",
-        async () => {
-          const f = inp.files && inp.files[0];
-          document.body.removeChild(inp);
-          if (!f) return resolve(false);
-          try {
-            const txt = await f.text();
-            const ext = (f.name.split(".").pop() || "").toLowerCase();
-            const vtt = ext === "srt" ? srtToVtt(txt) : txt.startsWith("WEBVTT") ? txt : "WEBVTT\n\n" + txt;
-            const url = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
-            attachTrack(video, url, f.name.replace(/\.[^.]+$/, "") || "Local");
-            toast("Subtitles loaded.");
-            resolve(true);
-          } catch (e) {
-            console.error(e);
-            toast("Failed to load subtitles.");
-            resolve(false);
-          }
-        },
-        { once: true }
-      );
-    });
-
-    inp.click();
-    await done;
-  }
-
-  function attachTrack(video, url, label) {
-    $("track[data-btfw=\"1\"]", video)?.remove();
-    const tr = document.createElement("track");
-    tr.kind = "subtitles";
-    tr.label = label || "Local";
-    tr.srclang = "en";
-    tr.src = url;
-    tr.default = true;
-    tr.setAttribute("data-btfw", "1");
-    video.appendChild(tr);
-    try {
-      for (const t of video.textTracks) t.mode = t.label === tr.label ? "showing" : "disabled";
-    } catch (_) {}
-  }
-
-  function toast(msg) {
-    let t = $("#btfw-mini-toast");
-    if (!t) {
-      t = document.createElement("div");
-      t.id = "btfw-mini-toast";
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.style.opacity = "1";
-    clearTimeout(t._hid);
-    t._hid = setTimeout(() => (t.style.opacity = "0"), 1400);
-  }
-
-  function ensureLocalSubsButton(section) {
-    if (!section) return;
-    let btn = document.querySelector("#btfw-vo-subs");
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.id = "btfw-vo-subs";
-      btn.className = "btfw-vo-btn";
-      btn.title = "Load local subtitles (.vtt/.srt)";
-      const icon = document.createElement("i");
-      icon.className = "fa fa-cc";
-      btn.appendChild(icon);
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        pickLocalSubs();
-      });
-      section.insertBefore(btn, section.firstChild || null);
-    }
-    const enabled = localSubsEnabled() && isDirectMedia();
-    btn.style.display = enabled ? "" : "none";
-  }
-
   function boot() {
     ensureCSS();
     ensureOverlay();
@@ -823,8 +689,6 @@ BTFW.define("feature:videoOverlay", [], async () => {
     ].filter(Boolean);
     const mo = new MutationObserver(() => ensureOverlay());
     targets.forEach((target) => mo.observe(target, { childList: true, subtree: true }));
-
-    document.addEventListener("btfw:video:localsubs:changed", () => ensureOverlay());
 
     try {
       if (window.socket && typeof socket.on === "function") {
@@ -840,7 +704,6 @@ BTFW.define("feature:videoOverlay", [], async () => {
 
   return {
     name: "feature:videoOverlay",
-    setLocalSubsEnabled: setLocalSubs,
     toggleFullscreen,
     enableAirplay
   };

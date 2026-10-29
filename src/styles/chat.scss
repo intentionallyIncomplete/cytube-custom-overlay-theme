@@ -233,6 +233,7 @@
   padding: 8px 10px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 #messagebuffer > div.server-msg,

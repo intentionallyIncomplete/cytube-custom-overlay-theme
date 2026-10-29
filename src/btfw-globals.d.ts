@@ -25,6 +25,12 @@ interface BtfwRegistryApi {
 /** BTFW version, injected at build time via scripts/build-options.js. */
 declare const __BTFW_VERSION__: string;
 
+/**
+ * True only in `npm run dev` loader builds. Skips integrity checks on dist/
+ * assets so a watch rebuild can load without rewriting SRI hashes.
+ */
+declare const __BTFW_SKIP_LOCAL_SRI__: boolean;
+
 /** VerifyResult type for JSDoc (supports union types in checkJs). */
 // @ts-nocheck-next-line
 interface VerifyResult {
@@ -160,7 +166,10 @@ interface BtfwAudioEngine {
 /** Theme config injected by the loader. */
 interface BtfwConfig {
   corsVideoProxy?: string;
-  integrations?: { corsVideoProxy?: string };
+  integrations?: {
+    corsVideoProxy?: string;
+    subtitleBundles?: { endpoint?: string; driveOrigin?: string };
+  };
 }
 
 interface CytubeSocketLike {

@@ -1,0 +1,166 @@
+/* Theme-aware Video.js control bar mapping BTFW theme variables */
+/* This file themizes Video.js controls to match the CyTube Bootstrap theme */
+
+#videowrap .video-js {
+  /* Control bar container theming */
+  .vjs-control-bar {
+    background: color-mix(in srgb, var(--btfw-color-panel) 92%, transparent 8%) !important;
+    border-top: 1px solid var(--btfw-surface-divider) !important;
+    backdrop-filter: blur(12px) !important;
+    
+    /* General control styling */
+    .vjs-control {
+      color: var(--btfw-color-text) !important;
+      transition: all 0.16s ease !important;
+      
+      &:hover, &:focus {
+        color: var(--btfw-color-accent) !important;
+        background: color-mix(in srgb, var(--btfw-color-accent) 15%, transparent 85%) !important;
+      }
+    }
+  }
+
+  /* Play/pause button theming */
+  .vjs-play-control {
+    .vjs-icon-placeholder::before {
+      color: var(--btfw-color-text) !important;
+      transition: color 0.16s ease !important;
+    }
+    
+    &:hover .vjs-icon-placeholder::before {
+      color: var(--btfw-color-accent) !important;
+    }
+  }
+
+  /* Volume slider theming */
+  .vjs-volume-panel {
+    .vjs-volume-level {
+      background: var(--btfw-color-accent) !important;
+      transition: background 0.16s ease !important;
+    }
+    
+    .vjs-volume-bar {
+      background: color-mix(in srgb, var(--btfw-color-panel) 70%, transparent 30%) !important;
+    }
+  }
+
+  /* Progress bar theming */
+  .vjs-progress-control {
+    .vjs-play-progress {
+      background: var(--btfw-color-accent) !important;
+    }
+    
+    .vjs-load-progress {
+      background: color-mix(in srgb, var(--btfw-color-accent) 40%, transparent 60%) !important;
+    }
+  }
+
+  /* Time displays theming */
+  .vjs-current-time-display,
+  .vjs-duration-display,
+  .vjs-time-divider {
+    color: var(--btfw-color-text-soft) !important;
+    font-weight: 600 !important;
+  }
+
+  /* Fullscreen and other buttons */
+  .vjs-fullscreen-control,
+  .vjs-mute-control,
+  .vjs-playback-rate {
+    color: var(--btfw-color-text) !important;
+    
+    &:hover { color: var(--btfw-color-accent) !important; }
+  }
+
+  /* Big play button theming */
+  .vjs-big-play-button {
+    background: color-mix(in srgb, var(--btfw-color-accent) 85%, transparent 15%) !important;
+    border: 2px solid var(--btfw-color-accent) !important;
+    border-radius: 12px !important;
+    color: var(--btfw-color-on-accent) !important;
+    
+    &:hover {
+      background: var(--btfw-color-accent) !important;
+      transform: scale(1.02) !important;
+    }
+  }
+
+  /* Theme-specific overrides (example for Ember Forge) */
+  [data-theme="ember-forge"] & {
+    .vjs-control-bar {
+      background: linear-gradient(90deg, 
+        color-mix(in srgb, #ff6b35 10%, transparent 90%),
+        color-mix(in srgb, #ff8c42 8%, transparent 92%)) !important;
+      
+      .vjs-volume-level,
+      .vjs-play-progress {
+        background: linear-gradient(90deg, #ff6b35, #ff8c42) !important;
+      }
+    }
+  }
+
+  /* Theme-specific overrides (example for Azure Prism) */
+  [data-theme="azure-prism"] & {
+    .vjs-control-bar {
+      background: linear-gradient(90deg, 
+        color-mix(in srgb, #667eea 10%, transparent 90%),
+        color-mix(in srgb, #764ba2 8%, transparent 92%)) !important;
+      
+      .vjs-volume-level,
+      .vjs-play-progress {
+        background: linear-gradient(90deg, #667eea, #764ba2) !important;
+      }
+    }
+  }
+
+  /* Theme-specific overrides (example for Emerald Forest) */
+  [data-theme="emerald-forest"] & {
+    .vjs-control-bar {
+      background: linear-gradient(90deg, 
+        color-mix(in srgb, #34d399 10%, transparent 90%),
+        color-mix(in srgb, #10b981 8%, transparent 92%)) !important;
+      
+      .vjs-volume-level,
+      .vjs-play-progress {
+        background: linear-gradient(90deg, #34d399, #10b981) !important;
+      }
+    }
+  }
+
+  /* Mobile responsive adjustments */
+  @media (max-width: 720px) {
+    .vjs-control-bar {
+      inset-inline: clamp(8px, 4vw, 18px) !important;
+      padding: clamp(10px, 3.8vw, 18px) !important;
+      flex-wrap: wrap !important;
+      row-gap: 10px !important;
+    }
+    
+    .vjs-progress-control {
+      order: 4 !important;
+      flex-basis: 100% !important;
+      min-width: 120px !important;
+    }
+    
+    .vjs-volume-panel {
+      flex: 1 1 auto !important;
+      justify-content: flex-end !important;
+    }
+    
+    .vjs-volume-bar {
+      width: clamp(140px, 42vw, 100px) !important;
+      height: 10px !important;
+    }
+  }
+}
+
+/* Ensure theme changes are reactive */
+html[data-btfw-theme] #videowrap .video-js {
+  transition: all 0.2s ease !important;
+  animation: theme-update 0.2s ease !important;
+}
+
+@keyframes theme-update {
+  from { opacity: 0.8; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}

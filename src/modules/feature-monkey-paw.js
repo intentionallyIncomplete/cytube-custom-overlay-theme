@@ -4,11 +4,15 @@ BTFW.define("feature:monkeyPaw", [], async () => {
   const OVERLAY_ID = "btfw-monkey-paw-overlay";
   const PAW_SVG_PATH = "/src/assets/monkey-paw/paw.svg";
 
+  // The SVG shows the back of the hand, so a curling finger foreshortens toward its
+  // knuckle (scaleY) while the tip folds out of sight behind it, instead of
+  // rotating in-plane (which swings fingers sideways). The slight rotations lean
+  // the knuckles in toward the raised middle finger.
   const CURLS = {
-    "f-pinky": { root: "rotate(85deg)", tip: "rotate(70deg)" },
-    "f-ring": { root: "rotate(88deg)", tip: "rotate(75deg)" },
-    "f-index": { root: "rotate(87deg)", tip: "rotate(74deg)" },
-    "f-thumb": { root: "rotate(62deg)", tip: "rotate(38deg)" }
+    "f-pinky": { root: "rotate(-8deg) scaleY(0.3)", tip: "rotate(0deg) scaleY(0)" },
+    "f-ring": { root: "rotate(-4deg) scaleY(0.28)", tip: "rotate(0deg) scaleY(0)" },
+    "f-index": { root: "rotate(5deg) scaleY(0.3)", tip: "rotate(0deg) scaleY(0)" },
+    "f-thumb": { root: "rotate(80deg) scaleY(1)", tip: "rotate(70deg) scaleY(1)" }
   };
 
   const STAGGER = {
@@ -19,10 +23,10 @@ BTFW.define("feature:monkeyPaw", [], async () => {
   };
 
   const OPEN_FINGER_TRANSFORMS = {
-    "f-pinky": { root: "rotate(0deg)", tip: "rotate(0deg)" },
-    "f-ring": { root: "rotate(0deg)", tip: "rotate(0deg)" },
-    "f-index": { root: "rotate(0deg)", tip: "rotate(0deg)" },
-    "f-thumb": { root: "rotate(-18deg)", tip: "rotate(0deg)" }
+    "f-pinky": { root: "rotate(0deg) scaleY(1)", tip: "rotate(0deg) scaleY(1)" },
+    "f-ring": { root: "rotate(0deg) scaleY(1)", tip: "rotate(0deg) scaleY(1)" },
+    "f-index": { root: "rotate(0deg) scaleY(1)", tip: "rotate(0deg) scaleY(1)" },
+    "f-thumb": { root: "rotate(-18deg) scaleY(1)", tip: "rotate(0deg) scaleY(1)" }
   };
 
   let svgMarkupCache = null;

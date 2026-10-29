@@ -470,6 +470,23 @@ BTFW.define("feature:playlist-tools", [], async () => {
     return true;
   }
 
+  /* ---------- Drag-to-reorder feel ---------- */
+  function tuneQueueSortable() {
+    const jq = window.jQuery;
+    const queue = jq && jq("#queue");
+    if (!queue || !queue.hasClass("ui-sortable") || queue.data("btfwSortTuned")) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    queue.sortable("option", {
+      axis: "y",
+      tolerance: "pointer",
+      placeholder: "btfw-queue-placeholder",
+      forcePlaceholderSize: true,
+      revert: reduceMotion ? false : 150,
+      scrollSensitivity: 40
+    });
+    queue.data("btfwSortTuned", true);
+  }
+
   /* ---------- Utils ---------- */
   function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
@@ -559,6 +576,7 @@ BTFW.define("feature:playlist-tools", [], async () => {
     wireQueuePollCopy();
     ensureAddFromUrlTitleFilter();
     ensureAddTempPreference();
+    tuneQueueSortable();
 
     // Set up optimized observers instead of the old ones
     setupOptimizedObservers();

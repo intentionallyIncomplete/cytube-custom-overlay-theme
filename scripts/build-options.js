@@ -2,15 +2,17 @@
 
 import { readFileSync } from "fs";
 
-// __BTFW_VERSION__ is declared in src/btfw-globals.d.ts and substituted at
-// bundle time (#242): the loader logs it and publishes it on btfw:ready.
+// __BTFW_VERSION__ and __BTFW_SKIP_LOCAL_SRI__ are declared in
+// src/btfw-globals.d.ts and substituted at bundle time. The version is logged
+// and published on btfw:ready (#242). The SRI flag is true only for watch
+// builds, so a rebuilt dist file is not rejected by a hash baked into the loader.
 const PKG = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 export function isDevBuild() {
   return process.env.BTFW_DEV === "1" || process.argv.includes("--dev");
 }
 
-export function getEsbuildBaseOptions(isDev) {
+export function getEsbuildBaseOptions(isDev, { skipLocalSri = false } = {}) {
   return {
     target: ["es2018"],
     bundle: true,
@@ -21,7 +23,10 @@ export function getEsbuildBaseOptions(isDev) {
     legalComments: isDev ? "inline" : "none",
     drop: isDev ? [] : ["debugger"],
     sourcemap: isDev ? "linked" : false,
-    define: { __BTFW_VERSION__: JSON.stringify(PKG.version) },
+    define: {
+      __BTFW_VERSION__: JSON.stringify(PKG.version),
+      __BTFW_SKIP_LOCAL_SRI__: skipLocalSri ? "true" : "false"
+    },
     logLevel: "silent"
   };
 }

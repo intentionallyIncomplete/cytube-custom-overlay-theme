@@ -25,13 +25,13 @@ $btfw-font-default: 'Inter', 'Segoe UI', sans-serif;
     --btfw-nav-real-height: var(--btfw-top);
     --btfw-top-effective: var(--btfw-top);
     --btfw-viewport-h: 100dvh;
-    --btfw-primary-budget: calc(var(--btfw-viewport-h) - var(--btfw-top-effective) - var(--btfw-gap) * 2);
+    --btfw-primary-budget: calc(var(--btfw-viewport-h) - var(--btfw-top-effective) - var(--btfw-gap));
     --btfw-video-share: #{$btfw-video-share};
     --btfw-stack-max-h: #{$btfw-stack-max-h};
     --btfw-stack-header-min-h: #{$btfw-stack-header-min-h};
     --btfw-video-max-h: min(
       calc(var(--btfw-primary-budget) * var(--btfw-video-share)),
-      calc((100vw - var(--btfw-chat-min, 320px) - var(--btfw-split-width, 8px) - var(--btfw-gap) * 3) * 9 / 16)
+      calc((100vw - var(--btfw-chat-min, 320px) - var(--btfw-split-width, 8px) - var(--btfw-gap) * 2) * 9 / 16)
     );
     --btfw-gap: #{$btfw-gap};
     --btfw-color-bg: var(--btfw-theme-bg, #{$btfw-color-bg-fallback});
