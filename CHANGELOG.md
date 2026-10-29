@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.9...v1.31.0) (2026-10-29)
+
+
+### Features
+
+* **subtitles:** add support for attaching subtitles to video files and Google Drive links ([#252](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/252)) ([72a0c4d](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/72a0c4dd0479d3fca6cd6968a725da3abb801cc3))
+
 ## [1.30.9](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.8...v1.30.9) (2026-10-28)
 
 
