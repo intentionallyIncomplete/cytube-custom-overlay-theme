@@ -34,8 +34,7 @@ coverage/
 # Playwright local artifacts (suite + config stay tracked for CI)
 tests/test-results/
 /test-results/
-playwright-report/
-playwright/.cache/
 
-# Dead-selector audit output (issue #231)
-audit-results*.json
+AGENTS.md
+CLAUDE.md
+ROOT_OWNERSHIP.md
