@@ -1,3 +1,10 @@
+## [1.30.9](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.8...v1.30.9) (2026-10-28)
+
+
+### Bug Fixes
+
+* **ui:** resolve sticky movie-info toggle, theme-admin apply, chat scroll isolation ([#251](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/251)) ([92a3640](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/92a36402005c6b5c9357defc594f547220286be4))
+
 ## [1.30.8](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.7...v1.30.8) (2026-10-26)
 
 ## [1.30.7](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.6...v1.30.7) (2026-10-16)

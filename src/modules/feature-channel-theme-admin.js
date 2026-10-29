@@ -327,7 +327,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     // keeps the fragment inert until explicitly cloned into the live panel, rather than assigning
     // innerHTML directly on an already-attached element.
     const scratch = document.createElement("template");
-    scratch.innerHTML = adminTpl.channelThemeAdminPanelHtml();
+    scratch.innerHTML = adminTpl.channelThemeAdminPanelHtml(themeRuntime);
     panel.replaceChildren(scratch.content.cloneNode(true));
     return panel;
   }
