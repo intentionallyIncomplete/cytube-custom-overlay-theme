@@ -180,7 +180,8 @@ function makeDoc(
 
 const TPL = {
   addMediaPanelHtml: () => "<div class='btfw-addmedia-panel__inner'></div>",
-  addMediaButtonHtml: () => "<span>Add media</span>"
+  addMediaButtonHtml: () => "<span>Add media</span>",
+  playlistSearchButtonHtml: () => "<i></i>"
 };
 
 function defaultCtx(overrides: Partial<StackPlaylistContext> = {}): StackPlaylistContext {

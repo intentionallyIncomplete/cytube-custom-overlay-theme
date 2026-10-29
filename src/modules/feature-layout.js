@@ -32,10 +32,14 @@ BTFW.define("feature:layout", ["feature:styleCore", "feature:themeMode"], async 
 
   // Initialise all domains (order is intentional: state → columns → viewport).
   columns.loadVideoColumnWidth();
+  columns.loadVerticalVideoHeight();
   state.chatSidePref = columns.getStoredChatSide();
   columns.applyColumnTemplate();
   viewport.ensureShell();
   viewport.commitLayout();
+
+  // Wire vertical resizable after commitLayout creates the elements
+  columns.makeVerticalResizable();
 
   return {
     name: "feature:layout",

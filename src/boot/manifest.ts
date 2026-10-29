@@ -13,6 +13,7 @@ export const BOOT_DOM = [
   "feature:nowplaying",
   "feature:playlistPerformance",
   "feature:playlist-tools",
+  "feature:subtitle-bundle",
   "feature:audio",
   "feature:movie-info",
   "ext:movie-suggestion"
@@ -46,8 +47,7 @@ export const BOOT_NAV = [
 
 /** Sync/socket integration and playback guard. */
 export const BOOT_SYNC = [
-  "feature:syncGuard",
-  "feature:local-subs"
+  "feature:syncGuard"
 ] as const;
 
 /**

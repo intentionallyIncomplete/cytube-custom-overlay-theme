@@ -7,6 +7,10 @@ const defaultBaseUrl = `http://${host}:${port}`;
 const baseURL = process.env.E2E_BASE_URL || defaultBaseUrl;
 const useExternalTarget = Boolean(process.env.E2E_BASE_URL);
 
+// Use OpenClaw managed Chromium wrapper (includes LD_LIBRARY_PATH for libnspr4.so) to avoid libnspr4.so issues in WSL
+const chromiumExecutable = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
+  "/home/escape/.local/chromium-libs/chrome-wrapper.sh";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   outputDir: "tests/test-results",
@@ -29,8 +33,12 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] }
+      name: "custom-chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        executablePath: chromiumExecutable
+      },
+      browserName: "chromium"
     }
   ],
   webServer: useExternalTarget

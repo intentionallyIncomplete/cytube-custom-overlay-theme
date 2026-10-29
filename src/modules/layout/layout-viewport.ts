@@ -84,7 +84,7 @@ export function createLayoutViewportDomain(ctx: {
     const viewportH = getViewportHeight();
     const topEffective = getTopEffectivePx();
     const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--btfw-gap")) || 10;
-    return Math.max(0, viewportH - topEffective - gap * 2);
+    return Math.max(0, viewportH - topEffective - gap);
   }
 
   function roundLayoutPx(value: number): number {
@@ -94,7 +94,6 @@ export function createLayoutViewportDomain(ctx: {
   function applyViewportBudget(): void {
     const root = document.documentElement;
     const topEffective = getTopEffectivePx();
-    const gap = parseFloat(getComputedStyle(root).getPropertyValue("--btfw-gap")) || 10;
     const primaryRowH = getPrimaryRowHeight();
 
     root.style.setProperty("--btfw-top-effective", `${topEffective}px`);
@@ -103,7 +102,7 @@ export function createLayoutViewportDomain(ctx: {
 
     const leftpad = document.getElementById("btfw-leftpad");
     const colW = ctx.state.isVertical
-      ? Math.max(0, window.innerWidth - gap * 2)
+      ? window.innerWidth
       : (leftpad?.getBoundingClientRect().width || window.innerWidth * DEFAULT_VIDEO_RATIO);
     const aspectCap = colW * (9 / 16);
 
@@ -475,11 +474,16 @@ export function createLayoutViewportDomain(ctx: {
       const split = document.createElement("div");
       split.id = "btfw-vsplit";
 
+      // Vertical resize handle (for vertical/mobile layout)
+      const verticalSplit = document.createElement("div");
+      verticalSplit.id = "btfw-vsplit-vertical";
+
       ensureNavHost(grid);
 
       grid.appendChild(left);
       grid.appendChild(split);
       grid.appendChild(right);
+      grid.appendChild(verticalSplit);
 
       grid.style.opacity = '0';
       wrap.prepend(grid);

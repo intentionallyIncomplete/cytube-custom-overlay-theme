@@ -33,7 +33,7 @@ function resolveFilePath(urlPath) {
 }
 
 function send(res, status, body, headers = {}) {
-  res.writeHead(status, headers);
+  res.writeHead(status, { "Cache-Control": "no-store", ...headers });
   res.end(body);
 }
 
@@ -52,7 +52,11 @@ function serveFile(req, res, filePath) {
       return;
     }
 
-    res.writeHead(200, { "Content-Type": type, "Content-Length": stat.size });
+    res.writeHead(200, {
+      "Content-Type": type,
+      "Content-Length": stat.size,
+      "Cache-Control": "no-store"
+    });
     fs.createReadStream(filePath).pipe(res);
   });
 }
@@ -110,4 +114,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`BillTube E2E server: http://${HOST}:${PORT}/`);
   console.log(`Fixture page: http://${HOST}:${PORT}/tests/fixtures/channel.html`);
+  console.log("Cache-Control: no-store — refresh the browser after a rebuild; no restart needed.");
 });

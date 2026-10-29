@@ -10,7 +10,7 @@ Home decision (epic [#206](https://github.com/intentionallyIncomplete/cytube-cus
 
 | File | Purpose | Entry points |
 |------|---------|--------------|
-| `build.js` | Production JS build (esbuild bundles + loader), channel config copy, release-notes codegen; runs CSS build and `verify-dist` | `npm run build`, `npm run build:js` |
+| `build.js` | Production JS build (esbuild bundles + loader), channel config copy, release-notes codegen; runs CSS build and `verify-dist`. `--watch` rebuilds `dist/` on save (development loader, no local SRI) | `npm run build`, `npm run build:js`, `npm run dev` |
 | `build-css.js` | Compile `src/styles/*.scss` → `dist/css/`; exports `buildCss` / `verifyCss` for other scripts | `npm run build:css`; imported by `build.js`, `verify-dist.js` |
 | `build-options.js` | Shared esbuild options + bundle banner (library module, not a CLI) | Imported by `build.js` |
 | `verify-dist.js` | Assert required `dist/` JS + CSS artifacts exist; guards admin/features split (#197) | `npm run verify-dist`; CI release; spawned by `build.js` / `prepare-release.js` |
@@ -19,7 +19,7 @@ Home decision (epic [#206](https://github.com/intentionallyIncomplete/cytube-cus
 | `purge-cdn.js` | Purge jsDelivr cache for every shipped CDN path | `npm run purge-cdn`; release / purge workflows |
 | `verify-cdn-deploy.js` | Retried fetch + content/pin checks against jsDelivr `@vX.Y.Z` | `npm run verify:cdn` |
 | `audit-dead-selectors.js` (and `dead-selector-lib.js`) | Crawl the fixture (+ live channel via `--url`) and report compiled CSS selectors that never matched (#231) | `npm run audit:css`; `--url <channel>`, `--out <file.json>`, `--no-mobile`, `--help` |
-| `e2e-server.js` | Static HTTP server for Playwright fixtures (`127.0.0.1:3099`) | `npm run e2e:server`; `playwright.config.js` |
+| `e2e-server.js` | Static HTTP server for Playwright fixtures (`127.0.0.1:3099`). Reads files from disk on each request (`Cache-Control: no-store`), so a rebuild is visible on refresh without restarting | `npm run e2e:server`; `playwright.config.js` |
 | `root-ownership.ts` | Typed root ownership catalog for epic #206 | Vitest (`tests/unit/root-ownership.vitest.ts`); `tsconfig.strict-tools.json` |
 
 ## Dead-selector audit (#231)

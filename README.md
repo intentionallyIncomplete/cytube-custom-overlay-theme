@@ -8,7 +8,7 @@ Modular UI enhancement framework for [CyTube](https://cytu.be) channels. BillTub
 
 - **Layout & theme** — Resizable chat column, glass panels, per-user color/font presets in Theme Settings
 - **Chat** — Markdown-style filters, inline GIFs (Giphy and KLIPY), hover magnify for emotes, media handling
-- **Player & playlist** — Audio boost, subtitles, movie info, queue tools
+- **Player & playlist** — Audio boost, movie info, queue tools. When you add a direct video file or a Google Drive index link, you can attach a `.vtt` or `.srt` subtitle file; it is bundled with that video for everyone in the room.
 - **Movie requests** — TMDB search, suggestion history, chat announcements (via Cloudflare worker)
 - **Mods** — Theme admin toolkit, MOTD/poll headers, channel branding
 
@@ -40,6 +40,7 @@ npm run build
 | Command | Purpose |
 |---------|---------|
 | `npm run build` | Production bundles → `dist/` |
+| `npm run dev` | Rebuild `dist/` when `src/` changes (pair with a running `npm run e2e:server`) |
 | `npm run test` | Unit tests |
 | `npm run verify-dist` | Check required bundles exist |
 | `npm run test:e2e` | Playwright suite (starts `scripts/e2e-server.js`) |
@@ -59,18 +60,9 @@ Console should show something like: `[BTFW] BASE: http://127.0.0.1:3000`
 
 ## Backend worker (movies & GIFs)
 
-Movie search, suggestion storage, Giphy, and KLIPY traffic go through the Cloudflare **movies-storage** worker so API keys never ship in channel JavaScript.
+Movie search, suggestion storage, Giphy, and KLIPY traffic go through the Cloudflare **movies-storage** worker so API keys never ship in channel JavaScript. That worker is no longer in this repo.
 
-```bash
-cd src/workers/movies-storage
-npm install
-npx wrangler secret put TMDB_API_KEY
-npx wrangler secret put GIPHY_API_KEY
-npx wrangler secret put KLIPY_APP_KEY
-npm run deploy
-```
-
-See [src/workers/movies-storage/README.md](src/workers/movies-storage/README.md) for routes and verification curls.
+Other workers live in sibling folders: `../index-worker` (Google Drive index), `../subtitle-bundles` (subtitles attached in Add Media), and `../vidprox` (CORS video proxy). See [AGENTS.md](AGENTS.md#cloudflare-workers).
 
 ## Project layout
 
@@ -81,7 +73,6 @@ src/
 ├── config/         # Authored channel snippet + user-release-notes.json
 ├── styles/         # Authored SCSS (source of truth)
 ├── assets/         # Authored branding SVGs (KLIPY, theme icons, monkey paw)
-├── workers/        # Cloudflare workers (movies-storage, vidprox)
 └── billtube-fw.ts  # Loader source → dist/billtube-fw.js
 dist/               # Built JS bundles + dist/css/ (gitignored on main)
 tests/              # unit/ + e2e/ + fixtures/ + test-results/ (Playwright)

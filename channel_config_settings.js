@@ -1,4 +1,4 @@
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@v1.30.9";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/intentionallyIncomplete/cytube-custom-overlay-theme@__VERSION__";
 
 // CyTube defers video.js plugins; wait until resolution switcher registers before player init.
 (function () {
@@ -61,6 +61,17 @@ window.BTFW_THEME_ADMIN = {
   }
 };
 // BTFW_THEME_ADMIN_END
+
+// Subtitle bundles POST to the subtitle-bundles worker; Drive links on
+// driveOrigin (the quiglysmovies index worker) are resolved server-side.
+window.BTFW_CONFIG = window.BTFW_CONFIG || {};
+if (!window.BTFW_CONFIG.integrations) window.BTFW_CONFIG.integrations = {};
+if (!window.BTFW_CONFIG.integrations.subtitleBundles) {
+  window.BTFW_CONFIG.integrations.subtitleBundles = {
+    endpoint: "https://subtitle-bundles.ianbryanz.workers.dev",
+    driveOrigin: "https://quiglysmovies.ianbryanz.workers.dev"
+  };
+}
 
 // BTFW_LOADER_SENTINEL
 (function (W, D) {

@@ -16,6 +16,7 @@ export interface StackPlaylistContext {
   tpl: {
     addMediaPanelHtml(): string;
     addMediaButtonHtml(): string;
+    playlistSearchButtonHtml(): string;
   };
   /** Shell's active flyout group id, or null when no flyout is open. */
   getActiveFlyoutGroup(): string | null;
@@ -208,6 +209,51 @@ export function createStackPlaylist(ctx: StackPlaylistContext): StackPlaylistDom
     return { panel, toggle, setActive };
   }
 
+  /** Collapses the playlist filter behind a "Search" button in the actions row. */
+  function ensureSearchToggle(
+    controlsBar: HTMLElement,
+    actionsCluster: HTMLElement,
+    addMediaBtn: HTMLElement | null
+  ): void {
+    const search = controlsBar.querySelector<HTMLElement>(".btfw-plbar__search");
+    if (!search || document.getElementById("btfw-pl-search-toggle")) return;
+
+    search.id ||= "btfw-plbar-search";
+    search.hidden = true;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "btfw-pl-search-toggle";
+    btn.className = "button is-dark is-small btfw-plbar__action-btn";
+    btn.innerHTML = tpl.playlistSearchButtonHtml();
+    btn.title = "Filter Playlist";
+    btn.setAttribute("aria-label", "Filter Playlist");
+    btn.setAttribute("aria-controls", search.id);
+    btn.setAttribute("aria-expanded", "false");
+
+    if (addMediaBtn && addMediaBtn.parentElement === actionsCluster) addMediaBtn.after(btn);
+    else actionsCluster.prepend(btn);
+
+    const input = search.querySelector<HTMLInputElement>("input");
+
+    const setOpen = (open: boolean) => {
+      search.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        input?.focus();
+        return;
+      }
+      if (input?.value) search.querySelector<HTMLElement>("#btfw-pl-clear")?.click();
+    };
+
+    btn.addEventListener("click", () => setOpen(btn.getAttribute("aria-expanded") !== "true"));
+    search.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Escape") return;
+      setOpen(false);
+      btn.focus();
+    });
+  }
+
   function mergePlaylistControls(): void {
     const plBar = document.getElementById("btfw-plbar");
     if (plBar?.dataset.btfwMerged === "1") return;
@@ -377,6 +423,8 @@ export function createStackPlaylist(ctx: StackPlaylistContext): StackPlaylistDom
         }
       }
     }
+
+    ensureSearchToggle(controlsBar, actionsCluster, addMediaBtn);
 
     // Move any floating controls rows into the playlist container
     controlsRows.forEach(row => {

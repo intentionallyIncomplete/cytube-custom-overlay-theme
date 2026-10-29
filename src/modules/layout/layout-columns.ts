@@ -15,7 +15,10 @@ import {
   DEFAULT_VIDEO_RATIO,
   SPLIT_KEY,
   CHAT_SIDE_KEY,
-  RATIO_KEY
+  RATIO_KEY,
+  VERTICAL_VIDEO_MIN_PX,
+  VERTICAL_CHAT_MIN_PX,
+  VERTICAL_RATIO_KEY
 } from "./layout-state.js";
 
 export interface LayoutColumnsDomain {
@@ -24,6 +27,9 @@ export interface LayoutColumnsDomain {
   applyColumnTemplate(): void;
   setVideoColumnWidth(px: number): void;
   makeResizable(): void;
+  makeVerticalResizable(): void;
+  setVerticalVideoHeight(px: number): void;
+  loadVerticalVideoHeight(): void;
 }
 
 export function createLayoutColumnsDomain(ctx: {
@@ -210,11 +216,118 @@ export function createLayoutColumnsDomain(ctx: {
     });
   }
 
+  function makeVerticalResizable(): void {
+    const grid = document.getElementById("btfw-grid");
+    const verticalSplitter = document.getElementById("btfw-vsplit-vertical");
+    if (!grid || !verticalSplitter) {
+      console.warn("[BTFW] Vertical resizer elements not found.");
+      return;
+    }
+    if (verticalSplitter.dataset.btfwResizeWired) return;
+    verticalSplitter.dataset.btfwResizeWired = "true";
+
+    let isResizing = false;
+    let activePointerId: number | null = null;
+
+    function handleVerticalPointerMove(e: PointerEvent) {
+      if (!isResizing) return;
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+
+      if (!ctx.state.isVertical) {
+        stopVerticalResize();
+        return;
+      }
+
+      const gridRect = grid.getBoundingClientRect();
+      const splitRect = verticalSplitter.getBoundingClientRect();
+      const splitHeight = splitRect.height || 8;
+
+      const pointerY = e.clientY - gridRect.top;
+      const videoRowH = pointerY - splitHeight / 2;
+      const chatRowH = gridRect.height - pointerY - splitHeight / 2;
+
+      if (videoRowH < VERTICAL_VIDEO_MIN_PX || chatRowH < VERTICAL_CHAT_MIN_PX) return;
+
+      const totalH = videoRowH + chatRowH + splitHeight;
+      const ratio = videoRowH / totalH;
+
+      if (!Number.isFinite(ratio)) return;
+      setVerticalVideoHeight(ratio);
+    }
+
+    function stopVerticalResize() {
+      if (!isResizing) return;
+      const pointerId = activePointerId;
+      isResizing = false;
+      activePointerId = null;
+      document.body.classList.remove("btfw-resizing");
+      verticalSplitter.removeEventListener("pointermove", handleVerticalPointerMove);
+      verticalSplitter.removeEventListener("pointerup", stopVerticalResize);
+      verticalSplitter.removeEventListener("pointercancel", stopVerticalResize);
+      window.removeEventListener("blur", stopVerticalResize);
+      document.removeEventListener("visibilitychange", onVerticalVisibilityChange);
+      try {
+        if (pointerId !== null && typeof verticalSplitter.releasePointerCapture === "function") {
+          verticalSplitter.releasePointerCapture(pointerId);
+        }
+      } catch (_) {}
+      ctx.onColumnTemplateApplied();
+    }
+
+    function onVerticalVisibilityChange() {
+      if (document.visibilityState === "hidden") stopVerticalResize();
+    }
+
+    verticalSplitter.addEventListener("pointerdown", (e) => {
+      if (!ctx.state.isVertical || e.button !== 0) return;
+      isResizing = true;
+      activePointerId = e.pointerId;
+      e.preventDefault();
+      document.body.classList.add("btfw-resizing");
+      try {
+        verticalSplitter.setPointerCapture(e.pointerId);
+      } catch (_) {}
+      verticalSplitter.addEventListener("pointermove", handleVerticalPointerMove);
+      verticalSplitter.addEventListener("pointerup", stopVerticalResize);
+      verticalSplitter.addEventListener("pointercancel", stopVerticalResize);
+      window.addEventListener("blur", stopVerticalResize);
+      document.addEventListener("visibilitychange", onVerticalVisibilityChange);
+    });
+  }
+
+  function loadVerticalVideoHeight(): void {
+    const stored = parseFloat(localStorage.getItem(VERTICAL_RATIO_KEY) || "");
+    if (!isNaN(stored) && stored > 0 && stored < 1) {
+      const root = document.documentElement;
+      const primaryRowH = parseFloat(root.style.getPropertyValue("--btfw-primary-row-h")) || 720;
+      const videoRowH = Math.round(primaryRowH * stored);
+      root.style.setProperty("--btfw-vertical-video-row-h", `${videoRowH}px`);
+      root.style.setProperty("--btfw-vertical-chat-row-h", `${primaryRowH - videoRowH}px`);
+    }
+  }
+
+  function setVerticalVideoHeight(ratio: number): void {
+    if (!Number.isFinite(ratio) || ratio <= 0 || ratio >= 1) return;
+    const root = document.documentElement;
+    const primaryRowH = parseFloat(root.style.getPropertyValue("--btfw-primary-row-h")) || 720;
+    const videoRowH = Math.round(primaryRowH * Math.max(0.15, Math.min(0.85, ratio)));
+    const chatRowH = primaryRowH - videoRowH;
+
+    if (videoRowH < VERTICAL_VIDEO_MIN_PX || chatRowH < VERTICAL_CHAT_MIN_PX) return;
+
+    root.style.setProperty("--btfw-vertical-video-row-h", `${videoRowH}px`);
+    root.style.setProperty("--btfw-vertical-chat-row-h", `${chatRowH}px`);
+    localStorage.setItem(VERTICAL_RATIO_KEY, String(ratio));
+  }
+
   return {
     getStoredChatSide,
     loadVideoColumnWidth,
     applyColumnTemplate,
     setVideoColumnWidth,
-    makeResizable
+    makeResizable,
+    makeVerticalResizable,
+    setVerticalVideoHeight,
+    loadVerticalVideoHeight
   };
 }

@@ -38,6 +38,8 @@ npm run build
 npm run e2e:server
 ```
 
+Leave the server running while iterating. `npm run dev` rebuilds `dist/` on save; refresh the browser to load it. The server does not need a restart.
+
 Override port/host with `E2E_PORT` / `E2E_HOST`.
 
 ## Full CyTube stack (optional)

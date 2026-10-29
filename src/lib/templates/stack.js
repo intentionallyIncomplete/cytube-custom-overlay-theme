@@ -83,3 +83,7 @@ export function playlistAddFormHtml() {
 export function addMediaButtonHtml() {
   return `<span data-btfw-icon-slot="stack-add-media" aria-hidden="true"><i class="fa fa-plus"></i></span><span>Add media</span>`;
 }
+
+export function playlistSearchButtonHtml() {
+  return `<i class="fa fa-search" aria-hidden="true"></i>`;
+}

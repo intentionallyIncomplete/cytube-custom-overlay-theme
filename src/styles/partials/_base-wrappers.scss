@@ -92,6 +92,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 #btfw-theme-modal #btfw-ts-panels{
@@ -637,9 +638,11 @@
 }
 
 
+/* No transform here: it would become the containing block for the
+   absolutely positioned drag helper and push it out of view. */
 #queue {
-  transform: translateZ(0);
-    overflow-y: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   max-height: 600px;
 }
