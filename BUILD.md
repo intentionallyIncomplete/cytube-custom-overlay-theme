@@ -28,7 +28,7 @@ BillTube bundles modules for production (6 HTTP requests instead of 33+) and ser
 ```bash
 npm install
 npm run build          # esbuild: src/styles → dist/css/, src + modules → dist/billtube-fw.js + dist/*.bundle.js
-npm run release:verify # lint, typecheck, test, build, Playwright E2E
+npm run release:verify # lint, typecheck, test, build
 npm run verify-dist    # fail if bundles missing
 ```
 
@@ -38,7 +38,7 @@ npm run verify-dist    # fail if bundles missing
 
 ```bash
 npm run build          # produce dist/ + channel config template
-npm run e2e:server     # leave running; it serves the repo from disk
+npm run serve          # leave running; it serves the repo from disk on :3099
 npm run dev            # in a second terminal: rebuild dist/ when src/ changes, then refresh
 # Maintainer-local watch/serve helpers live in gitignored scripts/dev*.js (see scripts/README.md).
 ```
@@ -79,21 +79,16 @@ Boot always loads `dist/*.bundle.js` from the same origin/ref as `dist/billtube-
 
 **Lint:** `npm run lint:css` (stylelint on `src/styles/**/*.scss`).
 
-**Dead-selector audit:** `npm run audit:css` (see `scripts/README.md`)
-builds, crawls the fixture (and, with `--url <channel>`, your live channel),
-and reports compiled selectors that never matched an element. Treat
-candidates as unproven dead code — review before deleting from `src/styles/`.
-
 ## Release pipeline
 
 Validation and publishing are split across two GitHub Actions workflows:
 
 | Workflow | Trigger | Role |
 |----------|---------|------|
-| **CI** (`.github/workflows/ci.yml`) | Every push and PR | Lint, typecheck, unit tests, build, Playwright E2E (`ci-gate`); uploads `build-output` artifact |
-| **Release** (`.github/workflows/release.yml`) | After CI succeeds on `main` push | Asserts `verify` + `e2e` + `ci-gate`, reuses CI artifacts, runs semantic-release, purges CDN, verifies deploy |
+| **CI** (`.github/workflows/ci.yml`) | Every push and PR | Lint, typecheck, unit tests, build (`ci-gate`); uploads `build-output` artifact |
+| **Release** (`.github/workflows/release.yml`) | After CI succeeds on `main` push | Asserts `verify` + `ci-gate`, reuses CI artifacts, runs semantic-release, purges CDN, verifies deploy |
 
-PRs only run CI. Merges to `main` run CI once; Release waits for that run and does **not** proceed unless lint, typecheck, unit tests, build, and Playwright smoke tests all succeed.
+PRs only run CI. Merges to `main` run CI once; Release waits for that run and does **not** proceed unless lint, typecheck, unit tests, and build all succeed.
 
 ### Build outputs (what ships)
 
@@ -113,18 +108,17 @@ PRs only run CI. Merges to `main` run CI once; Release waits for that run and do
 
 On each releasable push to `main` (after CI passes):
 
-1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`, Playwright E2E; upload `dist/`
-2. **Release** — assert CI jobs (`verify`, `e2e`, `ci-gate`), download artifacts (`SKIP_BUILD=1`), `verify-dist`
+1. **CI** — `npm run lint:ci`, `typecheck`, `test`, `build`; upload `dist/`
+2. **Release** — assert CI jobs (`verify`, `ci-gate`), download artifacts (`SKIP_BUILD=1`), `verify-dist`
 3. **semantic-release** — version bump, changelog, `prepare:release` (skip build, run `inject-cdn-version.js` which reads `src/config/channel_config_settings.js` and writes the root pin)
 4. **Git commit** — `package.json`, `CHANGELOG.md`, pinned `channel_config_settings.js`, all `dist/*.js`, all `dist/css/*.css`
 5. **Git tag** — `vX.Y.Z`
 6. **Purge** — `npm run purge-cdn` invalidates jsDelivr cache for every shipped path
 7. **Verify** — `npm run verify:cdn` fetches each asset from `@vX.Y.Z`, checks HTTP 200, content markers, and CDN pin in channel config. Release fails if verification fails.
 
-Local preflight (same checks as CI verify + E2E, without CDN verify):
+Local preflight (same checks as CI verify, without CDN verify):
 
 ```bash
-npm run test:e2e:install   # once, if Chromium is missing
 npm run release:verify
 ```
 
@@ -200,7 +194,7 @@ BillTube3-slim/
     ├── prepare-release.js   # semantic-release prepare (build or reuse CI artifacts)
     ├── verify-cdn-deploy.js # post-purge jsDelivr smoke test
     ├── purge-cdn.js
-    ├── e2e-server.js     # Playwright fixture static server
+    ├── serve.js          # Local static server for dev (npm run serve)
     └── root-ownership.ts # Root ownership catalog (#207 / epic #206)
 ```
 
