@@ -404,6 +404,11 @@
   flex: 0 0 auto !important;
   min-width: 0;
   padding-top: 0 !important;
+  /* Clear the volume knob, which draws past the panel's right edge. */
+  margin-inline-end: 12px;
+  /* Width must not animate: at 100% the knob sits on the right edge, and a
+     width change moves it off the pointer and back again. */
+  transition: color 0.16s ease, background-color 0.16s ease, opacity 0.16s ease !important;
 }
 
 #videowrap .video-js.vjs-theme-city .vjs-mute-control{
@@ -423,19 +428,7 @@
   padding: 0;
   overflow: visible;
   touch-action: none;
-}
-
-#videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel:hover .vjs-volume-control,
-#videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel.vjs-hover .vjs-volume-control,
-#videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel:active .vjs-volume-control,
-#videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel:focus .vjs-volume-control,
-#videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel .vjs-volume-control:active,
-#videowrap .video-js.btfw-videojs-themed .vjs-volume-panel:hover .vjs-volume-control,
-#videowrap .video-js.vjs-theme-city .vjs-volume-panel:hover .vjs-volume-control,
-#videowrap .video-js.vjs-theme-city .vjs-volume-panel.vjs-hover .vjs-volume-control,
-#videowrap .video-js.vjs-theme-city .vjs-volume-panel.vjs-volume-panel-horizontal:hover .vjs-volume-control.vjs-volume-horizontal{
-  width: clamp(100px, 9vw, 90px) !important;
-  height: 3em !important;
+  transition: none !important;
 }
 
 #videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover,
@@ -444,7 +437,10 @@
   width: auto !important;
 }
 
-/* City theme draws volume as a triangle wedge via ::before — disable it */
+/* Stock Video.js draws its own handle on ::before. Ours is the ::after knob.
+   The stock handle sticks past the bar at 100% and picks up the pointer. */
+#videowrap .video-js.btfw-vjs-enhanced .vjs-volume-level::before,
+#videowrap .video-js.btfw-videojs-themed .vjs-volume-level::before,
 #videowrap .video-js.vjs-theme-city .vjs-volume-bar::before,
 #videowrap .video-js.vjs-theme-city .vjs-volume-level::before{
   content: none !important;
@@ -635,8 +631,6 @@
   }
 
   #videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel .vjs-volume-control,
-  #videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel:hover .vjs-volume-control,
-  #videowrap .video-js.btfw-vjs-enhanced .vjs-volume-panel.vjs-hover .vjs-volume-control,
   #videowrap .video-js.btfw-videojs-themed .vjs-volume-panel .vjs-volume-control,
   #videowrap .video-js.vjs-theme-city .vjs-volume-panel .vjs-volume-control{
     width: clamp(70px, 21vw, 100px) !important;
@@ -1264,7 +1258,7 @@
 #videowrap .video-js.vjs-theme-city .vjs-volume-panel {
   order: 1 !important;
   margin-left: 1.5em !important;
-  margin-right: 0.75em !important;
+  margin-right: calc(0.75em + 12px) !important;
   padding-top: 0 !important;
 }
 
