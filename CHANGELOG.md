@@ -1,3 +1,10 @@
+## [1.31.2](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.31.1...v1.31.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* volume slider jitter at 100% ([#259](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/259)) ([a96f688](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/a96f6888627777a8f6abb18affefde0547a04fb9))
+
 ## [1.31.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.31.0...v1.31.1) (2026-10-30)
 
 
