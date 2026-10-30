@@ -1,3 +1,10 @@
+## [1.31.1](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.31.0...v1.31.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **ci:** download release build artifacts into dist/ ([#258](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/258)) ([5530386](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/5530386a89f9973f46bb4b2183fa13f062aa3e72))
+
 # [1.31.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.30.9...v1.31.0) (2026-10-29)
 
 

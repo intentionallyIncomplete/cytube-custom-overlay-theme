@@ -536,7 +536,7 @@ a:hover {
   grid-template-areas: "nav nav nav" "video split chat";
   grid-template-rows: var(--btfw-top-effective) minmax(0, 1fr);
   grid-column-gap: 0;
-  grid-row-gap: var(--btfw-gap);
+  grid-row-gap: 0;
   margin-top: 0;
   padding: 0 var(--btfw-gap) var(--btfw-gap);
   width: 100%;
@@ -547,6 +547,14 @@ a:hover {
   position: relative;
   z-index: 0;
   overflow: hidden;
+}
+
+#btfw-grid.btfw-grid--chat-right {
+  padding-left: 0;
+}
+
+#btfw-grid.btfw-grid--chat-left {
+  padding-right: 0;
 }
 
 #btfw-grid.btfw-grid--chat-right #btfw-leftpad {
@@ -650,9 +658,9 @@ a:hover {
 
 #btfw-grid.btfw-grid--desktop-scroll #btfw-chatcol {
   position: sticky;
-  top: calc(var(--btfw-top-effective) + var(--btfw-gap));
-  height: calc(100dvh - var(--btfw-top-effective) - var(--btfw-gap) * 2);
-  max-height: calc(100dvh - var(--btfw-top-effective) - var(--btfw-gap) * 2);
+  top: var(--btfw-top-effective);
+  height: calc(100dvh - var(--btfw-top-effective) - var(--btfw-gap));
+  max-height: calc(100dvh - var(--btfw-top-effective) - var(--btfw-gap));
   align-self: start;
 }
 
@@ -744,6 +752,8 @@ body.btfw-resizing {
   grid-template-areas: "nav" "video" "chat" "stack";
   grid-template-rows: auto var(--btfw-vertical-video-row-h, minmax(180px, 50dvh)) var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh)) auto;
   grid-row-gap: var(--btfw-gap);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   height: calc(100dvh - var(--btfw-gap));
   min-height: calc(100dvh - var(--btfw-gap));
   max-height: calc(100dvh - var(--btfw-gap));
@@ -751,7 +761,7 @@ body.btfw-resizing {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: auto;
+  overscroll-behavior: contain;
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-stack .btfw-stack-item {
@@ -777,6 +787,57 @@ body.btfw-desktop-scroll-enabled {
 
 #btfw-grid.btfw-grid--vertical #btfw-vsplit {
   display: none;
+}
+
+/* Vertical resize handle between video and chat */
+#btfw-vsplit-vertical {
+  display: none;
+  position: relative;
+  height: 8px;
+  cursor: row-resize;
+  background: var(--btfw-surface-divider);
+  z-index: 20;
+  margin: 0;
+  width: 100%;
+}
+
+#btfw-vsplit-vertical::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 4px;
+  background: var(--btfw-color-accent);
+  border-radius: 2px;
+  transition: background 0.16s ease;
+}
+
+#btfw-vsplit-vertical:hover::before {
+  background: var(--btfw-color-accent-strong);
+}
+
+#btfw-grid.btfw-grid--vertical #btfw-vsplit-vertical {
+  display: block;
+}
+
+/* Video area - sticky at top in vertical mode */
+#btfw-grid.btfw-grid--vertical #btfw-leftpad {
+  position: sticky;
+  top: var(--btfw-top-effective);
+  height: var(--btfw-vertical-video-row-h);
+  max-height: var(--btfw-vertical-video-row-h);
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Chat area - fills remaining, scrollable */
+#btfw-grid.btfw-grid--vertical #btfw-chatcol {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-leftpad {
@@ -882,11 +943,11 @@ body.btfw-desktop-scroll-enabled {
 #btfw-grid.btfw-grid--vertical #btfw-stack [data-bind=playlist-group] #queue {
   max-height: min(40vh, 360px) !important;
   overflow-y: auto;
-  overscroll-behavior-y: auto;
+  overscroll-behavior: contain;
 }
 
 #btfw-grid.btfw-grid--vertical #messagebuffer {
-  overscroll-behavior-y: auto;
+  overscroll-behavior: contain;
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-stack .btfw-group-body {
@@ -1253,9 +1314,37 @@ body.btfw-desktop-scroll-enabled {
   background: transparent !important;
 }
 
-#btfw-stack #queue li.queue_entry,
 #btfw-stack #queue .queue_entry {
-  background: color-mix(in srgb, var(--btfw-color-panel) 20%, transparent 80%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--btfw-color-accent) 14%, var(--btfw-color-panel) 86%), color-mix(in srgb, var(--btfw-color-panel) 92%, var(--btfw-color-text) 8%));
+  border-radius: var(--btfw-radius);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btfw-surface-divider) 70%, transparent 30%);
+}
+
+#btfw-stack #queue .queue_entry:nth-child(even) {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--btfw-color-surface) 88%, var(--btfw-color-text) 12%), color-mix(in srgb, var(--btfw-color-surface) 94%, var(--btfw-color-text) 6%));
+}
+
+#btfw-stack #queue .queue_entry:hover {
+  background: color-mix(in srgb, var(--btfw-color-accent) 26%, var(--btfw-color-panel) 74%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btfw-color-accent) 60%, transparent 40%);
+}
+
+#btfw-stack #queue .queue_entry.ui-sortable-helper {
+  cursor: grabbing;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--btfw-color-accent) 60%, transparent 40%), 0 12px 28px color-mix(in srgb, var(--btfw-color-bg) 60%, transparent 40%);
+}
+
+/* jQuery UI sizes the placeholder to the row's content height, so pad it
+   back out in content-box to match the row. */
+#btfw-stack #queue .btfw-queue-placeholder {
+  box-sizing: content-box;
+  padding: 8px 12px;
+  margin: 0 0 6px;
+  list-style: none;
+  background: color-mix(in srgb, var(--btfw-color-accent) 10%, transparent 90%);
+  border-radius: var(--btfw-radius);
+  outline: 2px dashed color-mix(in srgb, var(--btfw-color-accent) 55%, transparent 45%);
+  outline-offset: -2px;
 }
 
 #btfw-stack [data-bind=playlist-group] .btfw-plbar {
@@ -1344,6 +1433,10 @@ body.btfw-desktop-scroll-enabled {
 
 .btfw-plbar__search {
   width: 100%;
+}
+
+.btfw-plbar__search[hidden] {
+  display: none !important;
 }
 
 .btfw-plbar__search .field {
@@ -1456,6 +1549,10 @@ body.btfw-desktop-scroll-enabled {
 .btfw-plbar__actions select:hover {
   background: color-mix(in srgb, var(--btfw-color-accent) 36%, transparent 64%) !important;
   border-color: color-mix(in srgb, var(--btfw-color-accent) 52%, transparent 48%) !important;
+}
+
+.btfw-plbar__actions #btfw-pl-search-toggle[aria-expanded=true] {
+  background: color-mix(in srgb, var(--btfw-color-accent) 36%, transparent 64%);
 }
 
 .btfw-plbar__actions button:active,
@@ -1679,6 +1776,53 @@ nav.pagination.is-centered.btfw-gif-pager {
   font-style: italic;
 }
 
+.btfw-subtitle-bundle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btfw-subtitle-bundle__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.btfw-subtitle-bundle__chip {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.btfw-subtitle-bundle__hint,
+.btfw-subtitle-bundle__toast {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--btfw-color-text) 72%, transparent 28%);
+}
+
+.btfw-subtitle-bundle__toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 80;
+  max-width: 22rem;
+  padding: 10px 12px;
+  border-radius: var(--btfw-radius, 8px);
+  background: var(--btfw-color-panel, #211b17);
+}
+
 /* Stack footer hidden (auth via navbar; branding removed per #39) */
 #btfw-stack-footer {
   display: none !important;
@@ -1775,6 +1919,7 @@ nav.pagination.is-centered.btfw-gif-pager {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 #btfw-theme-modal #btfw-ts-panels {
@@ -2320,9 +2465,11 @@ nav.pagination.is-centered.btfw-gif-pager {
   background: rgba(255, 255, 255, 0.0784313725) !important;
 }
 
+/* No transform here: it would become the containing block for the
+   absolutely positioned drag helper and push it out of view. */
 #queue {
-  transform: translateZ(0);
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   max-height: 600px;
 }
@@ -3044,4 +3191,159 @@ html.btfw-panels-flyout-open .btfw-chat-actions {
 #channeloptions .form-control:focus {
   border-color: var(--btfw-color-accent);
   background: color-mix(in srgb, var(--btfw-color-panel) 90%, transparent 10%);
+}
+
+/* Theme-aware Video.js control bar mapping BTFW theme variables */
+/* This file themizes Video.js controls to match the CyTube Bootstrap theme */
+#videowrap .video-js {
+  /* Control bar container theming */
+}
+#videowrap .video-js .vjs-control-bar {
+  background: color-mix(in srgb, var(--btfw-color-panel) 92%, transparent 8%) !important;
+  border-top: 1px solid var(--btfw-surface-divider) !important;
+  backdrop-filter: blur(12px) !important;
+  /* General control styling */
+}
+#videowrap .video-js .vjs-control-bar .vjs-control {
+  color: var(--btfw-color-text) !important;
+  transition: all 0.16s ease !important;
+}
+#videowrap .video-js .vjs-control-bar .vjs-control:hover, #videowrap .video-js .vjs-control-bar .vjs-control:focus {
+  color: var(--btfw-color-accent) !important;
+  background: color-mix(in srgb, var(--btfw-color-accent) 15%, transparent 85%) !important;
+}
+#videowrap .video-js {
+  /* Play/pause button theming */
+}
+#videowrap .video-js .vjs-play-control .vjs-icon-placeholder::before {
+  color: var(--btfw-color-text) !important;
+  transition: color 0.16s ease !important;
+}
+#videowrap .video-js .vjs-play-control:hover .vjs-icon-placeholder::before {
+  color: var(--btfw-color-accent) !important;
+}
+#videowrap .video-js {
+  /* Volume slider theming */
+}
+#videowrap .video-js .vjs-volume-panel .vjs-volume-level {
+  background: var(--btfw-color-accent) !important;
+  transition: background 0.16s ease !important;
+}
+#videowrap .video-js .vjs-volume-panel .vjs-volume-bar {
+  background: color-mix(in srgb, var(--btfw-color-panel) 70%, transparent 30%) !important;
+}
+#videowrap .video-js {
+  /* Progress bar theming */
+}
+#videowrap .video-js .vjs-progress-control .vjs-play-progress {
+  background: var(--btfw-color-accent) !important;
+}
+#videowrap .video-js .vjs-progress-control .vjs-load-progress {
+  background: color-mix(in srgb, var(--btfw-color-accent) 40%, transparent 60%) !important;
+}
+#videowrap .video-js {
+  /* Time displays theming */
+}
+#videowrap .video-js .vjs-current-time-display,
+#videowrap .video-js .vjs-duration-display,
+#videowrap .video-js .vjs-time-divider {
+  color: var(--btfw-color-text-soft) !important;
+  font-weight: 600 !important;
+}
+#videowrap .video-js {
+  /* Fullscreen and other buttons */
+}
+#videowrap .video-js .vjs-fullscreen-control,
+#videowrap .video-js .vjs-mute-control,
+#videowrap .video-js .vjs-playback-rate {
+  color: var(--btfw-color-text) !important;
+}
+#videowrap .video-js .vjs-fullscreen-control:hover,
+#videowrap .video-js .vjs-mute-control:hover,
+#videowrap .video-js .vjs-playback-rate:hover {
+  color: var(--btfw-color-accent) !important;
+}
+#videowrap .video-js {
+  /* Big play button theming */
+}
+#videowrap .video-js .vjs-big-play-button {
+  background: color-mix(in srgb, var(--btfw-color-accent) 85%, transparent 15%) !important;
+  border: 2px solid var(--btfw-color-accent) !important;
+  border-radius: 12px !important;
+  color: var(--btfw-color-on-accent) !important;
+}
+#videowrap .video-js .vjs-big-play-button:hover {
+  background: var(--btfw-color-accent) !important;
+  transform: scale(1.02) !important;
+}
+#videowrap .video-js {
+  /* Theme-specific overrides (example for Ember Forge) */
+}
+[data-theme=ember-forge] #videowrap .video-js .vjs-control-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, #ff6b35 10%, transparent 90%), color-mix(in srgb, #ff8c42 8%, transparent 92%)) !important;
+}
+[data-theme=ember-forge] #videowrap .video-js .vjs-control-bar .vjs-volume-level,
+[data-theme=ember-forge] #videowrap .video-js .vjs-control-bar .vjs-play-progress {
+  background: linear-gradient(90deg, #ff6b35, #ff8c42) !important;
+}
+#videowrap .video-js {
+  /* Theme-specific overrides (example for Azure Prism) */
+}
+[data-theme=azure-prism] #videowrap .video-js .vjs-control-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, #667eea 10%, transparent 90%), color-mix(in srgb, #764ba2 8%, transparent 92%)) !important;
+}
+[data-theme=azure-prism] #videowrap .video-js .vjs-control-bar .vjs-volume-level,
+[data-theme=azure-prism] #videowrap .video-js .vjs-control-bar .vjs-play-progress {
+  background: linear-gradient(90deg, #667eea, #764ba2) !important;
+}
+#videowrap .video-js {
+  /* Theme-specific overrides (example for Emerald Forest) */
+}
+[data-theme=emerald-forest] #videowrap .video-js .vjs-control-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, #34d399 10%, transparent 90%), color-mix(in srgb, #10b981 8%, transparent 92%)) !important;
+}
+[data-theme=emerald-forest] #videowrap .video-js .vjs-control-bar .vjs-volume-level,
+[data-theme=emerald-forest] #videowrap .video-js .vjs-control-bar .vjs-play-progress {
+  background: linear-gradient(90deg, #34d399, #10b981) !important;
+}
+#videowrap .video-js {
+  /* Mobile responsive adjustments */
+}
+@media (max-width: 720px) {
+  #videowrap .video-js .vjs-control-bar {
+    inset-inline: clamp(8px, 4vw, 18px) !important;
+    padding: clamp(10px, 3.8vw, 18px) !important;
+    flex-wrap: wrap !important;
+    row-gap: 10px !important;
+  }
+  #videowrap .video-js .vjs-progress-control {
+    order: 4 !important;
+    flex-basis: 100% !important;
+    min-width: 120px !important;
+  }
+  #videowrap .video-js .vjs-volume-panel {
+    flex: 1 1 auto !important;
+    justify-content: flex-end !important;
+  }
+  #videowrap .video-js .vjs-volume-bar {
+    width: clamp(140px, 42vw, 100px) !important;
+    height: 10px !important;
+  }
+}
+
+/* Ensure theme changes are reactive */
+html[data-btfw-theme] #videowrap .video-js {
+  transition: all 0.2s ease !important;
+  animation: theme-update 0.2s ease !important;
+}
+
+@keyframes theme-update {
+  from {
+    opacity: 0.8;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
