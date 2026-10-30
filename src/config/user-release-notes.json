@@ -7,10 +7,14 @@
       "categories": {
         "features": [
           "Add media: choose a .vtt or .srt file before queueing a direct video or a Google Drive index link. The captions travel with that playlist item."
+        ],
+        "bugFixes": [
+          "Layout: scrolling chat or the playlist no longer drags the whole page, and the chat column stays pinned beside the video."
         ]
       },
       "highlights": [
-        "Attach subtitles while adding a direct or Drive video."
+        "Attach subtitles while adding a direct or Drive video.",
+        "Chat and playlist scroll on their own without moving the page."
       ]
     },
     {
