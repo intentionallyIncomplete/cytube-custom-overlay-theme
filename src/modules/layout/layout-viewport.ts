@@ -36,6 +36,8 @@ export interface LayoutViewportDomain {
   ensureNavHost(grid: HTMLElement | null): void;
   findNavbarElement(): HTMLElement | null;
   onNavbarAutohide(active: boolean, hidden: boolean): void;
+  /** Binds window/navbar resize and layout document events. Idempotent. */
+  wireEvents(): void;
 }
 
 export function createLayoutViewportDomain(ctx: {
@@ -582,6 +584,41 @@ export function createLayoutViewportDomain(ctx: {
     requestAnimationFrame(alignPrimaryRowBottoms);
   }
 
+  let eventsWired = false;
+  function wireEvents(): void {
+    if (eventsWired) return;
+    eventsWired = true;
+
+    const onResize = () => {
+      setTimeout(setTop, 0);
+      scheduleResponsiveLayout();
+    };
+    const navbar = document.querySelector(".navbar, #nav-collapsible, #navbar, .navbar-fixed-top");
+    if (navbar) new ResizeObserver(onResize).observe(navbar);
+    window.addEventListener("resize", onResize);
+
+    document.addEventListener("btfw:layout:chatSideChanged", (ev) => {
+      const detail = (ev as CustomEvent<{ side?: string }>).detail;
+      ctx.state.chatSidePref = detail?.side === "left" ? "left" : "right";
+      ctx.columns.applyColumnTemplate();
+      updateResponsiveLayout();
+    });
+
+    document.addEventListener("btfw:chat:barsReady", () => placeStackInLayout());
+
+    document.addEventListener("btfw:layout:stackVisibility", (ev) => {
+      syncStackLayoutClasses((ev as CustomEvent<{ allHidden?: boolean }>).detail || {});
+      applyViewportBudget();
+      refreshVideoSizing();
+      requestAnimationFrame(alignPrimaryRowBottoms);
+    });
+
+    document.addEventListener("btfw:navbar:autohide", (ev) => {
+      const detail = (ev as CustomEvent<{ active?: boolean; hidden?: boolean }>).detail || {};
+      onNavbarAutohide(!!detail.active, !!detail.hidden);
+    });
+  }
+
   return {
     setTop,
     updateResponsiveLayout,
@@ -598,6 +635,7 @@ export function createLayoutViewportDomain(ctx: {
     commitLayout,
     ensureNavHost,
     findNavbarElement,
-    onNavbarAutohide
+    onNavbarAutohide,
+    wireEvents
   };
 }

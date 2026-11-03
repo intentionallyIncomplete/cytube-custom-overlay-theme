@@ -230,11 +230,16 @@ body.btfw-resizing {
   grid-template-areas:
     "nav"
     "video"
+    "vsplit"
     "chat"
     "stack";
+
+  // The navbar is fixed (collapsed to the floating Menu pill), so this row only
+  // reserves the --btfw-top-effective height the viewport budget subtracts.
   grid-template-rows:
-    auto
+    max(0px, calc(var(--btfw-top-effective) - var(--btfw-gap) * 2))
     var(--btfw-vertical-video-row-h, minmax(180px, 50dvh))
+    auto
     var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh))
     auto;
   grid-row-gap: var(--btfw-gap);
@@ -258,10 +263,12 @@ body.btfw-resizing {
   grid-template-areas:
     "nav"
     "video"
+    "vsplit"
     "chat";
   grid-template-rows:
-    auto
+    max(0px, calc(var(--btfw-top-effective) - var(--btfw-gap) * 2))
     var(--btfw-vertical-video-row-h, minmax(180px, 50dvh))
+    auto
     var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh));
 }
 
@@ -309,16 +316,11 @@ body.btfw-desktop-scroll-enabled {
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-vsplit-vertical {
+  grid-area: vsplit;
   display: block;
 }
 
-/* Video area - sticky at top in vertical mode */
 #btfw-grid.btfw-grid--vertical #btfw-leftpad {
-  position: sticky;
-  top: var(--btfw-top-effective);
-  height: var(--btfw-vertical-video-row-h);
-  max-height: var(--btfw-vertical-video-row-h);
-  overflow: hidden;
   z-index: 10;
 }
 

@@ -6,7 +6,8 @@
       "summary": "Attach subtitles when you add a direct video file or a Google Drive index link.",
       "categories": {
         "features": [
-          "Add media: choose a .vtt or .srt file before queueing a direct video or a Google Drive index link. The captions travel with that playlist item."
+          "Add media: choose a .vtt or .srt file before queueing a direct video or a Google Drive index link. The captions travel with that playlist item.",
+          "Your own subtitles: the CC button under the player is back. Load a .vtt or .srt file and it plays in sync with the current video, just for you."
         ],
         "bugFixes": [
           "Layout: scrolling chat or the playlist no longer drags the whole page, and the chat column stays pinned beside the video."
@@ -14,6 +15,7 @@
       },
       "highlights": [
         "Attach subtitles while adding a direct or Drive video.",
+        "Load your own .vtt or .srt subtitles from the CC button under the player.",
         "Chat and playlist scroll on their own without moving the page."
       ]
     },
