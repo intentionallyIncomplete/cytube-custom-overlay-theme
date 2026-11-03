@@ -36,6 +36,7 @@ BTFW.define("feature:layout", ["feature:styleCore", "feature:themeMode"], async 
   state.chatSidePref = columns.getStoredChatSide();
   columns.applyColumnTemplate();
   viewport.ensureShell();
+  viewport.wireEvents();
   viewport.commitLayout();
 
   // Wire vertical resizable after commitLayout creates the elements

@@ -10,6 +10,7 @@ export const BOOT_DOM = [
   "feature:player",
   "feature:stack",
   "feature:videoOverlay",
+  "feature:local-subs",
   "feature:nowplaying",
   "feature:playlistPerformance",
   "feature:playlist-tools",

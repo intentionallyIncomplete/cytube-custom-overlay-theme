@@ -118,6 +118,7 @@ const bundles = [
       "src/modules/feature-player.js",
       "src/modules/feature-stack.js",
       "src/modules/feature-video-overlay.js",
+      "src/modules/feature-local-subs.ts",
       "src/modules/feature-audio.js",
       "src/modules/feature-movie-info.js",
       "src/modules/feature-monkey-paw.js",
