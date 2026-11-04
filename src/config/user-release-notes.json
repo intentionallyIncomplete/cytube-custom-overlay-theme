@@ -1,8 +1,8 @@
 {
   "releases": [
     {
-      "version": "unreleased",
-      "date": "2026-10-28",
+      "version": "1.32.0",
+      "date": "2026-11-04",
       "summary": "Attach subtitles when you add a direct video file or a Google Drive index link.",
       "categories": {
         "features": [
