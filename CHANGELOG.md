@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.31.2...v1.32.0) (2026-11-04)
+
+
+### Features
+
+* restore the per-user subtitle button ([#261](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/261)) ([bb40112](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/bb4011264f1ea586f006f54273c9d2607d5bf732))
+
 ## [1.31.2](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.31.1...v1.31.2) (2026-10-30)
 
 

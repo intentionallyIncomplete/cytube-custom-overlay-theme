@@ -749,8 +749,8 @@ body.btfw-resizing {
 /* Vertical (mobile) layout: video + chat split viewport 50/50; stack scrolls below */
 #btfw-grid.btfw-grid--vertical {
   grid-template-columns: 1fr;
-  grid-template-areas: "nav" "video" "chat" "stack";
-  grid-template-rows: auto var(--btfw-vertical-video-row-h, minmax(180px, 50dvh)) var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh)) auto;
+  grid-template-areas: "nav" "video" "vsplit" "chat" "stack";
+  grid-template-rows: max(0px, var(--btfw-top-effective) - var(--btfw-gap) * 2) var(--btfw-vertical-video-row-h, minmax(180px, 50dvh)) auto var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh)) auto;
   grid-row-gap: var(--btfw-gap);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
@@ -769,8 +769,8 @@ body.btfw-resizing {
 }
 
 #btfw-grid.btfw-grid--vertical.btfw-grid--stack-hidden {
-  grid-template-areas: "nav" "video" "chat";
-  grid-template-rows: auto var(--btfw-vertical-video-row-h, minmax(180px, 50dvh)) var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh));
+  grid-template-areas: "nav" "video" "vsplit" "chat";
+  grid-template-rows: max(0px, var(--btfw-top-effective) - var(--btfw-gap) * 2) var(--btfw-vertical-video-row-h, minmax(180px, 50dvh)) auto var(--btfw-vertical-chat-row-h, minmax(220px, 50dvh));
 }
 
 body.btfw-mobile-stack-enabled {
@@ -819,16 +819,11 @@ body.btfw-desktop-scroll-enabled {
 }
 
 #btfw-grid.btfw-grid--vertical #btfw-vsplit-vertical {
+  grid-area: vsplit;
   display: block;
 }
 
-/* Video area - sticky at top in vertical mode */
 #btfw-grid.btfw-grid--vertical #btfw-leftpad {
-  position: sticky;
-  top: var(--btfw-top-effective);
-  height: var(--btfw-vertical-video-row-h);
-  max-height: var(--btfw-vertical-video-row-h);
-  overflow: hidden;
   z-index: 10;
 }
 
