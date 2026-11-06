@@ -1,8 +1,9 @@
-BTFW.define("feature:chat-commands", ["util:tmdb-proxy", "util:chatAutoscroll"], async ({ init }) => {
+BTFW.define("feature:chat-commands", ["util:tmdb-proxy", "util:tmdb-card", "util:chatAutoscroll"], async ({ init }) => {
   const $  = (s,r=document)=>r.querySelector(s);
   const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
   const motion = await BTFW.init("util:motion");
   const tmdb = await init("util:tmdb-proxy");
+  const tmdbCard = await init("util:tmdb-card");
   const chatAutoscroll = await init("util:chatAutoscroll");
   const now = ()=>Date.now();
 
@@ -36,176 +37,43 @@ BTFW.define("feature:chat-commands", ["util:tmdb-proxy", "util:chatAutoscroll"],
     return `${m}:${String(sec).padStart(2, "0")}`;
   }
 
-function getCurrentTitle(){
-  const ct = document.getElementById('currenttitle') || document.querySelector('.currenttitle');
-  let t = (ct?.textContent || "").trim();
-  t = t.replace(/^\s*(?:currently|now)\s*playing\s*[:-]\s*/i, "").trim();
-  return t;
+function parseTmdbRef(args){
+  const parts = args.map(a => String(a).toLowerCase());
+  let mediaType = "movie";
+  if (parts[0] === "movie" || parts[0] === "tv") mediaType = parts.shift();
+  if (parts.length !== 1 || !/^\d+$/.test(parts[0])) return null;
+  return { mediaType, id: parts[0] };
 }
 
-async function fetchTMDBSummary(title){
-  if (!tmdb.isAvailable()) return tmdb.MISSING_PROXY_MSG;
-  
+async function fetchTMDBSummary({ mediaType, id }){
+  if (!tmdbCard.isAvailable()) return tmdbCard.MISSING_PROXY_MSG;
   try {
-    const imdbMatch = /^tt\d+$/.test(title.trim());
-    let r;
-    
-    if (imdbMatch) {
-      const data = await tmdb.tmdbFetch(`find/${encodeURIComponent(title.trim())}`, { external_source: "imdb_id" });
-      r = (data.movie_results||[])[0] || (data.tv_results||[])[0];
-    } else {
-      const yearMatch = title.match(/\b(19|20)\d{2}\b/);
-      const year = yearMatch ? yearMatch[0] : '';
-      let cleanTitle = title;
-      
-      if (year) {
-        cleanTitle = title.replace(/\s*\(?\s*(19|20)\d{2}\s*\)?\s*/g, ' ').trim();
-      }
-      
-      if (year) {
-        const movieData = await tmdb.tmdbFetch("search/movie", {
-          query: cleanTitle,
-          primary_release_year: year,
-          include_adult: false,
-          language: "en-US",
-        });
-        if (movieData.results && movieData.results.length > 0) {
-          r = movieData.results[0];
-          r.media_type = 'movie';
-        }
-      }
-      
-      if (!r && year) {
-        const tvData = await tmdb.tmdbFetch("search/tv", {
-          query: cleanTitle,
-          first_air_date_year: year,
-          include_adult: false,
-          language: "en-US",
-        });
-        if (tvData.results && tvData.results.length > 0) {
-          r = tvData.results[0];
-          r.media_type = 'tv';
-        }
-      }
-      
-      if (!r) {
-        const data = await tmdb.tmdbFetch("search/multi", {
-          query: cleanTitle,
-          include_adult: false,
-          language: "en-US",
-        });
-        r = (data.results||[])[0];
-      }
-    }
-    
-    if (!r) return 'No TMDB result.';
-    
-    const mediaType = r.media_type || (r.title ? 'movie' : 'tv');
-    const name = r.title || r.name || title;
-    const year = (r.release_date || r.first_air_date || '').slice(0,4);
-    const rating = (typeof r.vote_average === "number") ? r.vote_average.toFixed(1) : 'n/a';
-    let overview = r.overview || '';
-    
-    if (!overview && r.id) {
-      const det = await tmdb.tmdbFetch(`${mediaType}/${r.id}`, { language: "en-US" });
-      overview = det.overview || '';
-    }
-    
-    if (!overview) overview = 'No summary available.';
-    
-if (overview.length > 150) {
-  overview = overview.substring(0, 147) + '...';
-}
-    
-overview = overview.replace(/\|/g, '&#124;');
-    
-    const posterPath = r.poster_path || '';
-    
-    return `[tmdbcard]${name}|${year}|${rating}|${overview}|${posterPath}[/tmdbcard]`;
-  } catch(e){ 
-    console.error('[summary] TMDB error', e); 
-    return `TMDB error: ${e.message||e}`; 
+    const media = await tmdbCard.fetchMedia(mediaType, id);
+    return tmdbCard.formatCardTag(media);
+  } catch(e){
+    console.error('[summary] TMDB error', e);
+    return `TMDB error: ${e.message||e}`;
   }
 }
-async function fetchTMDBCast(title){
+async function fetchTMDBCast({ mediaType, id }){
   if (!tmdb.isAvailable()) return tmdb.MISSING_PROXY_MSG;
-  
+
   try {
-    const imdbMatch = /^tt\d+$/.test(title.trim());
-    let movieId, mediaType = 'movie';
-    
-    if (imdbMatch) {
-      const data = await tmdb.tmdbFetch(`find/${encodeURIComponent(title.trim())}`, { external_source: "imdb_id" });
-      const r = (data.movie_results||[])[0] || (data.tv_results||[])[0];
-      if (!r) return 'No TMDB result.';
-      movieId = r.id;
-      mediaType = r.media_type || (data.movie_results?.[0] ? 'movie' : 'tv');
-    } else {
-      const yearMatch = title.match(/\b(19|20)\d{2}\b/);
-      const year = yearMatch ? yearMatch[0] : '';
-      let cleanTitle = title;
-      
-      if (year) {
-        cleanTitle = title.replace(/\s*\(?\s*(19|20)\d{2}\s*\)?\s*/g, ' ').trim();
-      }
-      
-      let r;
-      
-      if (year) {
-        const movieData = await tmdb.tmdbFetch("search/movie", {
-          query: cleanTitle,
-          primary_release_year: year,
-          include_adult: false,
-          language: "en-US",
-        });
-        if (movieData.results && movieData.results.length > 0) {
-          r = movieData.results[0];
-          mediaType = 'movie';
-        }
-      }
-      
-      if (!r && year) {
-        const tvData = await tmdb.tmdbFetch("search/tv", {
-          query: cleanTitle,
-          first_air_date_year: year,
-          include_adult: false,
-          language: "en-US",
-        });
-        if (tvData.results && tvData.results.length > 0) {
-          r = tvData.results[0];
-          mediaType = 'tv';
-        }
-      }
-      
-      if (!r) {
-        const data = await tmdb.tmdbFetch("search/multi", {
-          query: cleanTitle,
-          include_adult: false,
-          language: "en-US",
-        });
-        r = (data.results||[])[0];
-        if (r) mediaType = r.media_type || (r.title ? 'movie' : 'tv');
-      }
-      
-      if (!r) return 'No TMDB result.';
-      movieId = r.id;
-    }
-    
-    const creditsData = await tmdb.tmdbFetch(`${mediaType}/${movieId}/credits`, {});
-    
+    const creditsData = await tmdb.tmdbFetch(`${mediaType}/${id}/credits`, {});
+
     const cast = creditsData.cast || [];
     if (!cast.length) return 'No cast information available.';
-    
+
     const top8 = cast.slice(0, 8);
     const castList = top8.map(actor => {
       const character = actor.character ? ` (${actor.character})` : '';
       return `${actor.name}${character}`;
     }).join(', ');
-    
+
     return `col:#87ceeb:Cast: ${castList}`;
-  } catch(e){ 
-    console.error('[cast] TMDB error', e); 
-    return `TMDB error: ${e.message||e}`; 
+  } catch(e){
+    console.error('[cast] TMDB error', e);
+    return `TMDB error: ${e.message||e}`;
   }
 }
   function getChannelEmotes(){
@@ -234,44 +102,6 @@ async function fetchTMDBCast(title){
       return null;
     } catch(e){ return "Queue add failed."; }
   }
-function canonicalizeYearSuffix(value){
-  const input = String(value || "").trim();
-  if (!input) return "";
-  if (/\(\s*(?:19|20)\d{2}\s*\)\s*$/.test(input)) return input;
-
-  const match = /(?:^|[\s,;:|/-])((?:19|20)\d{2})\s*$/.exec(input);
-  if (!match) return input;
-
-  const year = match[1];
-  const basePart = input
-    .slice(0, match.index)
-    .replace(/[\s,;:|/-]+$/, "")
-    .trim();
-
-  if (!basePart) return input;
-
-  return `${basePart} (${year})`;
-}
-
-function sanitizeTitleForSearch(t){
-  if (!t) return "";
-  let s = " " + t + " ";
-
-  s = s.replace(/\[[^\]]*\]/g, " ");
-  s = s.replace(/\(([^)]*)\)/g, (m, inner) => /^\s*\d{4}\s*$/.test(inner) ? m : " ");
-
-  s = s.replace(/\b(?:official\s*trailer|trailer|teaser|lyrics|mv|amv|full\s*episode|episode\s*\d+|season\s*\d+)\b/gi, " ");
-  s = s.replace(/\b(?:\d{3,4}p|[48]k|hdr|dolby(?:\s+vision)?|remaster|extended|uncut|subbed|dubbed)\b/gi, " ");
-
-  s = s.replace(/\s{2,}/g, " ").trim();
-
-  const split = s.split(/\s[-–|:]\s/);
-  if (split.length > 1 && split[0].length >= 3) s = split[0].trim();
-
-  s = canonicalizeYearSuffix(s);
-
-  return s || t;
-}
   const REG = new Map();
   function addCommand(name, handler, {desc="", usage="", cooldownMs=800, aliases=[]}={}){
     REG.set(name, {name, handler, desc, usage, cooldownMs, last:0, aliases});
@@ -289,21 +119,19 @@ function sanitizeTitleForSearch(t){
   addCommand("help", ()=> `Commands: ${listPrimary().map(n=>"!"+n).join(", ")}  —  Click the “?” button below chat for details.`, { desc:"List commands", usage:"!help" });
 
   addCommand("summary", async (ctx)=>{
-  const raw = ctx.args.length ? ctx.args.join(" ") : getCurrentTitle();
-  if (!raw) return "No current title, try: !summary <title>";
-  const q = sanitizeTitleForSearch(raw);
-  const out = await fetchTMDBSummary(q);
+  const ref = parseTmdbRef(ctx.args);
+  if (!ref) return "Usage: !summary <tmdb id>  or  !summary tv <tmdb id>";
+  const out = await fetchTMDBSummary(ref);
   sendChat(out);
   return "";
-}, { desc:"TMDB summary for current or given title", usage:"!summary [title]" });
+}, { desc:"TMDB summary by TMDB id (movie by default)", usage:"!summary [tv] <tmdb id>" });
 addCommand("cast", async (ctx)=>{
-  const raw = ctx.args.length ? ctx.args.join(" ") : getCurrentTitle();
-  if (!raw) return "No current title, try: !cast <title>";
-  const q = sanitizeTitleForSearch(raw);
-  const out = await fetchTMDBCast(q);
+  const ref = parseTmdbRef(ctx.args);
+  if (!ref) return "Usage: !cast <tmdb id>  or  !cast tv <tmdb id>";
+  const out = await fetchTMDBCast(ref);
   sendChat(out);
   return "";
-}, { desc:"Show cast for current or given title", usage:"!cast [title]" });
+}, { desc:"Show cast by TMDB id (movie by default)", usage:"!cast [tv] <tmdb id>" });
   
   addCommand("time", async () => {
     const sg = await BTFW.init("feature:syncGuard");
