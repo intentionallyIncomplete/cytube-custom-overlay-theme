@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.32.0...v1.33.0) (2026-11-06)
+
+
+### Features
+
+* add movie info overlay as a personal setting ([#262](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/issues/262)) ([4faa320](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/commit/4faa320e6cea6ac4554fb93ca20883f4ee575035))
+
 # [1.32.0](https://github.com/intentionallyIncomplete/cytube-custom-overlay-theme/compare/v1.31.2...v1.32.0) (2026-11-04)
 
 
