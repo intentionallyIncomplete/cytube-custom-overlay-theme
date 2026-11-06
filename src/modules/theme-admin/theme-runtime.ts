@@ -133,6 +133,12 @@ export function createThemeRuntimeDomain(config: ThemeConfigDomain, rt: ThemeRun
     }
     if (!name) name = "CyTube";
     branding.headerName = name;
+    delete branding.favicon;
+    delete branding.faviconUrl;
+    delete branding.posterUrl;
+    delete branding.poster;
+    delete t.faviconUrl;
+    delete t.posterUrl;
 
     const selectors = [
       "#nav-collapsible .navbar-brand",
@@ -173,37 +179,6 @@ export function createThemeRuntimeDomain(config: ThemeConfigDomain, rt: ThemeRun
       anchor.setAttribute("title", name);
       anchor.setAttribute("aria-label", name);
     });
-
-    let faviconUrl = typeof branding.faviconUrl === "string" ? branding.faviconUrl.trim() : "";
-    if (!faviconUrl && typeof branding.favicon === "string") {
-      faviconUrl = branding.favicon.trim();
-    }
-    branding.faviconUrl = faviconUrl || "";
-    branding.favicon = branding.faviconUrl;
-    if (faviconUrl && typeof document !== "undefined") {
-      const linkSelectors = 'link[rel*="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]';
-      const links = Array.from(document.querySelectorAll(linkSelectors));
-      if (!links.length) {
-        const created = document.createElement("link");
-        created.rel = "icon";
-        document.head?.appendChild(created);
-        links.push(created);
-      }
-      links.forEach(link => {
-        try { (link as HTMLLinkElement).href = faviconUrl; } catch {}
-      });
-    }
-
-    let poster = typeof branding.posterUrl === "string" ? branding.posterUrl.trim() : "";
-    if (!poster && typeof branding.posterUrl === "string") {
-      poster = branding.posterUrl.trim();
-    }
-    branding.posterUrl = poster || "";
-    if (typeof window !== "undefined") {
-      if (!window.BTFW) (window as unknown as AnyRecord).BTFW = {};
-      const global = window.BTFW as unknown as AnyRecord;
-      global.channelPosterUrl = poster || "";
-    }
   }
 
   function applyRuntimeIntegrations(theme: unknown): void {
@@ -218,44 +193,10 @@ export function createThemeRuntimeDomain(config: ThemeConfigDomain, rt: ThemeRun
     delete integrations.ratings;
     delete integrations.audioEnhancer;
 
-    if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
-      integrations.movieInfo = { enabled: false };
-    }
-    const movieInfoRecord = integrations.movieInfo as AnyRecord;
-    const movieInfoEnabled = Boolean(movieInfoRecord.enabled);
-    movieInfoRecord.enabled = movieInfoEnabled;
-
     if (typeof window !== "undefined") {
       const cfg = (window.BTFW_CONFIG = window.BTFW_CONFIG || {}) as AnyRecord;
       cfg.integrationsEnabled = integrations.enabled;
-      if (typeof cfg.integrations !== "object") {
-        cfg.integrations = {};
-      }
-      const cfgIntegrations = cfg.integrations as AnyRecord;
-      cfgIntegrations.movieInfo = cfgIntegrations.movieInfo || {};
-      (cfgIntegrations.movieInfo as AnyRecord).enabled = movieInfoEnabled;
-      cfg.movieInfo = cfg.movieInfo || {};
-      (cfg.movieInfo as AnyRecord).enabled = movieInfoEnabled;
-      cfg.movieInfoEnabled = movieInfoEnabled;
-      cfg.shouldLoadMovieInfo = movieInfoEnabled;
-      try {
-        if (document?.body) {
-          if (movieInfoEnabled) {
-            document.body.dataset.btfwMovieInfoEnabled = "1";
-          } else if (document.body.dataset?.btfwMovieInfoEnabled) {
-            delete document.body.dataset.btfwMovieInfoEnabled;
-          }
-        }
-      } catch {}
     }
-    try {
-      document?.dispatchEvent?.(new CustomEvent("btfw:channelIntegrationsChanged", {
-        detail: {
-          enabled: integrations.enabled,
-          movieInfoEnabled
-        }
-      }));
-    } catch {}
   }
 
   function syncRuntimeThemeConfig(source: unknown): ThemeAdminConfig | null {

@@ -113,9 +113,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       .btfw-theme-admin label { font-weight: 600; letter-spacing: 0.03em; color: color-mix(in srgb, var(--btfw-admin-text) 92%, transparent 8%); }
       .btfw-theme-admin .btfw-checkbox { display: inline-flex; gap: 10px; align-items: center; font-weight: 600; color: color-mix(in srgb, var(--btfw-admin-text) 92%, transparent 8%); }
       .btfw-theme-admin .btfw-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--btfw-theme-accent, #6d4df6); }
-      .btfw-theme-admin .movie-info-toggle { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-      .btfw-theme-admin .movie-info-toggle button { min-width: 0; }
-      .btfw-theme-admin [data-role="movie-info-requirements"] { margin-top: 4px; }
       .btfw-theme-admin .field.is-disabled label,
       .btfw-theme-admin .field.is-disabled .help { opacity: 0.55; }
       .btfw-theme-admin .module-inputs { display: grid; gap: 10px; margin-top: 8px; }
@@ -142,7 +139,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       .btfw-theme-admin .field.is-disabled input,
       .btfw-theme-admin .field.is-disabled textarea,
       .btfw-theme-admin .field.is-disabled select { opacity: 0.55; }
-      .btfw-theme-admin input[type="color"] { width: 100%; height: 44px; padding: 0; border-radius: 12px; border: 1px solid var(--btfw-admin-border); background: var(--btfw-admin-surface-alt); cursor: pointer; }
       .btfw-theme-admin .help { font-size: 0.82rem; color: var(--btfw-admin-text-soft); line-height: 1.5; }
       .btfw-theme-admin .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
       .btfw-theme-admin .preview { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, color-mix(in srgb, var(--btfw-admin-surface-alt) 94%, transparent 6%), color-mix(in srgb, var(--btfw-theme-accent, #6d4df6) 16%, transparent 84%)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--btfw-admin-border) 20%, transparent 80%); }
@@ -292,26 +288,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     return { tabContainer, contentContainer };
   }
 
-  function syncMovieInfoToggle(panel, cfg){
-    if (!panel || !cfg || typeof cfg !== "object") return;
-    const integrations = cfg.integrations = cfg.integrations && typeof cfg.integrations === "object"
-      ? cfg.integrations
-      : (cfg.integrations = structuredClone(themeConfig.DEFAULT_CONFIG.integrations));
-    if (!integrations.movieInfo || typeof integrations.movieInfo !== "object") {
-      integrations.movieInfo = { enabled: false };
-    }
-    const button = panel.querySelector('#btfw-theme-movie-info-toggle');
-    const input = panel.querySelector('#btfw-theme-movie-info-enabled');
-    if (!button || !input) return;
-    const enabled = Boolean(integrations.movieInfo.enabled);
-    input.checked = enabled;
-    button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    button.classList.toggle('is-link', enabled);
-    button.classList.toggle('is-dark', !enabled);
-    button.classList.toggle('is-active', enabled);
-    button.textContent = enabled ? 'Movie info overlay enabled' : 'Enable movie info overlay';
-  }
-
   function buildThemeTabAnchorContent(){
     const icon = document.createElement('span');
     icon.className = 'fa fa-magic';
@@ -327,7 +303,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     // keeps the fragment inert until explicitly cloned into the live panel, rather than assigning
     // innerHTML directly on an already-attached element.
     const scratch = document.createElement("template");
-    scratch.innerHTML = adminTpl.channelThemeAdminPanelHtml(themeRuntime);
+    scratch.innerHTML = adminTpl.channelThemeAdminPanelHtml();
     panel.replaceChildren(scratch.content.cloneNode(true));
     return panel;
   }
@@ -349,24 +325,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
         cfg.branding = structuredClone(defaults.branding);
         cfg.resources = structuredClone(defaults.resources);
         updateInputs(panel, cfg);
-        onChange();
-      });
-    }
-
-    const movieInfoButton = panel.querySelector('#btfw-theme-movie-info-toggle');
-    const movieInfoInput = panel.querySelector('#btfw-theme-movie-info-enabled');
-    if (movieInfoButton && movieInfoInput) {
-      movieInfoButton.addEventListener('click', () => {
-        const next = !movieInfoInput.checked;
-        movieInfoInput.checked = next;
-        if (!cfg.integrations || typeof cfg.integrations !== 'object') {
-          cfg.integrations = {};
-        }
-        if (!cfg.integrations.movieInfo || typeof cfg.integrations.movieInfo !== 'object') {
-          cfg.integrations.movieInfo = { enabled: false };
-        }
-        cfg.integrations.movieInfo.enabled = next;
-        syncMovieInfoToggle(panel, cfg);
         onChange();
       });
     }
@@ -399,7 +357,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     const modules = themeConfig.normalizeModuleUrls(themeConfig.collectModuleCandidates(cfg));
     renderModuleInputs(panel, modules);
     ensureModuleFieldAvailability(panel);
-    syncMovieInfoToggle(panel, cfg);
   }
 
   function setValueAtPath(obj, path, value){
@@ -453,10 +410,7 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     delete updated.integrations.ratings;
     delete updated.integrations.autoSubs;
     delete updated.integrations.audioEnhancer;
-    if (!updated.integrations.movieInfo || typeof updated.integrations.movieInfo !== "object") {
-      updated.integrations.movieInfo = { enabled: false };
-    }
-    updated.integrations.movieInfo.enabled = Boolean(updated.integrations.movieInfo.enabled);
+    delete updated.integrations.movieInfo;
     if (updated.features && typeof updated.features === "object") {
       delete updated.features.videoOverlayPoll;
       if (Object.keys(updated.features).length === 0) {
@@ -469,18 +423,11 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     if (!updated.branding || typeof updated.branding !== "object") {
       updated.branding = themeConfig.cloneDefaults().branding;
     }
-    if (typeof updated.branding.headerName !== "string") {
-      updated.branding.headerName = "";
-    }
-    if (typeof updated.branding.faviconUrl !== "string") {
-      updated.branding.faviconUrl = "";
-    }
-    if (typeof updated.branding.posterUrl !== "string") {
-      updated.branding.posterUrl = "";
-    }
-    updated.headerName = updated.branding.headerName;
-    updated.faviconUrl = updated.branding.faviconUrl;
-    updated.posterUrl = updated.branding.posterUrl;
+    const headerName = typeof updated.branding.headerName === "string" ? updated.branding.headerName.trim() : "";
+    updated.branding = { headerName };
+    updated.headerName = headerName;
+    delete updated.faviconUrl;
+    delete updated.posterUrl;
     const typo = updated.typography || {};
     typo.preset = normalizeFontId(typo.preset || FONT_DEFAULT_ID);
     if (typo.preset !== 'custom') {
@@ -492,15 +439,6 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
       preset: typo.preset,
       customFamily: typo.customFamily || ''
     };
-    if (!updated.branding || typeof updated.branding !== "object") {
-      updated.branding = themeConfig.cloneDefaults().branding;
-    }
-    if (typeof updated.branding.favicon === "string" && !updated.branding.faviconUrl) {
-      updated.branding.faviconUrl = updated.branding.favicon;
-    }
-    updated.branding.favicon = updated.branding.faviconUrl || '';
-    updated.branding.posterUrl = (updated.branding.posterUrl || '').trim();
-    updated.branding.headerName = (updated.branding.headerName || '').trim();
     updated.version = themeConfig.DEFAULT_CONFIG.version;
     return updated;
   }
@@ -678,16 +616,10 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     delete cfg.integrations.ratings;
     delete cfg.integrations.autoSubs;
     delete cfg.integrations.audioEnhancer;
-    if (!cfg.integrations.movieInfo || typeof cfg.integrations.movieInfo !== "object") {
-      cfg.integrations.movieInfo = { enabled: false };
-    }
-    cfg.integrations.movieInfo.enabled = Boolean(cfg.integrations.movieInfo.enabled);
+    delete cfg.integrations.movieInfo;
 
     if (!cfg.branding || typeof cfg.branding !== "object") {
       cfg.branding = themeConfig.cloneDefaults().branding;
-    }
-    if (typeof cfg.branding.favicon === "string" && !cfg.branding.faviconUrl) {
-      cfg.branding.faviconUrl = cfg.branding.favicon;
     }
     if (typeof cfg.headerName === "string" && !cfg.branding.headerName) {
       cfg.branding.headerName = cfg.headerName;
@@ -695,15 +627,11 @@ BTFW.define("feature:channelThemeAdmin", ["util:themeRuntime"], async ({ init })
     if (typeof cfg.branding.header === "string" && !cfg.branding.headerName) {
       cfg.branding.headerName = cfg.branding.header;
     }
-    if (typeof cfg.faviconUrl === "string" && !cfg.branding.faviconUrl) {
-      cfg.branding.faviconUrl = cfg.faviconUrl;
-    }
-    if (typeof cfg.posterUrl === "string" && !cfg.branding.posterUrl) {
-      cfg.branding.posterUrl = cfg.posterUrl;
-    }
-    if (typeof cfg.branding.posterUrl !== "string") {
-      cfg.branding.posterUrl = '';
-    }
+    cfg.branding = {
+      headerName: typeof cfg.branding.headerName === "string" ? cfg.branding.headerName.trim() : ""
+    };
+    delete cfg.faviconUrl;
+    delete cfg.posterUrl;
 
     if (!cfg.resources || typeof cfg.resources !== "object") {
       cfg.resources = themeConfig.cloneDefaults().resources;

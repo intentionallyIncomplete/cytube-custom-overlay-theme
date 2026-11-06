@@ -10,14 +10,6 @@ import {
 } from "../../src/lib/templates/stack.js";
 import { channelThemeAdminPanelHtml } from "../../src/lib/templates/channel-theme-admin.js";
 
-function buildTintOptionsHtml() {
-  return '<option value="midnight">Midnight</option><option value="custom">Custom mix</option>';
-}
-
-function buildColorField(key, label, bindPath) {
-  return `<div class="btfw-ts-control btfw-ts-control--color"><label class="btfw-input__label" for="btfw-theme-color-${key}">${label}</label><input type="color" id="btfw-theme-color-${key}" data-btfw-bind="${bindPath}"></div>`;
-}
-
 test("chatTopbarHtml includes nowplaying slot", () => {
   assert.match(chatTopbarHtml(), /btfw-nowplaying-slot/);
 });
@@ -40,13 +32,38 @@ test("stackGroupHeaderHtml escapes script injection in title", () => {
   assert.match(result, /&lt;script&gt;/, "script tag should be escaped to HTML entities");
 });
 
-const mockThemeRuntime = {
-  TINT_PRESETS: {
-    midnight: { name: "Midnight" },
-    custom: { name: "Custom" }
-  }
-};
-
 test("channelThemeAdminPanelHtml includes apply button", () => {
-  assert.match(channelThemeAdminPanelHtml(mockThemeRuntime), /btfw-theme-apply/);
+  assert.match(channelThemeAdminPanelHtml(), /btfw-theme-apply/);
+});
+
+test("channelThemeAdminPanelHtml has no movie-info toggle", () => {
+  const html = channelThemeAdminPanelHtml();
+  assert.doesNotMatch(html, /btfw-theme-movie-info-toggle/);
+  assert.doesNotMatch(html, /integrations\.movieInfo\.enabled/);
+});
+
+test("channelThemeAdminPanelHtml drops the empty Integrations section", () => {
+  assert.doesNotMatch(channelThemeAdminPanelHtml(), /data-section="integrations"/);
+});
+
+test("channelThemeAdminPanelHtml keeps resources and the channel header name", () => {
+  const html = channelThemeAdminPanelHtml();
+  assert.match(html, /data-section="resources"/);
+  assert.match(html, /id="btfw-theme-header-name"/);
+  assert.match(html, /data-btfw-bind="branding\.headerName"/);
+  assert.match(html, /data-btfw-bind="resources\.styles"/);
+  assert.match(html, /data-role="module-inputs"/);
+});
+
+test("channelThemeAdminPanelHtml drops the channel palette and favicon/poster fields", () => {
+  const html = channelThemeAdminPanelHtml();
+  assert.doesNotMatch(html, /data-section="appearance"/);
+  assert.doesNotMatch(html, /data-section="branding"/);
+  assert.doesNotMatch(html, /btfw-theme-tint/);
+  assert.doesNotMatch(html, /btfw-theme-favicon/);
+  assert.doesNotMatch(html, /btfw-theme-poster/);
+  assert.doesNotMatch(html, /data-btfw-bind="tint"/);
+  assert.doesNotMatch(html, /data-btfw-bind="colors\./);
+  assert.doesNotMatch(html, /branding\.faviconUrl/);
+  assert.doesNotMatch(html, /branding\.posterUrl/);
 });

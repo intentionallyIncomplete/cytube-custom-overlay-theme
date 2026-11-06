@@ -1,4 +1,5 @@
 import { waitForCondition } from "../lib/dom-wait.js";
+import { isMovieInfoEnabled, onMovieInfoChanged } from "../lib/movie-info-pref";
 
 /* BTFW – feature:movie-info */
 BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
@@ -26,7 +27,6 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
 
   let fetchToken = 0;
   let globalListenersAttached = false;
-  let configObserver = null;
 
   function registerCleanup(fn) {
     if (typeof fn === "function") {
@@ -64,50 +64,13 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
     runCleanup();
   }
 
-  function toEnabledValue(value) {
-    if (typeof value === "boolean") return value;
-    if (typeof value === "number") return Number.isFinite(value) ? value > 0 : false;
-    if (typeof value === "string") {
-      const normalized = value.trim().toLowerCase();
-      if (!normalized) return false;
-      return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
-    }
-    return false;
-  }
-
-  function computeEnabled() {
-    const checks = [
-      () => window.BTFW_THEME_ADMIN?.integrations?.movieInfo?.enabled,
-      () => window.BTFW_CONFIG?.integrations?.movieInfo?.enabled,
-      () => window.BTFW_CONFIG?.movieInfo?.enabled,
-      () => window.BTFW_CONFIG?.movieInfoEnabled,
-      () => document?.body?.dataset?.btfwMovieInfoEnabled
-    ];
-    for (const check of checks) {
-      try {
-        const value = typeof check === "function" ? check() : check;
-        if (toEnabledValue(value)) {
-          return true;
-        }
-      } catch (_) {}
-    }
-    return false;
-  }
-
-  function ensureConfigObserver() {
-    if (configObserver || typeof MutationObserver !== "function") return;
-    const body = document.body;
-    if (!body) return;
-    configObserver = new MutationObserver(() => evaluateActivation());
-    configObserver.observe(body, { attributes: true, attributeFilter: ["data-btfw-movie-info-enabled"] });
-  }
+  const computeEnabled = () => isMovieInfoEnabled();
 
   function attachGlobalListeners() {
     if (globalListenersAttached) return;
     globalListenersAttached = true;
-    const refresh = () => evaluateActivation();
-    document.addEventListener("btfw:channelIntegrationsChanged", refresh);
-    document.addEventListener("btfw:ready", refresh);
+    onMovieInfoChanged(() => evaluateActivation());
+    document.addEventListener("btfw:ready", () => evaluateActivation());
   }
 
   function startInitCycle(delay = 0) {
@@ -743,7 +706,6 @@ BTFW.define("feature:movie-info", ["util:tmdb-proxy"], async ({ init }) => {
   }
 
   function boot() {
-    ensureConfigObserver();
     attachGlobalListeners();
     evaluateActivation();
   }
