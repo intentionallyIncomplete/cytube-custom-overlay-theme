@@ -12,6 +12,8 @@ import {
 import { EVENTS, LS_KEYS } from "../lib/btfw-constants.js";
 import { confirmDialog } from "../lib/confirm-dialog.js";
 import { escapeHtml } from "../lib/escape-html.js";
+import { isMovieInfoEnabled, setMovieInfoEnabled } from "../lib/movie-info-pref";
+import { readMovieInfoToggle, writeMovieInfoToggle } from "../lib/theme-settings-controls";
 
 BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", "util:dirtyApply"], async ({ init }) => {
   const themeRuntime = await init("util:themeRuntime");
@@ -300,6 +302,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       chatAutoScroll: !!$("#btfw-chat-autoscroll", modal)?.checked,
       imageHoverMagnify: !!$("#btfw-image-hover-magnify", modal)?.checked,
       joinNotices: !!$("#btfw-chat-join-notices", modal)?.checked,
+      movieInfo: readMovieInfoToggle(modal),
       chatSide: $("#btfw-chat-side", modal)?.value || "right",
       ignore: ignoreDraft.slice(),
       appearance: themeRuntime.cloneAppearance(
@@ -330,6 +333,9 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     if (hover) hover.checked = !!data.imageHoverMagnify;
     const join = $("#btfw-chat-join-notices", modal);
     if (join) join.checked = !!data.joinNotices;
+    if (typeof data.movieInfo === "boolean") {
+      writeMovieInfoToggle(modal, data.movieInfo);
+    }
     const side = $("#btfw-chat-side", modal);
     if (side) side.value = data.chatSide || "right";
     ignoreDraft = Array.isArray(data.ignore) ? data.ignore.slice() : [];
@@ -681,6 +687,18 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
                   </div>
                 </section>
 
+                <section class="btfw-ts-card">
+                  <header class="btfw-ts-card__header">
+                    <h3>Movie info</h3>
+                    <p>Poster, rating, and summary for the current video.</p>
+                  </header>
+                  <div class="btfw-ts-card__body">
+                    <label class="checkbox btfw-checkbox">
+                      <input type="checkbox" id="btfw-movie-info-enabled"> <span>Show movie info header</span>
+                    </label>
+                  </div>
+                </section>
+
               </div>
             </div>
 
@@ -847,6 +865,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     const autoScrollOn = $("#btfw-chat-autoscroll", m)?.checked;
     const hoverMagnifyOn = $("#btfw-image-hover-magnify", m)?.checked;
     const joinNoticesOn = $("#btfw-chat-join-notices", m)?.checked;
+    const movieInfoOn = readMovieInfoToggle(m);
     const chatSide    = $("#btfw-chat-side", m)?.value || "right";
 
     set(LS_KEYS.avatarsMode, avatarsMode);
@@ -857,6 +876,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
     set(LS_KEYS.imageHoverMagnify, hoverMagnifyOn ? "1" : "0");
     set(LS_KEYS.chatJoinNotices, joinNoticesOn ? "1":"0");
     set(LS_KEYS.layoutSide, chatSide);
+    setMovieInfoEnabled(movieInfoOn);
 
     // Commit ignore draft to storage + chat-ignore module
     const desired = new Set(ignoreDraft.map((n) => n.toLowerCase()));
@@ -892,6 +912,7 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
         avatarsMode, chatTextPx: parseInt(chatTextPx,10),
         emoteSize, mediaScale: mediaScalePct, gifAutoplay: !!gifAutoOn, chatAutoScroll: !!autoScrollOn, imageHoverMagnify: !!hoverMagnifyOn,
         joinNotices: !!joinNoticesOn,
+        movieInfo: movieInfoOn,
         chatSide,
         userAppearance
       }
@@ -931,6 +952,8 @@ BTFW.define("feature:themeSettings", ["util:themeRuntime", "util:themePresets", 
       $("#btfw-chat-autoscroll", m).checked = get(LS_KEYS.chatAutoScroll, "1") === "1";
       $("#btfw-image-hover-magnify", m).checked = get(LS_KEYS.imageHoverMagnify, "0") === "1";
       $("#btfw-chat-join-notices", m).checked = get(LS_KEYS.chatJoinNotices, "1") === "1";
+      const movieInfoToggle = $("#btfw-movie-info-enabled", m);
+      if (movieInfoToggle) movieInfoToggle.checked = isMovieInfoEnabled();
       const layoutSelect = $("#btfw-chat-side", m);
       const sideNow = get(LS_KEYS.layoutSide, "right");
       if (layoutSelect) layoutSelect.value = ["left","right"].includes(sideNow) ? sideNow : "right";

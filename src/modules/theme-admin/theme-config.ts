@@ -23,9 +23,9 @@ export interface ThemeAdminConfig {
   tint: string;
   colors: Record<string, string>;
   typography: Record<string, unknown>;
-  integrations: { enabled: boolean; movieInfo: Record<string, unknown> } & Record<string, unknown>;
+  integrations: { enabled: boolean } & Record<string, unknown>;
   resources: { styles: string[]; scripts: string[]; modules: string[] } & Record<string, unknown>;
-  branding: { headerName: string; faviconUrl: string; posterUrl: string } & Record<string, unknown>;
+  branding: { headerName: string } & Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -162,10 +162,7 @@ export function createThemeConfigDomain(rt: ThemeRuntimeTypographyApi) {
     colors: { ...rt.DEFAULT_APPEARANCE.colors },
     typography: { ...rt.DEFAULT_APPEARANCE.typography },
     integrations: {
-      enabled: true,
-      movieInfo: {
-        enabled: false
-      }
+      enabled: true
     },
     resources: {
       scripts: [],
@@ -173,9 +170,7 @@ export function createThemeConfigDomain(rt: ThemeRuntimeTypographyApi) {
       modules: []
     },
     branding: {
-      headerName: "CyTube",
-      faviconUrl: "",
-      posterUrl: ""
+      headerName: "CyTube"
     }
   };
 
@@ -234,11 +229,7 @@ export function createThemeConfigDomain(rt: ThemeRuntimeTypographyApi) {
     delete normalized.integrations.ratings;
     delete normalized.integrations.autoSubs;
     delete normalized.integrations.audioEnhancer;
-    if (!normalized.integrations.movieInfo || typeof normalized.integrations.movieInfo !== "object") {
-      normalized.integrations.movieInfo = { enabled: false };
-    } else {
-      normalized.integrations.movieInfo.enabled = Boolean(normalized.integrations.movieInfo.enabled);
-    }
+    delete normalized.integrations.movieInfo;
 
     if (normalized.features && typeof normalized.features === "object") {
       delete (normalized.features as AnyRecord).videoOverlayPoll;
@@ -264,27 +255,20 @@ export function createThemeConfigDomain(rt: ThemeRuntimeTypographyApi) {
     delete normalized.externalModules;
     delete normalized.modules;
 
-    if (!normalized.branding || typeof normalized.branding !== "object") {
-      normalized.branding = structuredClone(defaults.branding);
-    }
-    if (typeof normalized.branding.favicon === "string" && !normalized.branding.faviconUrl) {
-      normalized.branding.faviconUrl = normalized.branding.favicon;
-    }
-    if (typeof normalized.headerName === "string" && !normalized.branding.headerName) {
-      normalized.branding.headerName = normalized.headerName;
-    }
-    if (typeof normalized.branding.header === "string" && !normalized.branding.headerName) {
-      normalized.branding.headerName = normalized.branding.header;
-    }
-    if (typeof normalized.faviconUrl === "string" && !normalized.branding.faviconUrl) {
-      normalized.branding.faviconUrl = normalized.faviconUrl;
-    }
-    if (typeof normalized.posterUrl === "string" && !normalized.branding.posterUrl) {
-      normalized.branding.posterUrl = normalized.posterUrl;
-    }
-    if (typeof normalized.branding.posterUrl !== "string") {
-      normalized.branding.posterUrl = "";
-    }
+    const source = (cfg && typeof cfg === "object") ? (cfg as ThemeAdminConfig) : null;
+    const sourceBranding = (source?.branding && typeof source.branding === "object") ? source.branding : null;
+    const explicitHeader = (sourceBranding && typeof sourceBranding.headerName === "string")
+      ? sourceBranding.headerName.trim()
+      : "";
+    const legacyHeader = (source && typeof source.headerName === "string") ? source.headerName.trim() : "";
+    const aliasHeader = (sourceBranding && typeof sourceBranding.header === "string")
+      ? sourceBranding.header.trim()
+      : "";
+    normalized.branding = {
+      headerName: explicitHeader || legacyHeader || aliasHeader || defaults.branding.headerName
+    };
+    delete normalized.faviconUrl;
+    delete normalized.posterUrl;
 
     if (!normalized.typography || typeof normalized.typography !== "object") {
       normalized.typography = structuredClone(defaults.typography);
@@ -302,13 +286,15 @@ export function createThemeConfigDomain(rt: ThemeRuntimeTypographyApi) {
     delete cleaned.faviconUrl;
     delete cleaned.posterUrl;
     if (cleaned.branding && typeof cleaned.branding === "object") {
-      delete cleaned.branding.favicon;
+      const headerName = typeof cleaned.branding.headerName === "string" ? cleaned.branding.headerName : "";
+      cleaned.branding = { headerName };
     }
     if (cleaned.integrations && typeof cleaned.integrations === "object") {
       delete cleaned.integrations.tmdb;
       delete cleaned.integrations.autoSubs;
       delete cleaned.integrations.ratings;
       delete cleaned.integrations.audioEnhancer;
+      delete cleaned.integrations.movieInfo;
     }
     return cleaned;
   }

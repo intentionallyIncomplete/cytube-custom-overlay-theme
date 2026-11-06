@@ -1,6 +1,23 @@
 {
   "releases": [
     {
+      "version": "1.33.0",
+      "date": "2026-11-05",
+      "summary": "Movie info is now a personal setting, off by default — turn it on in Theme settings.",
+      "categories": {
+        "features": [
+          "Movie info overlay is now a personal setting: Theme settings > Video (off by default). Each viewer chooses whether to show the poster, rating, and summary header for the current video."
+        ],
+        "bugFixes": [
+          "Movie info: the toggle no longer ignores viewers — it now works for everyone who turns it on, not just the person who saved channel settings."
+        ]
+      },
+      "highlights": [
+        "Movie info header is opt-in per viewer: Theme settings > Video.",
+        "Toggling it applies instantly, no reload needed."
+      ]
+    },
+    {
       "version": "1.32.0",
       "date": "2026-11-04",
       "summary": "Attach subtitles when you add a direct video file or a Google Drive index link.",

@@ -1,51 +1,8 @@
-function buildTintOptionsHtml(themeRuntime) {
-  const options = Object.entries(themeRuntime.TINT_PRESETS)
-    .map(([id, preset]) => `<option value="${id}">${preset.name}</option>`)
-    .join("");
-  return `${options}<option value="custom">Custom mix</option>`;
-}
-
-function buildColorField(key, label, bindPath) {
-  return `
-      <div class="btfw-ts-control btfw-ts-control--color">
-        <label class="btfw-input__label" for="btfw-theme-color-${key}">${label}</label>
-        <input type="color" id="btfw-theme-color-${key}" data-btfw-bind="${bindPath}">
-      </div>`;
-}
-
-export function channelThemeAdminPanelHtml(themeRuntime) {
-  const tintOptions = buildTintOptionsHtml(themeRuntime);
-  const colorFields = [
-    buildColorField("background", "Background", "colors.background"),
-    buildColorField("surface", "Surface", "colors.surface"),
-    buildColorField("panel", "Panel", "colors.panel"),
-    buildColorField("text", "Primary text", "colors.text"),
-    buildColorField("chatText", "Chat text", "colors.chatText"),
-    buildColorField("accent", "Accent", "colors.accent")
-  ].join("");
+export function channelThemeAdminPanelHtml() {
   return `
       <div class="btfw-theme-admin" data-btfw-theme-admin>
         <h3>Channel operations</h3>
-        <p class="lead">Manage channel branding, optional resources, and BillTube integrations. Per-user colors and fonts live in each viewer's Theme settings.</p>
-
-        <details class="section" data-section="appearance">
-          <summary class="section__summary">
-            <div class="section__title">
-              <h4>Palette & tint</h4>
-              <span>Channel-wide color theme applied to all visitors.</span>
-            </div>
-            <span class="section__chevron" aria-hidden="true">></span>
-          </summary>
-          <div class="section__body">
-            <div class="field">
-              <label for="btfw-theme-tint">Preset tint</label>
-              <select class="btfw-ts-select is-small" id="btfw-theme-tint" data-btfw-bind="tint">${tintOptions}</select>
-            </div>
-            <div class="btfw-ts-color-grid">
-              ${colorFields}
-            </div>
-          </div>
-        </details>
+        <p class="lead">Set the channel header name and optional theme resources. Per-user colors and fonts live in each viewer's Theme settings.</p>
 
         <details class="section" data-section="resources">
           <summary class="section__summary">
@@ -84,52 +41,11 @@ export function channelThemeAdminPanelHtml(themeRuntime) {
           </div>
         </details>
 
-        <details class="section" data-section="integrations">
-          <summary class="section__summary">
-            <div class="section__title">
-              <h4>Integrations</h4>
-              <span>Channel-wide BillTube feature toggles.</span>
-            </div>
-            <span class="section__chevron" aria-hidden="true">></span>
-          </summary>
-          <div class="section__body">
-            <div class="field">
-              <label for="btfw-theme-movie-info-toggle">Movie info overlay</label>
-              <div class="movie-info-toggle">
-                <button type="button" class="button is-dark is-small" id="btfw-theme-movie-info-toggle" aria-pressed="false">Enable movie info overlay</button>
-                <input type="checkbox" id="btfw-theme-movie-info-enabled" data-btfw-bind="integrations.movieInfo.enabled" hidden>
-              </div>
-              <p class="help">Shows posters and metadata when viewers hover the now playing title. TMDB access is configured in the worker.</p>
-            </div>
-          </div>
-        </details>
-
-        <details class="section" data-section="branding">
-          <summary class="section__summary">
-            <div class="section__title">
-              <h4>Branding</h4>
-              <span>Navbar title, favicon, and poster overrides.</span>
-            </div>
-            <span class="section__chevron" aria-hidden="true">></span>
-          </summary>
-          <div class="section__body">
-            <div class="field">
-              <label for="btfw-theme-header-name">Channel header name</label>
-              <input type="text" id="btfw-theme-header-name" data-btfw-bind="branding.headerName" placeholder="CyTube">
-              <p class="help">Replaces the navbar brand text for all visitors.</p>
-            </div>
-            <div class="field">
-              <label for="btfw-theme-favicon">Favicon URL</label>
-              <input type="url" id="btfw-theme-favicon" data-btfw-bind="branding.faviconUrl" placeholder="https://example.com/favicon.png">
-              <p class="help">Provide a full URL to the icon browsers should show in the tab bar.</p>
-            </div>
-            <div class="field">
-              <label for="btfw-theme-poster">Video poster URL</label>
-              <input type="url" id="btfw-theme-poster" data-btfw-bind="branding.posterUrl" placeholder="https://example.com/poster.jpg">
-              <p class="help">Optional hero image used by some overlays. Leave blank to use the default poster.</p>
-            </div>
-          </div>
-        </details>
+        <div class="field">
+          <label for="btfw-theme-header-name">Channel header name</label>
+          <input type="text" id="btfw-theme-header-name" data-btfw-bind="branding.headerName" placeholder="CyTube">
+          <p class="help">Replaces the navbar brand text for all visitors.</p>
+        </div>
 
         <div class="buttons">
           <button type="button" class="btn-primary" id="btfw-theme-apply">Apply to Channel CSS &amp; JS</button>
