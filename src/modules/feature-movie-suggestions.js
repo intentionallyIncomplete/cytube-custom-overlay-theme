@@ -224,6 +224,27 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
         font-size: 0.85rem;
       }
 
+      #btfw-movie-suggest-modal .movie-tmdb-id {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 1px 6px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 4px;
+        background: rgba(255,255,255,0.06);
+        color: inherit;
+        font: 600 0.7rem/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+        cursor: copy;
+      }
+
+      #btfw-movie-suggest-modal .movie-tmdb-id:hover,
+      #btfw-movie-suggest-modal .movie-tmdb-id:focus-visible {
+        border-color: var(--btfw-color-accent, #6d4df6);
+      }
+
+      #btfw-movie-suggest-modal .movie-result__info small {
+        display: block;
+      }
+
       .button.btfw-nav-pill#btfw-movie-suggest-btn:hover {
         background-color: var(--btfw-color-accent, #6d4df6);
       }
@@ -371,6 +392,15 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
     const del = $(".delete", modal);
     bg.addEventListener("click", closeModal);
     del.addEventListener("click", closeModal);
+
+    // Capture phase so the chip wins over the result card's own click (which opens the suggest confirm).
+    modal.addEventListener("click", (e) => {
+      const chip = e.target.closest?.(".movie-tmdb-id");
+      if (!chip) return;
+      e.preventDefault();
+      e.stopPropagation();
+      copyTmdbId(chip);
+    }, true);
 
     $("#btfw-movie-prev", modal)?.addEventListener("click", () => {
       if (searchState.page > 1) {
@@ -524,6 +554,25 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
     return `https://image.tmdb.org/t/p/w154${posterPath}`;
   }
 
+  function tmdbIdChip(id) {
+    const value = String(id ?? "").trim();
+    if (!/^\d+$/.test(value)) return "";
+    return `<button type="button" class="movie-tmdb-id" data-tmdb-id="${value}"
+                    title="Copy TMDB ID (use with !summary ${value} or !cast ${value})">TMDB ${value}</button>`;
+  }
+
+  async function copyTmdbId(chip) {
+    const id = chip.dataset.tmdbId;
+    try {
+      await navigator.clipboard.writeText(id);
+      chip.textContent = "Copied!";
+    } catch (err) {
+      merror("copy TMDB id failed:", err);
+      chip.textContent = `ID ${id}`;
+    }
+    setTimeout(() => { chip.textContent = `TMDB ${id}`; }, 1200);
+  }
+
   function updatePager() {
     const modal = $("#btfw-movie-suggest-modal");
     if (!modal) return;
@@ -562,6 +611,7 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
         <div class="movie-result__info">
           <div class="movie-result__title">${escapeHtml(movie.title)}</div>
           <small style="opacity:0.7;">${escapeHtml(movie.releaseYear || "N/A")}</small>
+          ${tmdbIdChip(movie.id)}
         </div>
       </div>
     `).join("");
@@ -636,6 +686,7 @@ BTFW.define("ext:movie-suggestion", ["util:tmdb-proxy", "feature:monkeyPaw"], as
             <div>
               <div class="history-item__title">${escapeHtml(item.movieTitle)}${year}</div>
               <div class="history-item__meta">Requested by ${escapeHtml(item.username)}</div>
+              ${tmdbIdChip(item.movieId)}
             </div>
           </div>
         `;

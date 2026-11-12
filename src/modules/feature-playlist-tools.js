@@ -1,5 +1,6 @@
 /* BTFW — feature:playlist-tools (merged helpers: search, scroll-to-current, poll add) */
 import { escapeHtml } from "../lib/escape-html.js";
+import { sanitiseAddMediaTitle } from "../lib/sanitise-add-media-title.js";
 
 BTFW.define("feature:playlist-tools", [], async () => {
   const $ = (s, r = document) => r.querySelector(s);
@@ -364,35 +365,7 @@ BTFW.define("feature:playlist-tools", [], async () => {
   }
 
   /* ---------- Add-from-URL title sanitiser ---------- */
-  const scrubTokens = ["720p", "brrip", "x264", "yify", "mp4"];
-  const scrubPattern = new RegExp(`\\b(?:${scrubTokens.join("|")})\\b`, "gi");
   const titleInputSelectors = ["#addfromurl-title-val", "#mediaurl-title", ".media-title-input"];
-
-  function sanitiseTitleInput(value, options = {}) {
-    const { trimEdges = false } = options;
-    if (!value) return "";
-
-    let title = String(value);
-
-    // Replace dot groups with spaces so words separate naturally
-    title = title.replace(/\.+/g, " ");
-
-    // Remove known metadata tokens (case-insensitive)
-    scrubPattern.lastIndex = 0;
-    title = title.replace(scrubPattern, " ");
-
-    // Surround years with parentheses if not already wrapped
-    title = title.replace(/\b(19|20)\d{2}\b/g, (match, _prefix, offset, src) => {
-      const before = src[offset - 1];
-      const after = src[offset + match.length];
-      if (before === "(" && after === ")") return match;
-      return `(${match})`;
-    });
-
-    // Collapse runs of whitespace; only trim edges when finalising (blur/submit)
-    title = title.replace(/\s+/g, " ");
-    return trimEdges ? title.trim() : title;
-  }
 
   let titleFilterObserver = null;
   function ensureAddFromUrlTitleFilter() {
@@ -405,7 +378,7 @@ BTFW.define("feature:playlist-tools", [], async () => {
 
         const apply = (trimEdges = false) => {
           const raw = input.value || "";
-          const cleaned = sanitiseTitleInput(raw, { trimEdges });
+          const cleaned = sanitiseAddMediaTitle(raw, { trimEdges });
           if (cleaned === raw) return;
 
           const start = input.selectionStart;

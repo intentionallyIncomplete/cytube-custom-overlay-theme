@@ -1,6 +1,22 @@
 {
   "releases": [
     {
+      "version": "1.34.0",
+      "date": "2026-11-06",
+      "summary": "!summary and !cast look up a movie or show by its TMDB id, and !summary posts the poster card.",
+      "categories": {
+        "features": [
+          "!summary <tmdb id> posts the movie card: poster, title, year, rating, and synopsis. Add tv for a show, as in !summary tv 1396.",
+          "!cast <tmdb id> posts the top cast for that movie or show. A bare id is a movie; prefix it with tv for a show.",
+          "Request: each movie card and recent request shows its TMDB id. Click the id to copy it for !summary or !cast."
+        ]
+      },
+      "highlights": [
+        "!summary posts the poster card from a TMDB id.",
+        "Copy a TMDB id from any movie in the Request window."
+      ]
+    },
+    {
       "version": "1.33.0",
       "date": "2026-11-05",
       "summary": "Movie info is now a personal setting, off by default — turn it on in Theme settings.",
