@@ -1,5 +1,6 @@
 import { SELECTORS } from "../lib/btfw-constants.js";
 import { findUserlistItem, normalizeUserIdentifier } from "../lib/find-userlist-item.js";
+import { hasScrollableAncestorY } from "../lib/wheel-containment.js";
 
 BTFW.define("feature:chat", ["feature:layout", "util:chatAutoscroll", "util:state"], async ({ init }) => {
   const motion = await init("util:motion");
@@ -1249,6 +1250,22 @@ const scheduleNormalizeChatActions = (() => {
     });
   }
 
+  // overscroll-behavior only contains boxes that scroll, so the chat input and bars would
+  // otherwise hand the wheel straight to the page. Vertical layout chains on purpose (above).
+  function wireChatColumnWheelGuard(){
+    const column = document.getElementById("btfw-chatcol");
+    if (!column || column.dataset.btfwWheelGuardWired) return;
+    column.dataset.btfwWheelGuardWired = "1";
+
+    column.addEventListener("wheel", (ev) => {
+      if (ev.ctrlKey || !ev.deltaY || ev.defaultPrevented) return;
+      if (document.getElementById("btfw-grid")?.classList.contains("btfw-grid--vertical")) return;
+      const target = ev.target instanceof Element ? ev.target : null;
+      if (hasScrollableAncestorY(target, column, ev.deltaY, (el) => getComputedStyle(el).overflowY)) return;
+      ev.preventDefault();
+    }, { passive: false });
+  }
+
   document.addEventListener("btfw:layout:orientation", () => {
     setTimeout(wireVerticalScrollChaining, 0);
   });
@@ -1268,6 +1285,7 @@ const scheduleNormalizeChatActions = (() => {
     wireDelegatedClicks();
     watchForStrayButtons();
     wireVerticalScrollChaining();
+    wireChatColumnWheelGuard();
   }
 
   document.addEventListener("btfw:layoutReady", ()=> setTimeout(boot, 50));
